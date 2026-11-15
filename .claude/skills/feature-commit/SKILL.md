@@ -16,7 +16,7 @@ description: 被要求 commit 時使用。依序檢查機密、分支、流程�
 5. **測試**：執行 `quickstart.md` 或 `plan.md` 指定的測試指令，全部通過。
 6. **圖表**：如果這次包含該功能的最後一個任務，`diagram-verification.md` 必須存在，而且沒有未處理的差異。
 7. **一致性**：每個行為上的改變，都有對應的 spec 修改，而且 spec 的 commit 排在程式碼的 commit 之前。
-8. **拆分與訊息**：依 `CONTRIBUTING.md` 2.4 節拆分（每個 SpecKit 階段一個 commit；implement 階段每個任務一個 commit）；類型、範圍、英文標題、說明原因的內文、Refs 都符合規範。
+8. **拆分與訊息**：依 `CONTRIBUTING.md` 2.4 節拆分（每個 SpecKit 階段一個 commit；implement 階段每個任務一個 commit）；類型、範圍、標題（中文或英文，依 2.2 節）、說明原因的內文、Refs 都符合規範。
 
 ## 提案格式
 
