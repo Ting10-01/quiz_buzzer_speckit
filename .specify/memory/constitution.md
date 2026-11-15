@@ -1,50 +1,110 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# 課堂即時搶答系統專案憲法
 
-## Core Principles
+本專案為學生期末專題，目標是讓老師與各組學生在課堂上公平、即時地進行搶答活動。
+本憲法規範專案層級的原則，不描述具體功能需求或工具選型；功能需求以各功能的 `spec.md` 為準。
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## 核心原則（Core Principles）
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### I. 圖表生成 (Diagram Generation)：PlantUML 設計優先 (Design-First with PlantUML)
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- 規格制定階段：在 speckit.specify 階段，必須使用 PlantUML 語法生成組件圖 (Component diagram)、類別圖 (Class diagram) 和時序圖 (Sequence diagram)。這些圖表檔案 (.puml) 必須儲存在 ./diagrams/ 目錄中。
+- 產物生成：檔案建立後，必須使用 PlantUML CLI (java -jar plantuml.jar "./diagrams/*.puml") 將所有 .puml 檔案轉換為 PNG 圖片，且輸出的圖片必須儲存在相同的目錄中。
+- 規劃階段：speckit.plan 階段必須將這些圖表作為主要藍圖，用以生成應用程式的架構與組件。
+- 實作階段：在 speckit.implement 階段完成程式碼生成後，必須執行驗證步驟，以確保最終的程式碼與圖表完全一致。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+理由：先以圖表確立架構與互動，讓設計在實作前即可被審查，並作為驗證程式碼是否符合設計的依據。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. 規格先行與可追溯性
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- 任何系統行為的變更，必須依序先修改規格，再更新計畫與任務，最後才修改程式碼；不得以修改程式碼的方式反向定義需求。
+- 每一條需求都必須能追溯到至少一條驗收準則、至少一個任務與至少一個測試；無法追溯的需求、任務或測試視為缺陷。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+理由：規格是需求的唯一依據，可追溯性讓審查者能確認每條需求都已被實作與驗證。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### III. 分層架構與依賴抽象
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- 系統必須依職責分層，相依方向只能由外層指向內層；內層不得引用外層。
+- 模組之間必須依賴抽象，而非具體實作。
+- 新增功能或規則時，必須以新增實作的方式擴充，不得為此修改既有且已驗證的實作。
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+理由：清楚的相依方向與抽象邊界讓各部分可獨立測試與替換，並降低變更的連鎖影響。
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### IV. 外部資料於執行期解析
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- 外部資料的結構與位置不得寫死在程式碼中（例如：不得將某一題的填空格固定為某個儲存格位置）。
+- 系統必須在執行期依明確、可文件化的規則解析外部資料的結構與位置；無法依規則解析時，必須回報清楚的錯誤，而非猜測。
+
+理由：系統必須能處理格式相同但內容與版面不同的外部資料。
+
+### V. 單一權威狀態來源
+
+- 所有參與者共享的狀態（例如目前的活動階段、搶答結果）必須只有一個權威來源。
+- 其他參與者只接收並呈現該來源發布的狀態，不得自行推導或修改共享狀態。
+
+理由：單一來源才能保證所有參與者看到一致的活動階段，並維持搶答的公平性。
+
+### VI. 最小資訊揭露與機敏資料保護
+
+- 每位參與者只能取得其角色在當下階段需要的資訊（例如：搶答結束前，學生不得取得其他組別的作答內容）。此限制必須在權威來源端執行，不得僅依賴介面隱藏。
+- 機敏資料（密碼、金鑰、憑證等）只能存放於環境變數或本機憑證檔，不得寫入程式碼、文件、log 或版本紀錄。
+
+理由：資訊提早外流會破壞搶答的公平性；機敏資料外洩無法撤回。
+
+### VII. 輸入驗證與錯誤訊息
+
+- 所有來自使用者或外部來源的輸入都必須經過驗證後才能使用。
+- 驗證失敗時，必須提供清楚的錯誤訊息，說明哪一項輸入有誤以及原因，且不得因此讓系統進入不一致的狀態。
+
+理由：未經驗證的輸入可能破壞共享狀態；清楚的錯誤訊息讓使用者能自行修正，而不必猜測原因。
+
+### VIII. 自動化測試與人工驗證
+
+- 每個使用者故事至少要有一個正常案例與一個邊界案例的自動化測試。
+- 自動化測試不得依賴真實的外部服務；必須以替身取代外部依賴。
+- 除自動化測試外，每個使用者故事都必須經過人工驗證，並留下驗證紀錄。
+- 每次實作完成後，必須回報所執行的測試指令與測試結果。
+
+理由：自動化測試確保行為可重複驗證且結果穩定；人工驗證補足自動化測試無法涵蓋的實際操作情境。
+
+### IX. 程式碼規範
+
+- 介面元件必須可重用；同樣的介面元素只實作一次。
+- 呈現邏輯與資料存取必須分離。
+- 程式碼註解與命名一律使用英文。
+
+理由：避免重複實作造成介面不一致；呈現與資料存取分離讓兩者可獨立修改與測試；統一語言降低閱讀成本。
+
+### X. 人工把關
+
+- 每個階段由 AI 產生的文件與程式碼，都必須經人工審查並確認後，才能進入下一階段。
+- 未經人工確認的產出不得作為下一階段的輸入。
+
+理由：AI 產出可能偏離需求，人工審查是確保產出符合需求的最後防線。
+
+### XI. 簡潔
+
+- 只實作規格中定義的功能；不得加入規格未要求的功能。
+- 不得為假設的未來需求預先設計抽象；抽象只在當下規格確實需要時引入。
+
+理由：未要求的功能與預設的抽象會增加審查、測試與維護成本，且無法追溯到需求。
+
+## 開發流程與品質關卡
+
+- 每個功能依序經過：規格制定 → 釐清 → 計畫 → 任務 → 一致性分析 → 實作 → 圖表一致性驗證。不得跳過或顛倒順序。
+- 每一階段的產出必須通過人工審查（原則 X），並符合本憲法，才能進入下一階段。
+- 計畫階段必須執行憲法檢查，逐條確認設計未違反核心原則。
+- 實作階段一次只執行一個階段性任務群組，完成後停下並回報測試指令與結果（原則 VIII）。
+- 實作完成後，必須驗證程式碼中的組件、類別、方法與呼叫順序與圖表一致；不一致之處必須修正程式碼或依原則 II 修正規格與圖表，並留下驗證紀錄。
+
+## 治理（Governance）
+
+- 本憲法的效力高於專案中所有其他文件與慣例。其他文件與本憲法衝突時，以本憲法為準。
+- 任何階段發現違反本憲法時，必須先修正違反之處，才能進入下一步。本規則不設任何例外。
+- 修訂程序：修訂必須以獨立的變更提出，說明修訂理由與影響範圍，經人工審查確認後才生效；修訂後必須檢查既有規格、計畫與任務是否仍符合新版憲法。
+- 版本規則採語意化版本：
+  - MAJOR：移除原則或重新定義原則，導致既有產出不再相容。
+  - MINOR：新增原則或章節，或實質擴充既有規範。
+  - PATCH：釐清用語、修正錯字等不影響語意的修改。
+- 合規審查：每一階段的人工審查與每次合併前，都必須確認產出符合本憲法。
+
+**Version**: 1.0.0 | **Ratified**: 2026-11-15 | **Last Amended**: 2026-11-15
