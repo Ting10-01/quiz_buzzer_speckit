@@ -237,6 +237,14 @@ package "001（共用）" #EEEEEE {
   class Question
 }
 
+package "003（共用）" #EEEEEE {
+  class ResultsService {
+    +onActivityCreated(activity: Activity): void
+    +onQuestionClosed(activity: Activity, result: QuestionResult): void
+    +onActivityEnded(activity: Activity): void
+  }
+}
+
 SessionGateway --> CommandQueue
 SessionGateway --> Participant
 SessionGateway ..> TeacherCredential : 驗證
@@ -248,6 +256,7 @@ ActivityService --> BuzzEngine
 ActivityService --> RankingPolicy
 ActivityService --> ActivityStore
 ActivityService ..> Broadcaster : notify（非同步）
+ActivityService ..> ResultsService : 建立活動、每題結束、活動結束\n（佇列處理完後才呼叫）
 ActivityService ..> TeacherCredential : creates
 BuzzEngine --> SequenceClock : receivedAt
 BuzzEngine ..> Submission : creates

@@ -66,7 +66,7 @@
 | ActivityStore | `packages/server/src/store/ActivityStore.ts` | component、class |
 | Activity、Group、FairModeSetting、Phase、QuestionPhase、CloseReason、Submission、Command 系列、CommandResult | `packages/server/src/buzz/domain.ts` | class |
 | QuestionResult、SubmitResult、SubmitStatus、QuestionOutline、TeacherView、StudentView、OwnSubmission、PublicResult、GroupStatus | `packages/shared/src/activity.ts` | class；契約見 `contracts/socket-events.md` |
-| 003 ResultsService（題目結束時通知） | `ActivityService` 在建立活動、每題結束、活動結束時呼叫 `ResultsService.onActivityCreated()`／`onQuestionClosed()`／`onActivityEnded()`（003 實作；處理完佇列內的指令後才呼叫，不在臨界區內） | component |
+| 003 ResultsService（題目結束時通知） | `ActivityService` 在建立活動、每題結束、活動結束時呼叫 `ResultsService.onActivityCreated()`／`onQuestionClosed()`／`onActivityEnded()`（003 實作；處理完佇列內的指令後才呼叫，不在臨界區內） | component、class、sequence |
 | 老師憑證、建立活動 API | `packages/server/src/http/sessionRoutes.ts`；契約見 `contracts/session-http.md` | sequence |
 
 ## Project Structure

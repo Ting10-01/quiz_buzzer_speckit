@@ -94,7 +94,7 @@ description: "Task list for 002 搶答活動"
 
 - [ ] T029 [P] [US2] `server/tests/unit/buzz/BuzzEngine.test.ts`：接受時 `seq` 遞增、`receivedAt` 不倒退（AC-08）；同題兩組 → 不同序號、恰好一組成功（AC-09）；題組只填部分小題 → `INCOMPLETE_GROUP`（AC-10）；同組第二位成員 → `ALREADY_SUBMITTED`（AC-11）；同一 `submissionId` → `DUPLICATE` 並回傳第一次的結果、不取新序號（AC-12）；題目已結束 → `QUESTION_NOT_OPEN` 且不列入順位（AC-13）；空白答案 → `EMPTY_ANSWER`，超過 200 字 → `ANSWER_TOO_LONG`（AC-14）；指向已結束或未開放的題號 → `QUESTION_NOT_OPEN`（AC-31）
 - [ ] T030 [P] [US2] `server/tests/unit/buzz/FirstArrivalPolicy.test.ts`（負責：A）：成功組別為序號最小者；沒有送出時 `winnerGroupId` 為 `null`；同一份紀錄重算結果相同（AC-28）
-- [ ] T031 [P] [US2] `server/tests/integration/gateway.submit.test.ts`：兩組幾乎同時 `student:submit`，ack 都是 `ACCEPTED`、序號不同；ack 不含順位（AC-17）；結束後才到的送出回 `REJECTED`（AC-13）
+- [ ] T031 [P] [US2] `server/tests/integration/gateway.submit.test.ts`：兩組幾乎同時 `student:submit`，重複 100 次，每次 ack 都是 `ACCEPTED`、序號不同、恰好一個成功組別，且老師 view 的順位與搶答結果一致（SC-002）；ack 不含順位（AC-17）；結束後才到的送出回 `REJECTED`（AC-13）
 - [ ] T032 [P] [US2] `web/src/pages/student/AnswerPage.submit.test.tsx`：送出後顯示「本組已送出第 n 題」與送出時間並鎖定輸入（AC-07）；網路重試沿用同一個 `submissionId`
 
 ### Implementation for User Story 2
