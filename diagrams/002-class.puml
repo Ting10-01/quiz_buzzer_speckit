@@ -1,0 +1,302 @@
+@startuml
+title 002 搶答活動 — 類別圖
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Session" {
+  class SessionGateway {
+    +onConnect(connectionId: String, credential: String [0..1]): Participant
+    +onCommand(participant: Participant, command: Command): CommandResult
+  }
+
+  class Participant {
+    +connectionId: String
+    +role: Role
+    +groupId: String [0..1]
+  }
+
+  enum Role {
+    TEACHER
+    STUDENT
+  }
+
+  class TeacherCredential {
+    +token: String
+  }
+}
+
+package "Buzz" {
+  class CommandQueue {
+    +enqueue(command: Command): CommandResult
+  }
+
+  class ActivityService {
+    +createActivity(questionSet: QuestionSet, groupCount: int, fairMode: FairModeSetting, timeLimitSec: int [0..1]): TeacherCredential
+    +join(groupId: String): Participant
+    +changeGroup(participant: Participant, groupId: String): void
+    +openNextQuestion(): void
+    +closeQuestion(reason: CloseReason): QuestionResult
+    +endActivity(): QuestionResult[]
+    +submit(participant: Participant, command: SubmitCommand): SubmitResult
+  }
+
+  class QuestionTimer {
+    +start(questionNumber: int, deadline: Instant): void
+    +cancel(): void
+    -onExpire(): void
+  }
+
+  class BuzzEngine {
+    +submit(activity: Activity, command: SubmitCommand): SubmitResult
+    -validate(activity: Activity, command: SubmitCommand): void
+  }
+
+  interface RankingPolicy {
+    +resolve(question: Question, submissions: Submission[], winsSoFar: Map<String, int>): QuestionResult
+  }
+
+  class FirstArrivalPolicy
+
+  class FairPolicy {
+    +windowSeconds: int
+  }
+
+  class SequenceClock {
+    -lastIssuedAt: Instant
+    +stamp(): Instant
+  }
+
+  class VisibilityFilter {
+    +teacherView(activity: Activity): TeacherView
+    +studentView(activity: Activity, groupId: String): StudentView
+  }
+
+  class Broadcaster {
+    -outboxes: Map<String, Outbox>
+    +notify(activity: Activity): void
+    +reply(connectionId: String, result: SubmitResult): void
+    -flush(): void
+  }
+
+  class Outbox {
+    +connectionId: String
+    +pending: Message[]
+    +latestViewOnly: boolean
+  }
+
+  class ActivityStore {
+    +current(): Activity [0..1]
+    +replace(activity: Activity): void
+  }
+}
+
+package "Domain" {
+  class Activity {
+    +id: String
+    +phase: Phase
+    +questionSet: QuestionSet
+    +groups: Group[]
+    +fairMode: FairModeSetting
+    +timeLimitSec: int [0..1]
+    +currentQuestion: int [0..1]
+    +questionStates: Map<int, QuestionPhase>
+    +deadline: Instant [0..1]
+    +submissions: Submission[]
+    +results: Map<int, QuestionResult>
+    -nextSeq: int
+    +openQuestion(number: int, now: Instant): void
+    +closeQuestion(result: QuestionResult): void
+    +end(): void
+    +takeNextSeq(): int
+  }
+
+  enum Phase {
+    WAITING
+    RUNNING
+    ENDED
+  }
+
+  enum QuestionPhase {
+    PENDING
+    OPEN
+    CLOSED
+  }
+
+  enum CloseReason {
+    TEACHER
+    TIMEOUT
+  }
+
+  class Group {
+    +id: String
+    +name: String
+  }
+
+  class FairModeSetting {
+    +enabled: boolean
+    +windowSeconds: int
+  }
+
+  abstract class Command {
+    +issuedBy: Participant [0..1]
+  }
+
+  class OpenNextQuestionCommand
+  class CloseQuestionCommand {
+    +reason: CloseReason
+  }
+  class EndActivityCommand
+
+  class SubmitCommand {
+    +submissionId: String
+    +questionNumber: int
+    +answers: Map<String, String>
+  }
+
+  class CommandResult {
+    +ok: boolean
+    +message: String [0..1]
+  }
+
+  class Submission {
+    +submissionId: String
+    +groupId: String
+    +questionNumber: int
+    +answers: Map<String, String>
+    +seq: int
+    +receivedAt: Instant
+  }
+
+  class SubmitResult {
+    +status: SubmitStatus
+    +reason: String [0..1]
+    +receivedAt: Instant [0..1]
+  }
+
+  enum SubmitStatus {
+    ACCEPTED
+    DUPLICATE
+    REJECTED
+  }
+
+  class QuestionResult {
+    +questionNumber: int
+    +ranking: Submission[]
+    +winnerGroupId: String [0..1]
+    +closeReason: CloseReason
+  }
+
+  class QuestionOutline {
+    +questionNumber: int
+    +slotLabels: String[]
+    +slotTexts: String[]
+  }
+
+  class TeacherView {
+    +phase: Phase
+    +current: QuestionOutline [0..1]
+    +remainingSec: int [0..1]
+    +currentRanking: Submission[]
+    +waitingGroups: String[]
+    +closedResults: QuestionResult[]
+    +groups: GroupStatus[]
+  }
+
+  class StudentView {
+    +phase: Phase
+    +groupId: String
+    +current: QuestionOutline [0..1]
+    +remainingSec: int [0..1]
+    +ownSubmission: OwnSubmission [0..1]
+    +closedResults: PublicResult[]
+  }
+
+  class OwnSubmission {
+    +questionNumber: int
+    +answers: Map<String, String>
+    +receivedAt: Instant
+  }
+
+  class PublicResult {
+    +questionNumber: int
+    +winnerGroupName: String [0..1]
+    +answers: Map<String, String>
+  }
+
+  class GroupStatus {
+    +groupId: String
+    +name: String
+    +onlineCount: int
+    +submittedCount: int
+  }
+}
+
+package "001（共用）" #EEEEEE {
+  class QuestionSet
+  class Question
+}
+
+SessionGateway --> CommandQueue
+SessionGateway --> Participant
+SessionGateway ..> TeacherCredential : 驗證
+Participant --> Role
+CommandQueue --> ActivityService
+QuestionTimer --> CommandQueue : 歸零時 enqueue(CloseQuestionCommand(TIMEOUT))
+ActivityService --> QuestionTimer
+ActivityService --> BuzzEngine
+ActivityService --> RankingPolicy
+ActivityService --> ActivityStore
+ActivityService ..> Broadcaster : notify（非同步）
+ActivityService ..> TeacherCredential : creates
+BuzzEngine --> SequenceClock : receivedAt
+BuzzEngine ..> Submission : creates
+BuzzEngine ..> SubmitResult : returns
+FirstArrivalPolicy ..|> RankingPolicy
+FairPolicy ..|> RankingPolicy
+Broadcaster --> VisibilityFilter
+Broadcaster *-- "0..*" Outbox
+Broadcaster ..> SessionGateway : 送出訊息
+VisibilityFilter ..> TeacherView : creates
+VisibilityFilter ..> StudentView : creates
+OpenNextQuestionCommand --|> Command
+CloseQuestionCommand --|> Command
+EndActivityCommand --|> Command
+SubmitCommand --|> Command
+CommandQueue ..> CommandResult : returns
+SubmitResult --> SubmitStatus
+ActivityStore o-- "0..1" Activity
+Activity --> Phase
+Activity --> QuestionPhase
+Activity --> QuestionSet
+Activity *-- "2..20" Group
+Activity *-- FairModeSetting
+Activity *-- "0..*" Submission
+Activity *-- "0..*" QuestionResult
+QuestionResult o-- "0..*" Submission
+QuestionResult --> CloseReason
+CloseQuestionCommand --> CloseReason
+StudentView *-- "0..1" QuestionOutline
+StudentView *-- "0..1" OwnSubmission
+StudentView *-- "0..*" PublicResult
+TeacherView *-- "0..1" QuestionOutline
+TeacherView *-- "2..20" GroupStatus
+QuestionSet *-- Question
+
+note right of OwnSubmission
+  刻意不含 seq（順位）：
+  順位會透露其他組是否已送出（R9）
+end note
+
+note bottom of Submission
+  seq：系統接受時給的順位序號，從 1 連續遞增、不重複（NFR-01）
+  receivedAt：由 SequenceClock 給，隨 seq 單調不減（NFR-02）
+  只接受「目前開放中那一題」的送出（REQ-BUZ-08）
+  Activity.submissions 只能新增、不能修改，可重新判定（NFR-03）
+end note
+
+note right of PublicResult
+  已結束題目才會出現：只有成功組別與答案；
+  整輪結束後，完整順位改由 003 的結果檢視提供
+end note
+@enduml

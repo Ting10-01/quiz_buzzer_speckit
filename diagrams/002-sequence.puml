@@ -1,0 +1,97 @@
+@startuml
+title 002 搶答活動 — 時序圖（逐題開放）
+skinparam shadowing false
+autonumber
+
+actor "老師" as T
+participant "TeacherConsolePage" as TP
+participant "學生端\n（第 2 組）" as P2
+participant "學生端\n（第 5 組）" as P5
+participant "SessionGateway" as GW
+participant "CommandQueue" as Q
+participant "ActivityService" as AS
+participant "QuestionTimer" as QT
+participant "BuzzEngine" as BE
+participant "RankingPolicy" as RP
+participant "Broadcaster" as BC
+participant "ResultsService\n（003）" as RS
+
+== 開放下一題（第 n 題，R3、R11） ==
+T -> TP : 按「開放第 n 題」
+TP -> GW : teacher:openNext（連線帶老師憑證）
+GW -> GW : 確認是老師（REQ-BUZ-02）
+GW -> Q : enqueue(OpenNextQuestion)
+Q -> AS : openNextQuestion()
+AS -> AS : 第 n 題 = OPEN\ndeadline = now + 每題秒數（有設定時）
+AS -> QT : start(n, deadline)
+AS ->> BC : notify（非同步）
+BC -->> TP : view:teacher（第 n 題開放中、remainingSec）
+BC -->> P2 : view:student（第 n 題題目與倒數，只含本組資料）
+BC -->> P5 : view:student（同上）
+
+== 兩組幾乎同時送出第 n 題（時序正確 R10、NFR-01～03） ==
+P2 -> GW : student:submit(submissionId=a1, 第 n 題, 答案)
+P5 -> GW : student:submit(submissionId=b7, 第 n 題, 答案)
+GW -> Q : enqueue(Submit a1)
+GW -> Q : enqueue(Submit b7)
+note over Q
+  依抵達順序逐一處理，一筆完成前不會處理下一筆。
+  臨界區只做驗證、取序號、寫入紀錄，不做網路傳送
+end note
+group 臨界區（a1）
+  Q -> AS : submit(a1)
+  AS -> BE : submit(activity, a1)
+  BE -> BE : 檢查：第 n 題開放中、本組未送過、\n小題填齊、非空白、≤ 200 字
+  BE -> BE : seq = takeNextSeq()\nreceivedAt = SequenceClock.stamp()
+  BE --> AS : ACCEPTED
+end
+group 臨界區（b7）
+  Q -> AS : submit(b7)
+  AS -> BE : submit(activity, b7)
+  BE -> BE : seq = takeNextSeq()\nreceivedAt ≥ a1.receivedAt
+  BE --> AS : ACCEPTED
+end
+AS ->> BC : reply / notify（在臨界區之外）
+BC -->> P2 : ack SubmitResult ACCEPTED（不含順位）
+BC -->> P5 : ack SubmitResult ACCEPTED（不含順位）
+BC -->> TP : view:teacher（第 2 組 #1、第 5 組 #2）\n大量送出時每 200 ms 合併一次，落後 ≤ 1 秒
+
+== 第 n 題結束（倒數歸零或老師手動） ==
+alt 倒數歸零
+  QT -> Q : enqueue(CloseQuestion(TIMEOUT))
+else 老師按「結束這一題」
+  T -> TP : 結束這一題
+  TP -> GW : teacher:closeQuestion
+  GW -> Q : enqueue(CloseQuestion(TEACHER))
+end
+Q -> AS : closeQuestion(reason)
+AS -> QT : cancel()
+AS -> RP : resolve(第 n 題, 該題送出, 各組已搶到題數)
+RP --> AS : QuestionResult（純函式：同一份紀錄永遠得到同樣結果）
+AS -> AS : 第 n 題 = CLOSED，保存結果
+AS ->> RS : onQuestionClosed(activity, result)\n（非同步，寫入本機紀錄檔）
+AS ->> BC : notify
+BC -->> TP : view:teacher（第 n 題已結束 + 完整順位）
+BC -->> P2 : view:student（第 n 題成功組別與答案）
+BC -->> P5 : view:student（同上）
+
+P5 -> GW : student:submit(submissionId=b9, 第 n 題)（結束後才抵達）
+GW -> Q : enqueue(Submit b9)
+Q -> AS : submit(b9)
+AS -> BE : submit(activity, b9)
+BE --> AS : REJECTED（這一題已結束，不取序號）
+AS ->> BC : reply
+BC -->> P5 : ack SubmitResult REJECTED（QUESTION_NOT_OPEN）
+
+== 最後一題結束後：結束活動 ==
+T -> TP : 結束活動
+TP -> GW : teacher:endActivity(confirm)
+GW -> Q : enqueue(EndActivity)
+Q -> AS : endActivity()
+AS -> AS : phase = ENDED，未開放的題目記為無人搶答
+AS ->> RS : onActivityEnded(activity)
+AS ->> BC : notify
+BC -->> TP : view:teacher（phase = ENDED，前往結果與匯出）
+BC -->> P2 : view:student（phase = ENDED，前往完整結果）
+BC -->> P5 : view:student（同上）
+@enduml
