@@ -1,0 +1,118 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>結果與寫回</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes write{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.w{display:inline-block;animation:write .7s cubic-bezier(.65,0,.35,1) both}
+.w1{animation-delay:.3s}.w2{animation-delay:.75s}.w3{animation-delay:1.2s}.w4{animation-delay:1.65s}.w5{animation-delay:2.1s}.w6{animation-delay:2.55s}
+@keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.row{animation:arrive .32s cubic-bezier(.2,.8,.2,1) both}
+.r2{animation-delay:.06s}.r3{animation-delay:.12s}.r4{animation-delay:.18s}
+@media (prefers-reduced-motion: reduce){.w,.row{animation:none}.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="light" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </a>
+    <span style="color: var(--muted); font-size: 13.5px">計算機概論基礎 學習單 · 結果</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+      <span style="color: var(--muted); font-size: 13px">14:04:30 結束 · 共 4:30</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--raised); color: var(--text2); font-size: 13px; font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--muted)"></span>已結束</span>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em">搶答結果</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 14px">4 題都有人搶答。第 1、2、3、5 組各搶到 1 題；第 4、6 組沒有搶到。</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+        <a class="btn" href="T-Import.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 10px; color: var(--muted); text-decoration: none; font-size: 14px">開新一輪</a>
+        <button class="btn" type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--control); background: transparent; color: var(--text); font-weight: 500; font-size: 14px; font-family: inherit; cursor: pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--text)"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>匯出 CSV</button>
+        <a class="btn" href="T-WriteBack.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: 999px; background: var(--text); color: var(--ground); text-decoration: none; font-weight: 600; font-size: 14px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--ground)"><path d="M12 20V9"></path><path d="M7 13l5-5 5 5"></path><path d="M5 4h14"></path></svg>寫回 Google Sheets</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <section style="flex: 999 1 600px; min-width: 0; background: var(--surface); border-radius: 20px; padding: 18px 22px">
+        <h2 style="margin: 0 0 10px; font-size: 16px; font-weight: 600">每題的成功組別</h2>
+        <div style="display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 0 16px; font-size: 12px; color: var(--muted); padding-bottom: 8px"><span>題號</span><span>成功組別與答案</span><span style="text-align: right">送出組數</span></div>
+
+        <div class="row" style="display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--rule)">
+          <div><b style="display: block; font-size: 15px; font-weight: 600">第 1 題</b><span style="color: var(--muted); font-size: 12px">題組</span></div>
+          <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600">#1</span><b style="font-weight: 600">第 2 組</b><span>（1）CPU　（2）作業系統</span></div>
+            <span style="color: var(--muted); font-size: 12.5px">#2 第 5 組 慢 1.716 秒 · #3 第 3 組 慢 17.276 秒 · #4 第 1 組 慢 28.705 秒</span>
+          </div>
+          <span style="text-align: right">4</span>
+        </div>
+        <div class="row r2" style="display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--rule)">
+          <div><b style="display: block; font-size: 15px; font-weight: 600">第 2 題</b><span style="color: var(--muted); font-size: 12px">題組</span></div>
+          <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600">#1</span><b style="font-weight: 600">第 5 組</b><span>（1）演算法　（2）堆疊</span></div>
+            <span style="color: var(--muted); font-size: 12.5px">#2 第 2 組 慢 4.669 秒</span>
+          </div>
+          <span style="text-align: right">2</span>
+        </div>
+        <div class="row r3" style="display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--rule)">
+          <div><b style="display: block; font-size: 15px; font-weight: 600">第 3 題</b><span style="color: var(--muted); font-size: 12px">單題</span></div>
+          <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600">#1</span><b style="font-weight: 600">第 1 組</b><span>0</span></div>
+            <span style="color: var(--muted); font-size: 12.5px">#2 第 3 組 慢 25.306 秒</span>
+          </div>
+          <span style="text-align: right">2</span>
+        </div>
+        <div class="row r4" style="display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--rule)">
+          <div><b style="display: block; font-size: 15px; font-weight: 600">第 4 題</b><span style="color: var(--muted); font-size: 12px">單題</span></div>
+          <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600">#1</span><b style="font-weight: 600">第 3 組</b><span>IP</span></div>
+            <span style="color: var(--muted); font-size: 12.5px">#2 第 4 組 慢 1.882 秒</span>
+          </div>
+          <span style="text-align: right">2</span>
+        </div>
+
+        <h2 style="margin: 18px 0 10px; font-size: 16px; font-weight: 600">各組搶到的題數</h2>
+        <div style="display: grid; grid-template-columns: 64px minmax(0, 1fr) 24px; gap: 10px 12px; align-items: center; font-size: 13.5px">
+          <span>第 1 組</span><span style="height: 6px; border-radius: 3px; background: var(--text2); width: 100%"></span><span style="text-align: right">1</span>
+          <span>第 2 組</span><span style="height: 6px; border-radius: 3px; background: var(--text2); width: 100%"></span><span style="text-align: right">1</span>
+          <span>第 3 組</span><span style="height: 6px; border-radius: 3px; background: var(--text2); width: 100%"></span><span style="text-align: right">1</span>
+          <span>第 5 組</span><span style="height: 6px; border-radius: 3px; background: var(--text2); width: 100%"></span><span style="text-align: right">1</span>
+          <span style="color: var(--muted)">第 4 組</span><span style="height: 6px; border-radius: 3px; background: var(--raised); width: 100%"></span><span style="text-align: right; color: var(--muted)">0</span>
+          <span style="color: var(--muted)">第 6 組</span><span style="height: 6px; border-radius: 3px; background: var(--raised); width: 100%"></span><span style="text-align: right; color: var(--muted)">0</span>
+        </div>
+      </section>
+
+      <aside style="flex: 1 1 360px; min-width: 0; background: var(--surface); border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">寫回 Google Sheets</h2>
+        <div style="display: flex; align-items: center; gap: 10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--pos)"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M4 9h16M4 15h16M10 9v12"></path></svg><span style="font-size: 13.5px"><b style="font-weight: 600">計算機概論基礎 學習單</b><span style="color: var(--muted)">・工作表「學習單」</span></span></div>
+        <p style="margin: 0; color: var(--muted); font-size: 13px">直接寫入你匯入的那份試算表：只改黃框這 6 格，其他內容與格式都不變。</p>
+        <div style="overflow-x: auto; background: var(--sheet); border-radius: 12px">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+            <thead><tr style="color: var(--faint); font-size: 12px"><th style="width: 36px; padding: 6px; font-weight: 400; background: var(--raised)"></th><th style="width: 44px; padding: 6px; font-weight: 400; background: var(--raised)">B</th><th style="padding: 6px; font-weight: 400; background: var(--raised); text-align: left">G 作答</th></tr></thead>
+            <tbody>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">5</td><td rowspan="2" style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">1</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)">（1）<span class="w w1" style="font-weight: 500">CPU</span></td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">6</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)">（2）<span class="w w2" style="font-weight: 500">作業系統</span></td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">8</td><td rowspan="2" style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">2</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)">（1）<span class="w w3" style="font-weight: 500">演算法</span></td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">9</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)">（2）<span class="w w4" style="font-weight: 500">堆疊</span></td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">11</td><td style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">3</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)"><span class="w w5" style="font-weight: 500">0</span></td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">13</td><td style="padding: 8px; text-align: center; font-weight: 600">4</td><td style="padding: 8px; outline: 1.5px solid var(--accent-stroke); outline-offset: -1.5px; background: var(--accent-soft)"><span class="w w6" style="font-weight: 500">IP</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin: 0; padding: 12px 14px; background: var(--raised); border-radius: 12px; color: var(--muted); font-size: 13px">寫回前會先在同一份試算表複製一個「學習單-備份-日期時間」工作表。匯入後如果改過版面，系統會停止寫回並指出哪一題對不上，不會寫錯格子。</p>
+        <p style="margin: 0; color: var(--faint); font-size: 12.5px">CSV 會列出全部 10 筆送出、共 16 列：題號、小題、組別、答案、搶答順位、送出時間、是否成功。</p>
+      </aside>
+    </div>
+  </main>
+</div>
+</body></html>
