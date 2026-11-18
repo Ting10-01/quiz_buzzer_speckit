@@ -1,0 +1,83 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>控制台 準備中</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes join{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.tab{animation:join .32s cubic-bezier(.34,1.56,.64,1) both}
+.tab.late{animation-delay:.8s}
+@media (prefers-reduced-motion: reduce){.tab{animation:none}.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="dark" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </a>
+    <span style="color: var(--muted); font-size: 13.5px">計算機概論基礎 學習單 · 控制台</span>
+    <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warn)"></span>準備中</span>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px 24px 56px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em">等學生加入</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 14px">13 個分頁已加入，6 組中有 5 組有人；第 6 組還沒有人。</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+        <a class="btn" href="T-Setup.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 10px; color: var(--muted); text-decoration: none; font-size: 14px">修改設定</a>
+        <a class="btn" href="T-Live.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 24px; border-radius: 999px; background: var(--text); color: var(--ground); text-decoration: none; font-weight: 600; font-size: 15px"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="fill: var(--ground)"><path d="M7 4.5v15l12-7.5z"></path></svg>開放第 1 題</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section style="background: var(--surface); border-radius: 20px; padding: 20px 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="color: var(--muted); font-size: 13px">學生在自己的分頁開啟</span>
+            <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 22px; font-weight: 500">localhost:3000/student</span>
+          </div>
+          <button class="btn" type="button" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--control); background: transparent; color: var(--text); font-size: 13.5px; font-weight: 500; font-family: inherit; cursor: pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--text)"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>複製網址</button>
+        </section>
+
+        <section style="background: var(--surface); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+            <h2 style="margin: 0; font-size: 16px; font-weight: 600">各組</h2>
+            <span style="color: var(--muted); font-size: 13px">每個方塊是一個已加入的分頁</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+            <div style="background: var(--raised); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600">第 1 組</b><span style="color: var(--muted); font-size: 13px">3 個分頁</span></div><div style="display: flex; gap: 6px"><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span></div></div>
+            <div style="background: var(--raised); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600">第 2 組</b><span style="color: var(--muted); font-size: 13px">2 個分頁</span></div><div style="display: flex; gap: 6px"><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span></div></div>
+            <div style="background: var(--raised); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600">第 3 組</b><span style="color: var(--muted); font-size: 13px">3 個分頁</span></div><div style="display: flex; gap: 6px"><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab late" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span></div></div>
+            <div style="background: var(--raised); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600">第 4 組</b><span style="color: var(--muted); font-size: 13px">2 個分頁</span></div><div style="display: flex; gap: 6px"><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span></div></div>
+            <div style="background: var(--raised); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600">第 5 組</b><span style="color: var(--muted); font-size: 13px">3 個分頁</span></div><div style="display: flex; gap: 6px"><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span><span class="tab" style="width: 22px; height: 22px; border-radius: 6px; background: var(--control)"></span></div></div>
+            <div style="border: 1px dashed var(--control); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between"><b style="font-weight: 600; color: var(--muted)">第 6 組</b><span style="color: var(--faint); font-size: 13px">0 個分頁</span></div><span style="color: var(--faint); font-size: 13px; line-height: 22px">還沒有人加入</span></div>
+          </div>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 320px; min-width: 0; background: var(--surface); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">這一輪的題目</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column">
+          <li style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--rule)"><b style="font-weight: 600">第 1 題</b><span style="color: var(--muted)">題組 · 2 小題</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--rule)"><b style="font-weight: 600">第 2 題</b><span style="color: var(--muted)">題組 · 2 小題</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--rule)"><b style="font-weight: 600">第 3 題</b><span style="color: var(--muted)">單題</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule)"><b style="font-weight: 600">第 4 題</b><span style="color: var(--muted)">單題</span></li>
+        </ul>
+        <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 13.5px">
+          <dt style="color: var(--muted)">成功規則</dt><dd style="margin: 0; text-align: right">最快送出的組別</dd>
+          <dt style="color: var(--muted)">進行方式</dt><dd style="margin: 0; text-align: right">逐題開放，每題 60 秒</dd>
+          <dt style="color: var(--muted)">作答方式</dt><dd style="margin: 0; text-align: right">每組每題送一次</dd>
+        </dl>
+        <p style="margin: 0; color: var(--faint); font-size: 12.5px">按下「開放第 1 題」後，所有分頁會在同一刻切換到第 1 題並開始倒數。</p>
+      </aside>
+    </div>
+  </main>
+</div>
+</body></html>
