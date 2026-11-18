@@ -36,7 +36,7 @@
 | 401 | `UNAUTHORIZED` | 沒有或錯誤的老師憑證 |
 | 409 | `NO_QUESTION_SET` | 還沒匯入題目 |
 | 409 | `ACTIVITY_RUNNING` | 已有進行中的活動 |
-| 409 | `UNEXPORTED_RESULTS` | 上一輪已結束但還沒匯出；帶 `confirmReplace: true` 重送即可取代（REQ-BUZ-20） |
+| 409 | `UNEXPORTED_RESULTS` | 上一輪已結束，但還沒寫回 Google Sheets 也還沒匯出 CSV（003 紀錄的 `writtenBack`、`csvExported` 都是 `false`）；帶 `confirmReplace: true` 重送即可取代（REQ-BUZ-20） |
 | 422 | `INVALID_SETTINGS` | 組數、秒數或公平模式視窗超出範圍；`message` 說明哪一項 |
 
 ## GET /api/activity/public
