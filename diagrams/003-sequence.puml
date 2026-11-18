@@ -1,0 +1,89 @@
+@startuml
+title 003 搶答結果與匯出 — 時序圖
+skinparam shadowing false
+autonumber
+
+actor "老師" as T
+participant "TeacherResultsPage" as TRP
+actor "學生" as S
+participant "StudentResultsPage" as SRP
+participant "ActivityService\n（002）" as AS
+participant "ResultsService" as RS
+database "ActivityRecordStore" as Rec
+database "QuestionSetStore\n（001）" as QStore
+participant "GuidedNotesWriter" as GNW
+participant "SpreadsheetReader\n（001）" as SR
+participant "SpreadsheetWriter\n（Google Sheets）" as SW
+participant "CsvExporter" as CE
+
+== 建立活動與每一題結束：存檔（REQ-EXP-14） ==
+AS ->> RS : onActivityCreated(activity)
+RS -> Rec : create(ActivityRecord：QuestionSet（含學習單來源）、組別)
+AS ->> RS : onQuestionClosed(activity, 第 n 題結果)\n（002 處理完指令後才呼叫，不在臨界區內）
+RS -> Rec : appendQuestion(activityId, QuestionRecord)
+note right of Rec : 寫暫存檔再 rename 取代，依呼叫順序完成；\n系統當掉後已結束的題目都找得回來
+AS ->> RS : onActivityEnded(activity)
+RS -> Rec : markEnded(activityId)
+
+== 學生檢視結果（R8、R9） ==
+SRP -> RS : GET /api/results/student\n→ studentResults(groupId)
+alt 題目進行中
+  RS --> SRP : 只有已結束題目的成功組別與答案
+else 活動已結束
+  RS --> SRP : 每題所有組別的答案與順位（本組標示）
+end
+SRP --> S : 顯示結果
+
+== 寫回 Google Sheets（R5、R5.1） ==
+T -> TRP : 按「寫回 Google Sheets」
+TRP --> T : 確認：會覆蓋 N 個填空格，並先建立備份工作表
+T -> TRP : 確認
+TRP -> RS : POST /api/results/write-back\n→ writeBack()（附老師憑證）
+RS -> RS : 確認老師身分與活動已結束\n（否則 ACTIVITY_NOT_ENDED）
+RS -> QStore : current()
+QStore --> RS : QuestionSet（學習單來源、填空格位置）
+RS -> GNW : writeBack(questionSet, results)
+GNW -> SR : open(spreadsheetId, sheetId)
+SR --> GNW : 目前的工作表\n（失效 → AUTH_EXPIRED；刪除 → SHEET_NOT_FOUND）
+GNW -> GNW : verifyLayout(sheet, questionSet)
+alt 任一題的題號不在原位置
+  GNW --> RS : WriteBackError(LAYOUT_CHANGED, 題號)
+  RS --> TRP : 拒絕，指出對不上的題號（未建立備份、未寫入）
+else 版面一致
+  GNW -> SW : duplicateSheet(spreadsheetId, sheetId, 「原名-備份-日期時間」)
+  SW --> GNW : 備份工作表\n（失敗 → BACKUP_FAILED / NO_EDIT_PERMISSION，不寫入）
+  loop 每一題的每個填空格（AnswerSlot）
+    alt 該題有成功組別
+      GNW -> GNW : text = 標記 + 答案
+    else 無人搶答
+      GNW -> GNW : text = 只留標記（清掉舊答案）
+    end
+  end
+  GNW -> SW : writeTexts(spreadsheetId, 所有填空格)\n（一次批次、純文字）
+  SW --> GNW : 完成（連線中斷 → NETWORK_ERROR，學習單不會只寫一部分）
+  GNW --> RS : WriteBackResult（寫入格數、清除格數、備份名稱、連結）
+  RS -> Rec : markWrittenBack(activityId)
+  RS --> TRP : 寫回完成
+  TRP --> T : 顯示寫入格數、備份工作表名稱、開啟試算表的連結
+end
+
+== 匯出 CSV（E2） ==
+T -> TRP : 按「匯出 CSV」
+TRP -> RS : GET /api/results/csv\n→ exportCsv()（附老師憑證）
+RS -> CE : export(questionSet, results)
+CE -> CE : 每筆送出的每個小題 → CsvRow\n依題號、再依順位排序
+CE -> CE : escape()（引號、換行、公式字元）
+CE --> RS : CSV 文字（UTF-8 加 BOM）
+RS -> Rec : markCsvExported(activityId)
+RS --> TRP : ExportFile（試算表名稱-搶答結果.csv）
+TRP --> T : 下載
+
+== 系統重開後找回上一輪（AC-16） ==
+RS -> RS : 伺服器啟動時 restoreLatest()
+RS -> Rec : loadLatest()
+Rec --> RS : ActivityRecord（已結束的題目；ended = false 視為中斷）
+RS -> QStore : save(questionSet)
+T -> TRP : 開啟老師頁面
+TRP -> RS : GET /api/results/teacher → teacherResults()
+RS --> TRP : 上一輪的結果（restored = true），可以寫回與匯出 CSV
+@enduml
