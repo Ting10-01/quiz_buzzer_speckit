@@ -126,6 +126,27 @@ packages/
     └── lib/{api,googlePicker}.ts
 ```
 
+### 共用骨架（三個子功能共用，兩人一起建立）
+
+tasks.md 的 Phase 1、2 建立下列檔案；之後依 `docs/work-split.md` 的檔案歸屬修改，改動前先告知對方。
+
+```text
+package.json、tsconfig.base.json、.env.example、.gitignore
+packages/
+├── shared/
+│   ├── src/index.ts                      # 只匯出型別
+│   ├── src/{activity,socket-events,results}.ts   # 002、003 的共用型別（依各自 data-model）
+│   └── fixtures/                         # 範例 QuestionSet 與已結束活動的結果
+├── server/src/
+│   ├── index.ts                          # 建立 Express 與 Socket.IO，掛上所有路由與 gateway
+│   ├── http/{errors,requireTeacher}.ts   # 統一錯誤格式；老師憑證驗證（由 002 換成正式版）
+│   └── results/ResultsService.ts         # 空實作，由 003 換成正式版
+└── web/src/
+    ├── main.tsx、App.tsx                 # 路由列出所有頁面
+    ├── styles/tokens.css                 # 由 docs/design 的色彩變數而來
+    └── pages/HomePage.tsx                # 設計稿 00：選擇身分
+```
+
 **Structure Decision**: 採 npm workspaces 的 web application 結構。`shared` 放三個子功能共用的型別，`server` 是唯一的權威來源（原則 V），`web` 只負責顯示與送出操作。所有和 Google 有關的程式集中在 `server/src/google`、`server/src/spreadsheet` 與 `web/src/lib/googlePicker.ts`，解析邏輯在 `server/src/import`，不依賴 Google。
 
 ## Complexity Tracking
