@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>找不到表頭</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible,.sel:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.arrive{animation:arrive .32s cubic-bezier(.2,.8,.2,1) .2s both}
+@media (prefers-reduced-motion: reduce){.arrive{animation:none}.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="dark" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </a>
+    <span style="color: var(--muted); font-size: 13.5px">建立活動 · 計算機概論基礎 學習單（變形）</span>
+    <ol style="margin: 0 0 0 auto; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px">
+      <li style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--text); color: var(--ground); font-weight: 600">1 匯入學習單</li>
+      <li style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--raised); color: var(--muted)">2 活動設定</li>
+      <li style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--raised); color: var(--muted)">3 開始搶答</li>
+    </ol>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px 24px 56px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em">找不到表頭，無法匯入</h1>
+      <p style="margin: 0; color: var(--muted); font-size: 14px; max-width: 760px">在「學習單」工作表找不到同時寫著題號欄與作答欄表頭的那一列，所以沒有匯入任何題目，原本的題目清單也沒有變動。請照右邊的寫法修改表頭後重新讀取。</p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+      <section style="flex: 999 1 560px; min-width: 0; background: var(--surface); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--pos)"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M4 9h16M4 15h16M10 9v12"></path></svg><h2 style="margin: 0; font-size: 16px; font-weight: 600">計算機概論基礎 學習單（變形）</h2><span style="color: var(--faint); font-size: 12.5px">Google 試算表 · 工作表「學習單」</span></div>
+        <div style="overflow-x: auto; background: var(--sheet); border-radius: 12px">
+          <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px">
+            <thead>
+              <tr style="color: var(--faint); font-size: 12px">
+                <th style="width: 40px; padding: 6px; font-weight: 400; background: var(--raised)"></th>
+                <th style="width: 64px; padding: 6px; font-weight: 400; background: var(--raised)">B</th>
+                <th style="padding: 6px; font-weight: 400; background: var(--raised)">C – F</th>
+                <th style="width: 150px; padding: 6px; font-weight: 400; background: var(--raised)">G – H</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">4</td><td style="padding: 8px; text-align: center; font-weight: 600; outline: 1.5px dashed var(--neg); outline-offset: -1.5px; color: var(--neg-ink)">No.</td><td style="padding: 8px; font-weight: 600; outline: 1.5px dashed var(--neg); outline-offset: -1.5px; color: var(--neg-ink)">內容</td><td style="padding: 8px; font-weight: 600; outline: 1.5px dashed var(--neg); outline-offset: -1.5px; color: var(--neg-ink)">學生填寫</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">5</td><td rowspan="2" style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">1</td><td style="padding: 8px; color: var(--faint); border-bottom: 1px solid var(--rule); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">根據文章第一段，小明升級的電腦「大腦」硬體，其英文簡稱是什麼？</td><td style="padding: 8px; border-bottom: 1px solid var(--rule)">（1）</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">6</td><td style="padding: 8px; color: var(--faint); border-bottom: 1px solid var(--rule); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">而他安裝的 Windows 負責管理電腦的軟硬體資源，這種系統軟體統稱為什麼？</td><td style="padding: 8px; border-bottom: 1px solid var(--rule)">（2）</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">8</td><td rowspan="2" style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">2</td><td style="padding: 8px; color: var(--faint); border-bottom: 1px solid var(--rule); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">為了處理角色移動，小明設計了步驟明確的邏輯，這在程式設計中稱為什麼？</td><td style="padding: 8px; border-bottom: 1px solid var(--rule)">（1）</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">9</td><td style="padding: 8px; color: var(--faint); border-bottom: 1px solid var(--rule); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">而他用來實作「上一步／復原」功能，採用了「後進先出」機制的資料結構，中文稱為什麼？</td><td style="padding: 8px; border-bottom: 1px solid var(--rule)">（2）堆疊</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">11</td><td style="padding: 8px; text-align: center; font-weight: 600; border-bottom: 1px solid var(--rule)">3</td><td style="padding: 8px; color: var(--faint); border-bottom: 1px solid var(--rule); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">無論小明寫的高階語言多麼複雜，最終都會被轉換成由數字 1 和哪一個數字構成的二進位訊號？</td><td style="padding: 8px; border-bottom: 1px solid var(--rule)">&#160;</td></tr>
+              <tr><td style="padding: 6px; text-align: center; color: var(--faint); background: var(--raised); font-size: 12px">13</td><td style="padding: 8px; text-align: center; font-weight: 600">4</td><td style="padding: 8px; color: var(--faint); max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">專案最後的連線失敗，是因為小明的筆電沒有成功取得一組在網路世界中用來辨識身分的獨一無二之編碼，這個號碼被稱為什麼位址？</td><td style="padding: 8px">&#160;</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span style="color: var(--muted); font-size: 12.5px">紅色虛線是學習單第 4 列目前的表頭文字：「No.」「內容」「學生填寫」都不在系統認得的寫法裡。</span>
+      </section>
+
+      <aside style="flex: 1 1 340px; min-width: 0; background: var(--surface); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div role="alert" style="display: flex; gap: 10px; background: var(--neg-bg); color: var(--neg-ink); border-radius: 12px; padding: 12px 14px; font-size: 13.5px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--neg); flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.5v.01"></path></svg>
+          <span>找不到表頭列（NO_HEADER）。系統不會猜欄位位置，以免把答案寫到錯的格子。</span>
+        </div>
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">系統認得的表頭寫法</h2>
+        <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; background: var(--raised); border-radius: 12px; padding: 14px 16px; font-size: 14px">
+          <dt style="color: var(--muted)">題號欄</dt><dd style="margin: 0">題號、編號、題次</dd>
+          <dt style="color: var(--muted)">作答欄</dt><dd style="margin: 0">作答、答案、回答</dd>
+          <dt style="color: var(--muted)">題目欄</dt><dd style="margin: 0">題目、問題、題幹<span style="color: var(--faint)">（可以沒有）</span></dd>
+        </dl>
+        <h3 style="margin: 0; font-size: 15px; font-weight: 600">怎麼修正</h3>
+        <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text2); font-size: 14px">
+          <li>在 Google 試算表把題號欄的表頭改成「題號」，作答欄改成「作答」（或上表的其他寫法）。</li>
+          <li>題號欄與作答欄的表頭要在同一列。</li>
+          <li>回到這裡按「重新讀取」。</li>
+        </ol>
+        <div style="margin-top: auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding-top: 8px">
+          <a class="btn" href="T-Connect.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 8px; color: var(--muted); text-decoration: none; font-size: 14px">重新挑選</a>
+          <a class="btn" href="T-Import.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 22px; border-radius: 999px; background: var(--text); color: var(--ground); text-decoration: none; font-weight: 600; font-size: 14px">重新讀取</a>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</body></html>

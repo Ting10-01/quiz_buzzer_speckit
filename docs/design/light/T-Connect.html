@@ -1,0 +1,71 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>連結 Google 並挑選學習單</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes found{from{outline-color:transparent;background:transparent}to{outline-color:var(--accent-stroke);background:var(--accent-soft)}}
+.found{animation:found .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.arrive{animation:arrive .4s cubic-bezier(.2,.8,.2,1) both}
+@media (prefers-reduced-motion: reduce){.found,.arrive{animation:none}.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="light" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </a>
+    <span style="color: var(--muted); font-size: 13.5px">建立活動</span>
+    <ol style="margin: 0 0 0 auto; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px">
+      <li style="display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--text); color: var(--ground); font-weight: 600">1 匯入學習單</li>
+      <li style="display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--raised); color: var(--muted)">2 活動設定</li>
+      <li style="display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--raised); color: var(--muted)">3 開始搶答</li>
+    </ol>
+  </header>
+
+  <main style="max-width: 1040px; margin: 0 auto; padding: 40px 24px 56px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em">從 Google 雲端硬碟匯入學習單</h1>
+      <p style="margin: 0; color: var(--muted); font-size: 14px; max-width: 720px">系統直接讀取你雲端上的 Google 試算表，搶答結束後也會把答案寫回同一份。第一次使用要先連結你的 Google 帳號。</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px">
+      <section class="arrive" style="background: var(--surface); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: var(--ground); font-weight: 600; font-size: 13px">1</span>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">連結 Google 帳號</h2>
+          <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px 0 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); font-size: 12.5px; font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warn)"></span>尚未連結</span>
+        </div>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; color: var(--text2); font-size: 14px">
+          <li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--muted); flex: none; margin-top: 3px"><path d="M5 12l5 5 9-10"></path></svg><span>系統只能讀寫你下一步挑選的那份試算表，看不到雲端硬碟裡的其他檔案。</span></li>
+          <li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--muted); flex: none; margin-top: 3px"><path d="M5 12l5 5 9-10"></path></svg><span>授權只存在這台電腦，重開系統不用再登入；隨時可以解除連結。</span></li>
+          <li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--muted); flex: none; margin-top: 3px"><path d="M5 12l5 5 9-10"></path></svg><span>學生不需要 Google 帳號。</span></li>
+        </ul>
+        <a class="btn" href="T-Import.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 20px; border-radius: 999px; background: var(--text); color: var(--ground); text-decoration: none; font-weight: 600; font-size: 14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--ground)"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path></svg>連結 Google 帳號</a>
+        <p style="margin: 0; color: var(--faint); font-size: 12.5px">會開啟 Google 的登入與授權畫面；按取消不會連結，也不會讀取任何檔案。</p>
+      </section>
+
+      <section style="background: var(--surface); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px; opacity: 0.55" aria-disabled="true">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--raised); color: var(--muted); font-weight: 600; font-size: 13px">2</span>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">挑選學習單</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; background: var(--sheet); border-radius: 12px; padding: 16px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--pos)"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M4 9h16M4 15h16M10 9v12"></path></svg>
+          <span style="color: var(--muted); font-size: 14px">Google 的檔案選擇器只會列出試算表；挑選後列出它的工作表，預設選第一個找得到表頭的。</span>
+        </div>
+        <span style="align-self: flex-start; display: inline-flex; align-items: center; height: 42px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--control); color: var(--muted); font-weight: 600; font-size: 14px">從 Google 雲端硬碟挑選</span>
+        <p style="margin: 0; padding: 12px 14px; background: var(--raised); border-radius: 12px; color: var(--muted); font-size: 13px">作業範本請先在 Google 試算表選「檔案 → 建立副本」存到自己的雲端硬碟。只有檢視權限的試算表可以匯入，但無法寫回答案。</p>
+      </section>
+    </div>
+
+    <a class="btn" href="Main.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; height: 40px; padding: 0 8px; color: var(--muted); text-decoration: none; font-size: 14px">取消</a>
+  </main>
+</div>
+</body></html>
