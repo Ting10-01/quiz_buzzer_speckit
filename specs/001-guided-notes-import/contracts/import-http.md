@@ -60,11 +60,11 @@
 
 ## POST /api/import/confirm
 
-確認目前的預覽（必須是 `READY`），寫入 `QuestionSetStore`。
+確認目前暫存的預覽，寫入 `QuestionSetStore`。
 
 **Response 200**：`{ "questionCount": 4, "groupCount": 2, "source": { … } }`
 
-**Errors**：`409 NO_PENDING_PREVIEW`（沒有可確認的預覽，或預覽狀態不是 `READY`）。
+**Errors**：`409 NO_PENDING_PREVIEW`（沒有可確認的預覽，例如還沒預覽、已取消，或上一次預覽失敗）。
 
 ## POST /api/import/cancel
 

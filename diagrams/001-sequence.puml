@@ -74,7 +74,7 @@ QS --> GP : questions + warnings
 GP -> GP : validateNumbering(questions)\n（不重複、由上到下遞增、可跳號、≤ 200 題）
 
 alt 解析成功
-  GP --> S : ImportPreview(READY, source, mapping, questionSet, warnings)
+  GP --> S : ImportPreview(source, mapping, questionSet, warnings)
   S -> S : 只有檢視權限 → 加上 ImportWarning(READ_ONLY)
   S -> S : 暫存 PendingImport
   S --> P : 預覽資料
