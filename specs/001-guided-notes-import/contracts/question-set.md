@@ -6,7 +6,6 @@
 
 ```ts
 export type QuestionKind = 'SINGLE' | 'GROUP';
-export type MappingSource = 'AUTO' | 'MANUAL';
 
 export interface GuidedNotesSource {
   spreadsheetId: string;
@@ -27,7 +26,6 @@ export interface ColumnMapping {
   numberCol: number;
   answerCol: number;
   questionCol: number | null;
-  source: MappingSource;
   matchedHeaders: string[];
 }
 

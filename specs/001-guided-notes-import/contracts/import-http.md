@@ -2,7 +2,7 @@
 
 **Owner**: `001-guided-notes-import` | **Base**: `http://localhost:3000/api/import`
 
-所有請求都要帶老師憑證：`Authorization: Bearer <teacherToken>`（由 002 的老師工作階段 API 發出）。沒有或錯誤的憑證回 `401`。活動已經開始搶答時（phase 不是 `WAITING`），所有匯入請求回 `409 IMPORT_LOCKED`（REQ-IMP-15）。Google 授權相關的錯誤見 [google-auth-http.md](./google-auth-http.md)。
+所有請求都要帶老師憑證：`Authorization: Bearer <teacherToken>`（由 002 的老師工作階段 API 發出；這是本系統的老師身分，與 Google 帳號無關）。沒有或錯誤的憑證回 `401`。活動已經開始搶答時（phase 不是 `WAITING`），所有匯入請求回 `409 IMPORT_LOCKED`（REQ-IMP-15）。Google 授權相關的錯誤見 [google-auth-http.md](./google-auth-http.md)。
 
 請求與回應一律是 JSON；錯誤格式：
 
@@ -32,23 +32,19 @@
 { "spreadsheetId": "1AbC…", "sheetId": 0 }
 ```
 
-手動指定欄位時（REQ-IMP-05）另加：`"mapping": { "headerRow": 4, "numberCol": 2, "answerCol": 7, "questionCol": 3 }`
-
 **Response 200**
 
 ```json
 {
-  "status": "READY",
   "source": { "spreadsheetId": "1AbC…", "spreadsheetTitle": "計算機概論基礎 學習單", "sheetId": 0, "sheetName": "學習單" },
-  "mapping": { "headerRow": 4, "numberCol": 2, "answerCol": 7, "questionCol": 3, "source": "AUTO", "matchedHeaders": ["題號", "題目", "作答"] },
+  "mapping": { "headerRow": 4, "numberCol": 2, "answerCol": 7, "questionCol": 3, "matchedHeaders": ["題號", "題目", "作答"] },
   "summary": { "questionCount": 4, "groupCount": 2, "slotCount": 6 },
   "questions": [ { "number": 1, "kind": "GROUP", "slots": [ { "slotId": "1-1", "label": "（1）", "questionText": "根據文章第一段…", "marker": "（1）", "oldAnswer": null, "cell": { "sheetId": 0, "sheetName": "學習單", "row": 5, "col": 7 } } ] } ],
-  "warnings": [ { "code": "READ_ONLY", "questionNumber": null, "cell": null, "text": "目前連結的帳號只能檢視這份試算表，搶答結束後無法寫回答案。請先複製一份到自己的雲端硬碟再挑選。" } ],
-  "expectedHeaders": ["題號／編號／題次", "作答／答案／回答", "題目／問題／題幹（可省略）"]
+  "warnings": [ { "code": "READ_ONLY", "questionNumber": null, "cell": null, "text": "目前連結的帳號只能檢視這份試算表，搶答結束後無法寫回答案。請先複製一份到自己的雲端硬碟再挑選。" } ]
 }
 ```
 
-找不到表頭時：`status: "NEEDS_MAPPING"`、`mapping: null`、`questions: []`，另附 `grid`（該工作表前 30 列的文字預覽），讓前端畫出供老師點選的表格。
+找不到表頭時回 `422 NO_HEADER`，錯誤另附 `expectedHeaders`，例如 `["題號／編號／題次", "作答／答案／回答", "題目／問題／題幹（可省略）"]`，`message` 說明把表頭改成其中一種寫法後重新匯入（REQ-IMP-05）。
 
 **Errors**
 
@@ -58,7 +54,7 @@
 | 403 | `NO_ACCESS` | 無法讀取這份試算表 |
 | 504 | `NETWORK_ERROR` | 15 秒內連不上 Google，可重試 |
 | 422 | `NO_QUESTIONS` / `INVALID_NUMBERING` / `TOO_MANY_QUESTIONS` | 內容不符規則；附 `cell` |
-| 422 | `INVALID_MAPPING` | 手動指定的欄位重複或超出範圍 |
+| 422 | `NO_HEADER` | 找不到表頭列；附 `expectedHeaders`（AC-15） |
 
 `/sheets` 也可能回傳前四種錯誤。
 

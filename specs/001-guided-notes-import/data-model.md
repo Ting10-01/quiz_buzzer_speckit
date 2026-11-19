@@ -63,8 +63,7 @@
 | `numberCol` | number | 題號欄 |
 | `answerCol` | number | 作答欄（合併範圍的最左欄） |
 | `questionCol` | number \| null | 題目欄，可以沒有 |
-| `source` | MappingSource（`'AUTO' \| 'MANUAL'`） | 自動辨識或老師手動指定 |
-| `matchedHeaders` | string[] | 自動辨識時找到的表頭文字；手動時為空陣列 |
+| `matchedHeaders` | string[] | 找到的表頭文字，例如 `["題號","題目","作答"]`，預覽時顯示給老師 |
 
 規則：`numberCol` 與 `answerCol` 不可相同；`questionCol` 不可等於前兩者。
 
@@ -104,12 +103,10 @@ LINKED | EXPIRED --unlink()--> UNLINKED（撤銷授權並刪除憑證檔）
 
 | 欄位 | 型別 | 規則 |
 | --- | --- | --- |
-| `status` | PreviewStatus（`'READY' \| 'NEEDS_MAPPING'`） | 找不到表頭時為 `NEEDS_MAPPING` |
 | `source` | GuidedNotesSource | 這次預覽的來源 |
-| `mapping` | ColumnMapping \| null | `READY` 時必有 |
-| `questionSet` | QuestionSet \| null | `READY` 時必有 |
+| `mapping` | ColumnMapping | |
+| `questionSet` | QuestionSet | |
 | `warnings` | ImportWarning[] | 不阻止匯入的提醒 |
-| `expectedHeaders` | string[] | 系統找的表頭文字（`NEEDS_MAPPING` 時給老師看） |
 
 ### PendingImport
 
@@ -132,22 +129,23 @@ LINKED | EXPIRED --unlink()--> UNLINKED（撤銷授權並刪除憑證檔）
 | `AUTH_EXPIRED` | 授權被撤銷或已失效 | Edge Cases |
 | `NO_ACCESS` | 無法讀取挑選的試算表 | REQ-IMP-11 |
 | `NETWORK_ERROR` | 15 秒內連不上 Google | AC-14 |
+| `NO_HEADER` | 選定的工作表找不到表頭列 | AC-15 |
 | `NO_QUESTIONS` | 表頭以下沒有任何正整數題號 | REQ-IMP-11 |
 | `INVALID_NUMBERING` | 題號重複或沒有遞增 | AC-16 |
 | `TOO_MANY_QUESTIONS` | 超過 200 題 | REQ-IMP-11 |
 
-`ImportError` 另有 `message`（給老師看的中文說明，含修正方式）與 `cell: CellRef | null`。找不到表頭不是錯誤，而是 `ImportPreview.status = 'NEEDS_MAPPING'`（AC-15）。
+`ImportError` 另有 `message`（給老師看的中文說明，含修正方式）、`cell: CellRef | null` 與 `expectedHeaders: string[]`（只有 `NO_HEADER` 時有值，列出各欄接受的表頭寫法）。
 
 ### 匯入狀態
 
 ```text
-（無） --preview()--> PendingImport(READY | NEEDS_MAPPING)
-PendingImport(NEEDS_MAPPING) --preview(mapping)--> PendingImport(READY)
-PendingImport(READY) --confirm()--> QuestionSetStore 更新，PendingImport 清除
+（無） --preview() 成功--> PendingImport
+（無） --preview() 失敗（含 NO_HEADER）--> 回傳 ImportError，不建立 PendingImport
+PendingImport --confirm()--> QuestionSetStore 更新，PendingImport 清除
 PendingImport(*) --cancel() 或錯誤--> PendingImport 清除，QuestionSetStore 不變（REQ-IMP-14）
 ```
 
-活動開始搶答後（002 的 phase 不是 `WAITING`），`listSheets`、`preview`、`confirm` 一律拒絕（REQ-IMP-15）。
+沒有老師身分（002 發出的老師憑證）時一律拒絕；活動開始搶答後（002 的 phase 不是 `WAITING`），`listSheets`、`preview`、`confirm` 一律拒絕（REQ-IMP-15）。
 
 ## Spreadsheet 抽象（packages/server/src/spreadsheet）
 

@@ -42,16 +42,16 @@ description: "Task list for 001 Guided Notes 匯入"
 
 **⚠️ CRITICAL**: 這個 Phase 完成並合併前，不開始任何 User Story
 
-- [ ] T008 依 `contracts/question-set.md` 建立 `shared/src/guided-notes.ts`（`GuidedNotesSource`、`CellRef`、`ColumnMapping`、`AnswerSlot`、`Question`、`QuestionSet`、`QuestionKind`、`MappingSource`）
+- [ ] T008 依 `contracts/question-set.md` 建立 `shared/src/guided-notes.ts`（`GuidedNotesSource`、`CellRef`、`ColumnMapping`、`AnswerSlot`、`Question`、`QuestionSet`、`QuestionKind`）
 - [ ] T009 [P] 依 002 `data-model.md` 與 `contracts/socket-events.md` 建立 `shared/src/activity.ts`、`shared/src/socket-events.ts`；依 003 `data-model.md` 建立 `shared/src/results.ts`
 - [ ] T010 [P] 建立 `shared/fixtures/question-set-single.json`（單題範本 6 題）、`question-set-group.json`（題組範本 4 題、2 個題組）、`ended-activity-results.json`（一場已結束活動的 `QuestionResult[]`）；內容依 `docs/templates/` 兩份範本
 - [ ] T011 建立 `server/src/index.ts`：建立 Express 與 Socket.IO，掛上 `http/importRoutes.ts`、`http/googleRoutes.ts`、`http/sessionRoutes.ts`、`http/resultsRoutes.ts` 與 `session/SessionGateway.ts` 的空殼；正式環境提供 `web` 的建置檔
 - [ ] T012 [P] 建立 `server/src/http/errors.ts`：統一錯誤格式 `{ error: { code, message, cell?, questionNumber? } }` 與對應 HTTP 狀態碼
 - [ ] T013 [P] 建立交界的空實作：`server/src/store/QuestionSetStore.ts` 的 `current()` 先回傳 `shared/fixtures` 的範例；`server/src/results/ResultsService.ts` 的 `onActivityCreated`／`onQuestionClosed`／`onActivityEnded` 先不做事；`server/src/google/GoogleAuthService.ts` 先回傳 `UNAVAILABLE`
 - [ ] T014 [P] 建立 `server/src/http/requireTeacher.ts`：驗證 `Authorization: Bearer` 老師憑證的 middleware（憑證的發行由 002 tasks 的 T010 完成；骨架先接受測試用憑證）
-- [ ] T015 [P] 建立 `web/src/App.tsx` 路由，列出所有頁面的空元件：`pages/HomePage.tsx`、`pages/teacher/{ImportPage,SetupPage,LobbyPage,ConsolePage,ResultsPage}.tsx`、`pages/student/{JoinPage,AnswerPage,ResultsPage}.tsx`
-- [ ] T016 [P] 建立 `web/src/lib/api.ts`：`fetch` 包裝，自動帶 `localStorage` 中的老師憑證，把錯誤格式轉成可顯示的訊息
-- [ ] T017 [P] 依 `docs/design/` 的 `Main` 實作 `web/src/pages/HomePage.tsx`（選擇老師或學生）
+- [ ] T015 [P] 建立 `web/src/App.tsx` 路由，列出所有頁面的空元件：`pages/HomePage.tsx`、`pages/teacher/{ImportPage,SetupPage,LobbyPage,ConsolePage,ResultsPage,RecoverPage}.tsx`、`pages/student/{JoinPage,AnswerPage,ResultsPage}.tsx`
+- [ ] T016 [P] 建立 `web/src/lib/api.ts`：`fetch` 包裝，自動帶該分頁 `sessionStorage` 中的老師憑證（002 research R6），把錯誤格式轉成可顯示的訊息
+- [ ] T017 [P] 依 `docs/design/` 的 `Main` 實作 `web/src/pages/HomePage.tsx`（選擇老師或學生）：選老師時呼叫 002 的 `POST /api/teacher/session`，把老師憑證存在該分頁的 `sessionStorage`；已有老師時顯示 002 回傳的 `TEACHER_ACTIVE` 說明，只能以學生加入（002 AC-34）
 
 **Checkpoint**: 骨架合併後，A 與 B 依 `docs/work-split.md` 的檔案歸屬分頭開發
 
@@ -72,21 +72,21 @@ description: "Task list for 001 Guided Notes 匯入"
 - [ ] T022 [P] [US1] 建立 `server/tests/fixtures/sheets/single.json`、`group.json`（依 Sheets API v4 `spreadsheets.get` 回應格式，內容依兩份範本）與 3 份變形：`variant-shifted.json`（表頭在第 7 列、題號在 D 欄、作答在 I 欄）、`variant-gaps.json`（題與題之間空兩列、表頭上方多一段說明文字）、`variant-synonyms.json`（表頭為「編號／題幹／答案」、題目欄在作答欄右邊）（SC-002），並寫 `server/tests/unit/spreadsheet/GoogleSheet.test.ts`：`merges` 的 GridRange（0 起算、結尾不含）轉成 1 起算的 `RowRange`；`valueAt` 回傳 `effectiveValue` 的數字
 - [ ] T023 [P] [US1] `server/tests/unit/google/GoogleAuthService.test.ts`（負責：B）：`state` 一次性、10 分鐘過期、錯誤的 `state` 不保存任何東西（AC-06）；同意後存檔且檔案權限為 0600；`unlink()` 先撤銷再刪檔；`status()` 依情況回 `UNLINKED`／`LINKED`／`EXPIRED`；整個流程的 log 不含 token（SC-006）
 - [ ] T024 [P] [US1] `server/tests/integration/googleRoutes.test.ts`（負責：B）：缺少任一 Google 環境變數時 `/status` 回 `UNAVAILABLE`、`/picker-session` 回 `503 GOOGLE_UNAVAILABLE`；`/callback` 同意時 302 到 `/teacher/import?google=linked`，拒絕時到 `?google=denied`；沒有老師憑證回 401
-- [ ] T025 [P] [US1] `server/tests/integration/importRoutes.test.ts`：以假的 `SpreadsheetReader` 測 `/sheets`、`/preview`、`/confirm`、`/cancel`、`/current` 的成功流程；沒有老師憑證回 401；活動 phase 不是 `WAITING` 時一律 `409 IMPORT_LOCKED`（REQ-IMP-15）；多個工作表時 `defaultSheetId` 為第一個找得到表頭的工作表（AC-07）
-- [ ] T026 [P] [US1] `web/src/pages/teacher/ImportPage.test.tsx`：未連結時顯示「連結 Google 帳號」（AC-05）；`?google=denied` 時顯示尚未授權（AC-06）；已連結時顯示帳號 email 與「解除連結」
+- [ ] T025 [P] [US1] `server/tests/integration/importRoutes.test.ts`：以假的 `SpreadsheetReader` 測 `/sheets`、`/preview`、`/confirm`、`/cancel`、`/current` 的成功流程；沒有老師憑證或使用學生的身分回 401（REQ-IMP-15）；確認後 `/current` 回傳題目清單與來源（AC-02）；活動 phase 不是 `WAITING` 時一律 `409 IMPORT_LOCKED`（REQ-IMP-15）；多個工作表時 `defaultSheetId` 為第一個找得到表頭的工作表（AC-07）
+- [ ] T026 [P] [US1] `web/src/pages/teacher/ImportPage.test.tsx`：沒有老師身分的分頁進入匯入頁時導回首頁（REQ-IMP-15）；有老師身分但未連結 Google 時顯示「連結 Google 帳號」（AC-05）；`?google=denied` 時顯示尚未授權（AC-06）；已連結時顯示帳號 email 與「解除連結」
 
 ### Implementation for User Story 1
 
 - [ ] T027 [P] [US1] 建立 `server/src/spreadsheet/types.ts`：`SpreadsheetReader`（`info(spreadsheetId)`、`open(spreadsheetId, sheetId)`）、`Sheet`（`id`、`name`、`maxRow`、`maxCol`、`textAt`、`valueAt`、`mergedRangeAt`）、`RowRange`、`SpreadsheetInfo`（`title`、`sheets`、`defaultSheetId`、`canEdit`）、`SheetInfo`
-- [ ] T028 [P] [US1] 建立 `server/src/import/types.ts`：`ImportPreview`（`status: PreviewStatus`、`source`、`mapping`、`questionSet`、`warnings`、`expectedHeaders`）、`PendingImport`、`ImportWarning`（`code: 'OLD_ANSWER' | 'READ_ONLY'`）、`ImportError` 與 `ImportErrorCode`（`NOT_LINKED`、`AUTH_EXPIRED`、`NO_ACCESS`、`NETWORK_ERROR`、`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`）
+- [ ] T028 [P] [US1] 建立 `server/src/import/types.ts`：`ImportPreview`（`source`、`mapping`、`questionSet`、`warnings`）、`PendingImport`、`ImportWarning`（`code: 'OLD_ANSWER' | 'READ_ONLY'`）、`ImportError`（`code`、`message`、`cell`、`expectedHeaders`）與 `ImportErrorCode`（`NOT_LINKED`、`AUTH_EXPIRED`、`NO_ACCESS`、`NETWORK_ERROR`、`NO_HEADER`、`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`）
 - [ ] T029 [P] [US1] 實作 `server/src/import/HeaderLocator.ts`（research R5）
 - [ ] T030 [US1] 實作 `server/src/import/QuestionScanner.ts` 的單題路徑：逐列讀題號、作答欄、題目欄（research R6、R7），依 T027
-- [ ] T031 [US1] 實作 `server/src/import/GuidedNotesParser.ts`：`parse(sheet, mapping?)` 回傳 `ImportPreview`；`validateNumbering` 檢查不重複、由上到下嚴格遞增、可跳號、1–200 題（REQ-IMP-06），依 T029、T030
+- [ ] T031 [US1] 實作 `server/src/import/GuidedNotesParser.ts`：`parse(sheet)` 回傳 `ImportPreview`，找不到表頭時丟出 `NO_HEADER`；`validateNumbering` 檢查不重複、由上到下嚴格遞增、可跳號、1–200 題（REQ-IMP-06），依 T029、T030
 - [ ] T032 [US1] 實作 `server/src/spreadsheet/GoogleSheetsReader.ts`：`info` 用 `spreadsheets.get`（`fields=properties.title,sheets.properties(sheetId,title)`）與 Drive `files.get`（`capabilities/canEdit`）；`open` 用 `includeGridData` 並轉成 `GoogleSheet`；每次請求逾時 15 秒；錯誤對應 401→`AUTH_EXPIRED`、403／404→`NO_ACCESS`、逾時→`NETWORK_ERROR`（research R4）
 - [ ] T033 [P] [US1] 實作 `server/src/google/TokenStore.ts`（負責：B）：`TokenStore` 介面與 `LocalTokenStore`（`credentials/google-token.json`，權限 0600，`clear()` 刪檔）
 - [ ] T034 [US1] 實作 `server/src/google/GoogleAuthService.ts`（負責：B）：`OAuth2Client`，範圍只有 `drive.file` 與 `openid email`，`access_type=offline`、`prompt=consent`；`authUrl`、`handleCallback`（驗證一次性 `state`）、`status`、`unlink`（撤銷後刪檔）、`pickerSession`（`accessToken`、`appId`、`apiKey`）、`authorizedClient`（refresh 失敗時狀態變為 `EXPIRED`）；任何 token 不寫入 log（research R2、R3），依 T033
 - [ ] T035 [US1] 實作 `server/src/http/googleRoutes.ts`（負責：B）：`GET /status`、`POST /connect`、`GET /callback`、`POST /unlink`、`GET /picker-session`，依 `contracts/google-auth-http.md`，依 T034
-- [ ] T036 [US1] 實作 `server/src/import/ImportService.ts`：`listSheets(spreadsheetId)`、`preview(spreadsheetId, sheetId?, mapping?)`、`confirm()`、`cancel()`；同一時間最多一份 `PendingImport`；`confirm` 寫入 `QuestionSetStore`，依 T031、T032
+- [ ] T036 [US1] 實作 `server/src/import/ImportService.ts`：`listSheets(spreadsheetId)`、`preview(spreadsheetId, sheetId?)`、`confirm()`、`cancel()`；同一時間最多一份 `PendingImport`；`confirm` 寫入 `QuestionSetStore`，依 T031、T032
 - [ ] T037 [US1] 把 `server/src/store/QuestionSetStore.ts` 從範例資料換成真正的 `save(questionSet)`／`current()`（唯讀）
 - [ ] T038 [US1] 實作 `server/src/http/importRoutes.ts`：`POST /sheets`、`POST /preview`、`POST /confirm`、`POST /cancel`、`GET /current`，依 `contracts/import-http.md`，套用 `requireTeacher` 與 `IMPORT_LOCKED` 檢查，依 T036
 - [ ] T039 [P] [US1] 實作 `web/src/lib/googlePicker.ts`（負責：B）：載入 `https://apis.google.com/js/api.js`，以 `PickerBuilder` 開啟選擇器（`ViewId.SPREADSHEETS`、`setOAuthToken`、`setDeveloperKey`、`setAppId`），回傳 `spreadsheetId` 或 `cancel`
@@ -120,7 +120,7 @@ description: "Task list for 001 Guided Notes 匯入"
 
 ## Phase 5: User Story 3 - 連線、權限或格式有問題時清楚處理 (Priority: P2)
 
-**Goal**: 每一種失敗都有原因與修正方式；找不到表頭時手動指定欄位；失敗不影響既有題目清單
+**Goal**: 每一種失敗都有原因與修正方式；找不到表頭時拒絕匯入並列出可用的表頭寫法；失敗不影響既有題目清單
 
 **Independent Test**: 依 quickstart 情境 7–14，各種錯誤與警告都得到正確處理，既有題目清單不變
 
@@ -128,17 +128,17 @@ description: "Task list for 001 Guided Notes 匯入"
 
 - [ ] T047 [P] [US3] `server/tests/unit/import/QuestionScanner.warnings.test.ts`：填空格「（2）堆疊」產生 `OLD_ANSWER` 警告並附儲存格（AC-17）；只有空白或底線 `_`、`＿` 不算舊答案
 - [ ] T048 [P] [US3] `server/tests/unit/import/GuidedNotesParser.errors.test.ts`：題號重複或沒有遞增 → `INVALID_NUMBERING` 並附題號與列（AC-16）；題號 1、2、4 → 3 題（AC-20）；表頭以下沒有題號 → `NO_QUESTIONS`；201 題 → `TOO_MANY_QUESTIONS`；「編號／答案」自動辨識並回傳 `matchedHeaders`（AC-19）
-- [ ] T049 [P] [US3] `server/tests/unit/import/ManualMapping.test.ts`：找不到表頭 → `NEEDS_MAPPING` 並附 `expectedHeaders`（AC-15）；手動指定後以同一套規則解析；題號欄與作答欄相同或超出範圍 → `422 INVALID_MAPPING`
+- [ ] T049 [P] [US3] `server/tests/unit/import/NoHeader.test.ts`：表頭寫「No.／學生填寫」→ `NO_HEADER`，`expectedHeaders` 列出題號欄、作答欄、題目欄各接受的寫法，`message` 說明修正方式；`/preview` 回 `422`，既有題目清單不變（AC-15、REQ-IMP-05）
 - [ ] T050 [P] [US3] `server/tests/integration/importRoutes.errors.test.ts`：`canEdit=false` 時預覽附 `READ_ONLY` 警告但仍可確認（AC-13）；Reader 逾時 → `504 NETWORK_ERROR`（AC-14）；授權失效 → `401 AUTH_EXPIRED`；已確認一份題目後，新的預覽失敗或 `cancel` 時 `/current` 不變（AC-18）
 - [ ] T051 [P] [US3] `web/src/pages/teacher/ImportPage.errors.test.tsx`：關閉選擇器不改變頁面（AC-12）；`AUTH_EXPIRED` 時顯示重新連結；錯誤卡片顯示原因與修正方式
 
 ### Implementation for User Story 3
 
 - [ ] T052 [US3] 在 `server/src/import/QuestionScanner.ts` 實作舊答案判斷與 `OLD_ANSWER` 警告（research R6）
-- [ ] T053 [US3] 在 `server/src/import/ImportService.ts` 加入 `READ_ONLY` 警告（`SpreadsheetInfo.canEdit === false`）與手動欄位的驗證（`INVALID_MAPPING`）；`NEEDS_MAPPING` 時回傳前 30 列的 `grid` 預覽（`contracts/import-http.md`）
+- [ ] T053 [US3] 在 `server/src/import/ImportService.ts` 加入 `READ_ONLY` 警告（`SpreadsheetInfo.canEdit === false`），並在 `server/src/import/GuidedNotesParser.ts` 找不到表頭時丟出附 `expectedHeaders` 的 `NO_HEADER`（`contracts/import-http.md`）
 - [ ] T054 [US3] 在 `server/src/import/GuidedNotesParser.ts` 為每種 `ImportErrorCode` 撰寫中文訊息：說明原因、所在列與修正方式（原則 VII）
-- [ ] T055 [P] [US3] 建立 `web/src/components/ManualMappingPanel.tsx`（設計稿 T1-手動：點選表頭列、題號欄、題目欄、作答欄）、`web/src/components/WarningCard.tsx`、`web/src/components/ErrorCard.tsx`
-- [ ] T056 [US3] 在 `web/src/pages/teacher/ImportPage.tsx` 接上手動指定欄位、警告、錯誤與重新連結流程，依 T053、T055
+- [ ] T055 [P] [US3] 建立 `web/src/components/WarningCard.tsx` 與 `web/src/components/ErrorCard.tsx`（設計稿 T1-錯誤：列出可用的表頭寫法與修正方式）
+- [ ] T056 [US3] 在 `web/src/pages/teacher/ImportPage.tsx` 接上警告、錯誤（含 `NO_HEADER`）與重新連結流程，依 T053、T055
 
 **Checkpoint**: 001 全部 User Story 完成
 
@@ -194,7 +194,7 @@ A：T040 → T041（接上 B 的 T035、T039）
 
 1. US1 → 匯入單題
 2. US2 → 題組
-3. US3 → 錯誤、權限、手動指定欄位
+3. US3 → 錯誤、權限、找不到表頭
 4. Polish → README 設定步驟、機密掃描、人工驗證、圖表一致性驗證
 
 ## 需求追溯（REQ → Tasks）
@@ -205,7 +205,7 @@ A：T040 → T041（接上 B 的 T035、T039）
 | REQ-IMP-02 Google 授權、最小範圍、憑證不外洩 | T006、T023、T024、T033、T034、T035、T040、T057、T058 |
 | REQ-IMP-03 多個工作表與預設工作表 | T025、T032、T036、T041 |
 | REQ-IMP-04 執行期找表頭 | T019、T029 |
-| REQ-IMP-05 手動指定欄位 | T049、T053、T055、T056 |
+| REQ-IMP-05 找不到表頭時報錯 | T049、T053、T054、T055、T056 |
 | REQ-IMP-06 題號規則與題數 | T020、T021、T031、T048 |
 | REQ-IMP-07 題目敘述可有可無 | T020、T021、T030 |
 | REQ-IMP-08 題組 | T042、T044 |
@@ -215,4 +215,4 @@ A：T040 → T041（接上 B 的 T035、T039）
 | REQ-IMP-12 預覽內容 | T025、T040、T041、T046 |
 | REQ-IMP-13 保存題目清單與來源 | T025、T036、T037 |
 | REQ-IMP-14 失敗不影響既有清單 | T050 |
-| REQ-IMP-15 只有老師、搶答開始後鎖定 | T014、T025、T038 |
+| REQ-IMP-15 只有老師身分、搶答開始後鎖定 | T014、T017、T025、T026、T038 |

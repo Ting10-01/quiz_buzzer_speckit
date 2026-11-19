@@ -6,7 +6,7 @@
 
 ## Summary
 
-老師先以自己的 Google 帳號登入授權（範圍只限挑選過的檔案），再用 Google 檔案選擇器挑選雲端上的學習單。系統以 Sheets API 讀取該工作表的儲存格與合併範圍，在執行期依同義詞清單找出表頭列與題號、作答、題目三欄（找不到時讓老師手動指定），再依題號儲存格的合併範圍分出單題與題組，產出 `QuestionSet`（題號、小題、題目敘述、填空格位置與來源試算表）。預覽確認後保存，供 002 開題、003 直接寫回同一份試算表。Google 的部分包在 `SpreadsheetReader` 介面與 `GoogleAuthService` 後面，解析邏輯是不碰網路的純函式，用 Vitest 測試。
+老師先以自己的 Google 帳號登入授權（範圍只限挑選過的檔案），再用 Google 檔案選擇器挑選雲端上的學習單。系統以 Sheets API 讀取該工作表的儲存格與合併範圍，在執行期依同義詞清單找出表頭列與題號、作答、題目三欄（找不到時拒絕匯入並列出可用的表頭寫法），再依題號儲存格的合併範圍分出單題與題組，產出 `QuestionSet`（題號、小題、題目敘述、填空格位置與來源試算表）。預覽確認後保存，供 002 開題、003 直接寫回同一份試算表。Google 的部分包在 `SpreadsheetReader` 介面與 `GoogleAuthService` 後面，解析邏輯是不碰網路的純函式，用 Vitest 測試。
 
 ## Technical Context
 
@@ -26,7 +26,7 @@
 
 **Constraints**: 憑證只放在 `.env` 與 `credentials/`，不得進入 repo、文件或 log（原則 VI、SC-006）；授權範圍只有 `drive.file`；不得寫死任何儲存格位置（原則 IV）；匯入只讀不寫
 
-**Scale/Scope**: 一次一份學習單、一位老師；1 個頁面（匯入，含連結帳號、選工作表、手動指定欄位三種狀態）
+**Scale/Scope**: 一次一份學習單、一位老師；1 個頁面（匯入，含連結帳號、挑選與選工作表、預覽三種狀態）；只有老師身分能進入
 
 ## Constitution Check
 
@@ -37,10 +37,10 @@
 | I 圖表優先 | `diagrams/001-component/class/sequence` 三張圖與 PNG 已依 Google Sheets 版本重畫；下方「藍圖對照」把每個元件與類別對應到程式路徑 | ✅ |
 | II 規格先行與可追溯 | 先以 specify、clarify 改 spec（助教公告、授權方式、檔案選擇器），再改 plan；每個 REQ-IMP 都有 AC；tasks 階段會為每個 AC 建立測試任務 | ✅ |
 | III 分層與依賴抽象 | 解析器只依賴 `Sheet` 介面；Google 只出現在 `GoogleSheetsReader`、`GoogleAuthService`；HTTP 路由只呼叫服務；`TokenStore` 介面讓授權服務可用假物件測試 | ✅ |
-| IV 外部資料於執行期解析 | 表頭以同義詞清單在執行期辨識；位置一律來自解析結果；找不到時手動指定而不是猜測 | ✅ |
+| IV 外部資料於執行期解析 | 表頭以同義詞清單在執行期辨識；位置一律來自解析結果；找不到時拒絕匯入並說明可用寫法，不猜測欄位 | ✅ |
 | V 單一權威狀態來源 | 題目清單只存在伺服器的 `QuestionSetStore`；前端只顯示 API 回傳的預覽 | ✅ |
 | VI 最小資訊揭露與機敏資料 | 用戶端設定只在環境變數；老師授權只在本機憑證檔；範圍只有 `drive.file`；`picker-session` 只回給老師；token 不寫入 log；學生端與 Google 無關 | ✅ |
-| VII 輸入驗證與錯誤訊息 | 驗證 `spreadsheetId`、工作表、手動欄位、題號；Google 錯誤轉成具體原因與修正方式；失敗不改動既有狀態 | ✅ |
+| VII 輸入驗證與錯誤訊息 | 驗證老師身分、`spreadsheetId`、工作表、表頭、題號；Google 錯誤轉成具體原因與修正方式；失敗不改動既有狀態 | ✅ |
 | VIII 自動化測試與人工驗證 | 自動化測試不需網路（假 `Sheet`、API 回應 fixture、假 `OAuth2Client`）；quickstart 列出 17 個人工情境，含真實連線 | ✅ |
 | IX 程式碼規範 | 預覽表格、警告、錯誤卡片、帳號狀態做成共用元件；頁面只透過 `lib/api.ts`；命名與註解用英文 | ✅ |
 | X 人工把關 | 本 plan 需人工審查後才能進入 tasks | ⏳ 待審查 |
@@ -54,7 +54,7 @@ plan 以三張圖為主要藍圖（原則 I）。實作完成後的圖表一致�
 
 | 圖上的元件／類別 | 程式位置 | 來源圖 |
 | --- | --- | --- |
-| ImportPage | `packages/web/src/pages/teacher/ImportPage.tsx`（連結帳號、挑選、選工作表、手動指定欄位、預覽） | component、sequence |
+| ImportPage | `packages/web/src/pages/teacher/ImportPage.tsx`（連結帳號、挑選、選工作表、預覽、錯誤） | component、sequence |
 | Google 檔案選擇器 | `packages/web/src/lib/googlePicker.ts`（載入 Google 腳本並開啟選擇器） | component、sequence |
 | GoogleAuthService、AuthState、AuthStatus、LinkedAccount、PickerSession | `packages/server/src/google/GoogleAuthService.ts` | component、class、sequence |
 | TokenStore、LocalTokenStore、StoredToken | `packages/server/src/google/TokenStore.ts` | component、class |

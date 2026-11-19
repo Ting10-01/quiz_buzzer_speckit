@@ -50,7 +50,7 @@ package "Import" {
   class ImportService {
     -pending: PendingImport [0..1]
     +listSheets(spreadsheetId: String): SpreadsheetInfo
-    +preview(spreadsheetId: String, sheetId: int [0..1], mapping: ColumnMapping [0..1]): ImportPreview
+    +preview(spreadsheetId: String, sheetId: int [0..1]): ImportPreview
     +confirm(): QuestionSet
     +cancel(): void
   }
@@ -73,21 +73,14 @@ package "Import" {
   }
 
   class ImportPreview {
-    +status: PreviewStatus
     +source: GuidedNotesSource
-    +mapping: ColumnMapping [0..1]
-    +questionSet: QuestionSet [0..1]
+    +mapping: ColumnMapping
+    +questionSet: QuestionSet
     +warnings: ImportWarning[]
-    +expectedHeaders: String[]
-  }
-
-  enum PreviewStatus {
-    READY
-    NEEDS_MAPPING
   }
 
   class GuidedNotesParser {
-    +parse(sheet: Sheet, mapping: ColumnMapping [0..1]): ImportPreview
+    +parse(sheet: Sheet): ImportPreview
     -validateNumbering(questions: Question[]): void
   }
 
@@ -119,13 +112,7 @@ package "Import" {
     +numberCol: int
     +answerCol: int
     +questionCol: int [0..1]
-    +source: MappingSource
     +matchedHeaders: String[]
-  }
-
-  enum MappingSource {
-    AUTO
-    MANUAL
   }
 
   class ImportWarning {
@@ -144,6 +131,7 @@ package "Import" {
     +code: ImportErrorCode
     +message: String
     +cell: CellRef [0..1]
+    +expectedHeaders: String[]
   }
 
   enum ImportErrorCode {
@@ -151,6 +139,7 @@ package "Import" {
     AUTH_EXPIRED
     NO_ACCESS
     NETWORK_ERROR
+    NO_HEADER
     NO_QUESTIONS
     INVALID_NUMBERING
     TOO_MANY_QUESTIONS
@@ -248,9 +237,8 @@ ImportService ..> ImportError : throws
 SpreadsheetInfo *-- "1..*" SheetInfo
 PendingImport --> GuidedNotesSource
 PendingImport --> ImportPreview
-ImportPreview --> PreviewStatus
-ImportPreview o-- "0..1" ColumnMapping
-ImportPreview o-- "0..1" QuestionSet
+ImportPreview o-- ColumnMapping
+ImportPreview o-- QuestionSet
 ImportPreview *-- "0..*" ImportWarning
 GuidedNotesParser --> HeaderLocator
 GuidedNotesParser --> QuestionScanner
@@ -258,7 +246,6 @@ GuidedNotesParser ..> ImportError : throws
 HeaderLocator ..> ColumnMapping : creates
 QuestionScanner ..> ScanResult : creates
 QuestionScanner ..> MarkerSplit
-ColumnMapping --> MappingSource
 ImportWarning --> WarningCode
 ImportWarning --> CellRef
 ImportError --> ImportErrorCode

@@ -51,19 +51,16 @@ S --> P : 工作表清單與預設工作表
 P -> S : preview(spreadsheetId, sheetId)
 S -> R : open(spreadsheetId, sheetId)
 R --> S : sheet（儲存格內容與合併範圍）
-S -> GP : parse(sheet, 無指定欄位)
+S -> GP : parse(sheet)
 
 GP -> HL : locate(sheet)
 HL -> HL : 找同時含「題號／編號／題次」\n與「作答／答案／回答」的第一列；\n同列有「題目／問題／題幹」就記為題目欄
-HL --> GP : ColumnMapping(AUTO) 或無
+HL --> GP : ColumnMapping 或無
 
 opt 找不到表頭
-  GP --> S : ImportPreview(NEEDS_MAPPING, 系統找的表頭文字)
-  S --> P : 需要手動指定欄位
-  P --> T : 說明系統找的表頭文字，\n請點選表頭列、題號欄、作答欄（題目欄可略）
-  T -> P : 指定欄位
-  P -> S : preview(spreadsheetId, sheetId, ColumnMapping(MANUAL))
-  S -> GP : parse(sheet, mapping)
+  GP --> S : ImportError(NO_HEADER, expectedHeaders)
+  S --> P : 錯誤
+  P --> T : 列出各欄接受的表頭寫法，\n請修改學習單後重新匯入（既有題目清單不變）
 end
 
 GP -> QS : scan(sheet, mapping)
@@ -81,7 +78,7 @@ alt 解析成功
   S -> S : 只有檢視權限 → 加上 ImportWarning(READ_ONLY)
   S -> S : 暫存 PendingImport
   S --> P : 預覽資料
-  P --> T : 顯示試算表與工作表名稱、表頭文字或手動欄位、\n題數、題組數、每題題號與填空格位置、\n舊答案與無法寫回的警告
+  P --> T : 顯示試算表與工作表名稱、找到的表頭文字、\n題數、題組數、每題題號與填空格位置、\n舊答案與無法寫回的警告
   T -> P : 確認匯入
   P -> S : confirm()
   S -> Store : save(questionSet)
