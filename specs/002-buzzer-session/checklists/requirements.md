@@ -39,3 +39,4 @@
 
 - 2026-11-18 依 SpecKit specify 流程重新驗證：16 項皆通過；配合 001 改為連線 Google Sheets，更新 Input、Assumptions 與 001 需求編號引用。
 - 2026-11-18 clarify：未發現需要釐清的重大盲點（No critical ambiguities）。
+- 2026-11-19 依 PR #3 review 修改：老師身分只保存在取得它的分頁、同一時間只有一個老師（AC-34）、以一次性連結取回（AC-35）；重新檢查後 16 項仍全部通過。
