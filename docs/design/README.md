@@ -16,7 +16,7 @@
 | 00 | `Main` | 首頁：選擇身分 | 1440 × 900 | `web/src/pages/HomePage.tsx` | 骨架 |
 | T0 | `T-Connect` | 老師：連結 Google 並挑選學習單 | 1440 × 960 | `pages/teacher/ImportPage.tsx`（未連結狀態）；連結與選擇器由 `lib/googlePicker.ts` 與 Google 授權 API 提供 | A（頁面）、B（Google 授權） |
 | T1 | `T-Import` | 老師：確認辨識結果 | 1440 × 960 | `pages/teacher/ImportPage.tsx` | A |
-| T1-手動 | `T-ImportError` | 老師：找不到表頭時指定欄位 | 1440 × 1000 | `pages/teacher/ImportPage.tsx` | A |
+| T1-錯誤 | `T-ImportError` | 老師：找不到表頭（列出可用的表頭寫法與修正方式） | 1440 × 1000 | `pages/teacher/ImportPage.tsx`（錯誤狀態） | A |
 | T2 | `T-Setup` | 老師：活動設定 | 1440 × 1040 | `pages/teacher/SetupPage.tsx` | B |
 | T3 | `T-Lobby` | 老師：控制台・準備中 | 1440 × 960 | `pages/teacher/LobbyPage.tsx` | B |
 | T4 | `T-Live` | 老師：控制台・搶答中 | 1440 × 1040 | `pages/teacher/ConsolePage.tsx` | B |
