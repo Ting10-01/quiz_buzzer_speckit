@@ -1,0 +1,65 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>提前結束這一題</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.scrim{animation:fade .2s cubic-bezier(.2,.8,.2,1) both}
+.dialog{animation:rise .32s cubic-bezier(.2,.8,.2,1) .05s both}
+@keyframes beat{0%,100%{opacity:1}50%{opacity:.35}}
+.live{animation:beat 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@media (prefers-reduced-motion: reduce){.scrim,.dialog,.live{animation:none}.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="light" style="position: relative; min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <span style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </span>
+    <span style="color: var(--muted); font-size: 13.5px">計算機概論基礎 學習單 · 控制台</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+      <span style="color: var(--muted); font-size: 13px">第 4 題 / 共 4 題</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--pos-bg); color: var(--pos-ink); font-size: 13px; font-weight: 500"><span class="live" style="width: 7px; height: 7px; border-radius: 50%; background: var(--pos)"></span>搶答中</span>
+    </div>
+  </header>
+
+  <main aria-hidden="true" style="max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 24px; font-weight: 600">第 4 題 · 單題</span>
+      <span style="color: var(--muted)">第 3 組在開放後 9.233 秒第一個送出，只比第 4 組快 1.882 秒。這是最後一題。</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border-radius: 20px">
+      <div style="padding: 14px 22px"><div style="color: var(--muted); font-size: 13px">剩餘時間</div><div style="font-size: 24px; font-weight: 500">0:42</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">本題已送出</div><div style="font-size: 24px; font-weight: 500">2 / 5 組</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">已結束</div><div style="font-size: 24px; font-weight: 500">3 / 4 題</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">連線分頁</div><div style="font-size: 24px; font-weight: 500">13 個</div></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <div style="flex: 999 1 600px; min-width: 0; height: 460px; background: var(--surface); border-radius: 20px; padding: 18px 22px"><span style="font-size: 16px; font-weight: 600">題目</span></div>
+      <div style="flex: 1 1 320px; min-width: 0; height: 460px; background: var(--surface); border-radius: 20px; padding: 18px 20px"><span style="font-size: 16px; font-weight: 600">題目進度</span></div>
+    </div>
+  </main>
+
+  <div class="scrim" style="position: absolute; inset: 0; background: var(--scrim); display: flex; align-items: flex-start; justify-content: center; padding: 160px 16px 40px">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="end-title" style="width: 100%; max-width: 460px; background: var(--surface); border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55)">
+      <h2 id="end-title" style="margin: 0; font-size: 20px; font-weight: 600">提前結束第 4 題？</h2>
+      <p style="margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.6">還剩 42 秒。結束後不再接受第 4 題的送出。這是最後一題，活動會一併結束，所有畫面同時公布結果。</p>
+      <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; background: var(--raised); border-radius: 12px; padding: 14px 16px; font-size: 14px">
+        <dt style="color: var(--muted)">本題已送出</dt><dd style="margin: 0; text-align: right">2 組（目前第一：第 3 組）</dd>
+        <dt style="color: var(--muted)">還沒送出</dt><dd style="margin: 0; text-align: right">第 1、2、5 組</dd>
+      </dl>
+      <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px">
+        <a class="btn" href="T-Live.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--control); color: var(--text); text-decoration: none; font-weight: 500; font-size: 14px">繼續作答</a>
+        <a class="btn" href="T-Results.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; background: var(--neg); color: var(--on-neg); text-decoration: none; font-weight: 600; font-size: 14px">結束並公布結果</a>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>

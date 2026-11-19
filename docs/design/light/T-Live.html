@@ -1,0 +1,113 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>控制台 第 4 題搶答中</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.btn{transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:2px}
+@keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+.live{animation:beat 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes drop{from{opacity:0;transform:translateY(-14px) scale(.6)}to{opacity:1;transform:none}}
+.drop{animation:drop .36s cubic-bezier(.34,1.56,.64,1) .4s both}
+.bar{transition:width 1s linear}
+@keyframes arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.arrive{animation:arrive .32s cubic-bezier(.2,.8,.2,1) both}
+@media (prefers-reduced-motion: reduce){.live,.drop,.arrive{animation:none}.bar,.btn{transition:none}}
+</style>
+</head><body>
+<div data-theme="light" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 32px; border-bottom: 1px solid var(--rule)">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </a>
+    <span style="color: var(--muted); font-size: 13.5px">計算機概論基礎 學習單 · 控制台</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+      <span style="color: var(--muted); font-size: 13px">第 4 題 / 共 4 題</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--pos-bg); color: var(--pos-ink); font-size: 13px; font-weight: 500"><span class="live" style="width: 7px; height: 7px; border-radius: 50%; background: var(--pos)"></span>搶答中</span>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em">第 4 題 · 單題</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 14px">第 3 組在開放後 9.233 秒第一個送出，只比第 4 組快 1.882 秒。這是最後一題。</p>
+      </div>
+      <a class="btn" href="T-EndConfirm.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--neg); color: var(--neg); text-decoration: none; font-weight: 600; font-size: 14px"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="fill: var(--neg)"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>結束這一題</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border-radius: 20px">
+      <div style="padding: 14px 22px"><div style="color: var(--muted); font-size: 13px">剩餘時間</div><div style="font-size: 24px; font-weight: 500">0:42</div><div style="color: var(--faint); font-size: 12px">時間到自動結束</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">本題已送出</div><div style="font-size: 24px; font-weight: 500">2<span style="font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 3px">/ 5 組在線</span></div><div style="color: var(--faint); font-size: 12px">第 1、2、5 組還沒送出</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">已結束</div><div style="font-size: 24px; font-weight: 500">3<span style="font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 3px">/ 4 題</span></div><div style="color: var(--faint); font-size: 12px">每題結束就公布結果</div></div>
+      <div style="padding: 14px 22px; border-left: 1px solid var(--rule)"><div style="color: var(--muted); font-size: 13px">連線分頁</div><div style="font-size: 24px; font-weight: 500">13<span style="font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 3px">個</span></div><div style="color: var(--faint); font-size: 12px">第 6 組離線</div></div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section style="background: var(--surface); border-radius: 20px; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <h2 style="margin: 0; font-size: 16px; font-weight: 600">題目</h2>
+            <span style="color: var(--muted); font-size: 13px">學生畫面顯示同一段文字</span>
+          </div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.7">專案最後的連線失敗，是因為小明的筆電沒有成功取得一組在網路世界中用來辨識身分的獨一無二之編碼，這個號碼被稱為什麼位址？</p>
+          <div style="height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden"><div class="bar" style="height: 100%; width: 70%; background: var(--pos); border-radius: 3px"></div></div>
+          
+        </section>
+
+        <section style="background: var(--surface); border-radius: 20px; padding: 18px 22px 14px">
+          <h2 style="margin: 0 0 4px; font-size: 16px; font-weight: 600">本題搶答順位</h2>
+          <p style="margin: 0 0 8px; color: var(--muted); font-size: 13px">從開放這一題起算；點是系統接受的時刻，黃色是目前第一。</p>
+          <div style="position: relative; height: 50px; margin: 0 4px">
+            <span style="position: absolute; left: 0; right: 0; top: 34px; height: 2px; background: var(--grid)"></span>
+            <span style="position: absolute; top: 8px; bottom: 6px; left: 16.67%; width: 1px; background: var(--grid)"></span><span style="position: absolute; top: 8px; bottom: 6px; left: 33.33%; width: 1px; background: var(--grid)"></span><span style="position: absolute; top: 8px; bottom: 6px; left: 50%; width: 1px; background: var(--grid)"></span><span style="position: absolute; top: 8px; bottom: 6px; left: 66.67%; width: 1px; background: var(--grid)"></span><span style="position: absolute; top: 8px; bottom: 6px; left: 83.33%; width: 1px; background: var(--grid)"></span>
+            <span style="position: absolute; top: 2px; bottom: 0; left: 30%; border-left: 1px dashed var(--muted)"></span>
+            <span class="drop" style="position: absolute; left: 18.53%; top: 35px; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--chart3); display: grid; place-items: center; font-size: 10px; font-weight: 600; color: var(--muted)">2</span>
+            <span style="position: absolute; left: 15.39%; top: 35px; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--accent-stroke); display: grid; place-items: center; font-size: 10px; font-weight: 600; color: var(--on-accent)">1<span style="position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: var(--accent-text)">第 3 組</span></span>
+          </div>
+          <div style="position: relative; height: 18px; margin: 4px 4px 12px; color: var(--faint); font-size: 11.5px">
+            <span style="position: absolute; left: 0">0 秒</span><span style="position: absolute; left: 16.67%; transform: translateX(-50%)">10</span><span style="position: absolute; left: 33.33%; transform: translateX(-50%)">20</span><span style="position: absolute; left: 50%; transform: translateX(-50%)">30</span><span style="position: absolute; left: 66.67%; transform: translateX(-50%)">40</span><span style="position: absolute; left: 83.33%; transform: translateX(-50%)">50</span><span style="position: absolute; right: 0">60 秒</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+            <thead><tr style="color: var(--muted); font-size: 12px"><th style="text-align: left; font-weight: 400; padding: 0 8px 8px 0">順位</th><th style="text-align: left; font-weight: 400; padding: 0 8px 8px">組別</th><th style="text-align: left; font-weight: 400; padding: 0 8px 8px">答案</th><th style="text-align: right; font-weight: 400; padding: 0 0 8px 8px">開放後</th></tr></thead>
+            <tbody>
+              <tr><td style="padding: 10px 8px 10px 0; border-top: 1px solid var(--rule)"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600">#1</span></td><td style="padding: 10px 8px; border-top: 1px solid var(--rule); font-weight: 600">第 3 組</td><td style="padding: 10px 8px; border-top: 1px solid var(--rule)">IP</td><td style="padding: 10px 0 10px 8px; border-top: 1px solid var(--rule); text-align: right">9.233 秒</td></tr>
+              <tr class="arrive" style="animation-delay: .4s"><td style="padding: 10px 8px 10px 0; border-top: 1px solid var(--rule)"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 22px; border-radius: 6px; background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 600">#2</span></td><td style="padding: 10px 8px; border-top: 1px solid var(--rule)">第 4 組</td><td style="padding: 10px 8px; border-top: 1px solid var(--rule)">IP</td><td style="padding: 10px 0 10px 8px; border-top: 1px solid var(--rule); text-align: right">11.115 秒 <span style="color: var(--muted)">（慢 1.882 秒）</span></td></tr>
+            </tbody>
+          </table>
+          <p style="margin: 10px 0 0; color: var(--faint); font-size: 13px">還沒送出：第 1、2、5 組 · 第 6 組離線</p>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section style="background: var(--surface); border-radius: 20px; padding: 18px 20px">
+          <h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">題目進度</h2>
+          <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 0 12px; align-items: center; font-size: 13.5px">
+            <b style="padding: 9px 0; font-weight: 600">第 1 題</b><span style="padding: 9px 0; display: flex; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 20px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 11.5px; font-weight: 600">#1</span>第 2 組</span><span style="padding: 9px 0; color: var(--muted); text-align: right">4 組 · 時間到</span>
+            <b style="padding: 9px 0; font-weight: 600; border-top: 1px solid var(--rule)">第 2 題</b><span style="padding: 9px 0; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 20px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 11.5px; font-weight: 600">#1</span>第 5 組</span><span style="padding: 9px 0; border-top: 1px solid var(--rule); color: var(--muted); text-align: right">2 組 · 時間到</span>
+            <b style="padding: 9px 0; font-weight: 600; border-top: 1px solid var(--rule)">第 3 題</b><span style="padding: 9px 0; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 8px"><span style="display: inline-grid; place-items: center; min-width: 30px; height: 20px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-size: 11.5px; font-weight: 600">#1</span>第 1 組</span><span style="padding: 9px 0; border-top: 1px solid var(--rule); color: var(--muted); text-align: right">2 組 · 時間到</span>
+            <b style="padding: 9px 0; font-weight: 600; border-top: 1px solid var(--rule)">第 4 題</b><span style="padding: 9px 0; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 8px; color: var(--pos-ink)"><span class="live" style="width: 7px; height: 7px; border-radius: 50%; background: var(--pos)"></span>進行中</span><span style="padding: 9px 0; border-top: 1px solid var(--rule); color: var(--muted); text-align: right">2 組</span>
+          </div>
+        </section>
+
+        <section style="background: var(--surface); border-radius: 20px; padding: 18px 20px">
+          <h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 600">各組搶到的題數</h2>
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 0 14px; font-size: 13.5px">
+            <span style="padding: 7px 0">第 1 組</span><span style="padding: 7px 0; color: var(--muted)">3 人在線</span><span style="padding: 7px 0; text-align: right">1 題</span>
+            <span style="padding: 7px 0; border-top: 1px solid var(--rule)">第 2 組</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--muted)">2 人在線</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); text-align: right">1 題</span>
+            <span style="padding: 7px 0; border-top: 1px solid var(--rule)">第 3 組</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--muted)">3 人在線</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); text-align: right">0 題</span>
+            <span style="padding: 7px 0; border-top: 1px solid var(--rule)">第 4 組</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--muted)">2 人在線</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); text-align: right">0 題</span>
+            <span style="padding: 7px 0; border-top: 1px solid var(--rule)">第 5 組</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--muted)">3 人在線</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); text-align: right">1 題</span>
+            <span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--faint)">第 6 組</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); color: var(--faint)">離線</span><span style="padding: 7px 0; border-top: 1px solid var(--rule); text-align: right; color: var(--faint)">0 題</span>
+          </div>
+          <p style="margin: 8px 0 0; color: var(--faint); font-size: 12.5px">第 4 題結束後才計入。</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</body></html>
