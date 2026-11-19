@@ -39,7 +39,7 @@
 | III 分層與依賴抽象 | `SessionGateway` 只做身分驗證與轉發；規則在 `ActivityService`／`BuzzEngine`；排名用 `RankingPolicy` 介面（兩個實作）；Socket.IO 只出現在 gateway 與 broadcaster | ✅ |
 | IV 外部資料於執行期解析 | 題目與小題來自 001 的 `QuestionSet`，不寫死題數或小題數 | ✅ |
 | V 單一權威狀態來源 | 階段、題目狀態、序號、倒數都只在伺服器；前端只顯示收到的 view（R9） | ✅ |
-| VI 最小資訊揭露與機敏資料 | `VisibilityFilter` 在伺服器端產生學生 view，不含其他組資料；老師憑證只在伺服器記憶體與老師瀏覽器的 `localStorage`，不寫入檔案與 log；搶答過程不連線 Google，學生端拿不到任何 Google 授權 | ✅ |
+| VI 最小資訊揭露與機敏資料 | `VisibilityFilter` 在伺服器端產生學生 view，不含其他組資料；老師憑證只在伺服器記憶體與老師分頁的 `sessionStorage`（同一瀏覽器的學生分頁讀不到）；取回碼只印在伺服器終端機；兩者都不寫入檔案與 log；搶答過程不連線 Google，學生端拿不到任何 Google 授權 | ✅ |
 | VII 輸入驗證與錯誤訊息 | 設定值範圍、送出內容（題號、slot、長度）、角色都在伺服器驗證；拒絕時回傳原因代碼 | ✅ |
 | VIII 自動化測試與人工驗證 | 單元測試（排序、去重、公平模式、倒數）、Socket.IO 整合測試、壓力測試；quickstart 列出 10 個人工情境 | ✅ |
 | IX 程式碼規範 | 頁面只透過 `lib/socket.ts` 收發事件；倒數、題目卡、結果卡做成共用元件；英文命名 | ✅ |
@@ -116,7 +116,7 @@ packages/
 │       ├── integration/session/  # 真 Socket.IO 連線：角色、隔離、重連
 │       └── load/              # R8 壓力測試
 └── web/src/
-    ├── pages/teacher/{SetupPage,LobbyPage,ConsolePage}.tsx
+    ├── pages/teacher/{SetupPage,LobbyPage,ConsolePage,RecoverPage}.tsx
     ├── pages/student/{JoinPage,AnswerPage}.tsx
     ├── components/            # Countdown、QuestionCard、ResultCard…
     └── lib/socket.ts          # Socket.IO client 包裝

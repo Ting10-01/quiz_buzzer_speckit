@@ -107,7 +107,7 @@ Question:  PENDING --openQuestion(n)--> OPEN --closeQuestion(TEACHER | TIMEOUT)-
 | `Outbox` | `connectionId`、`pending`、`latestViewOnly` | 慢連線只塞住自己（research R4） |
 | `SessionGateway` | `onConnect`、`onCommand` | Socket.IO 事件的入口，驗證身分後轉給 `CommandQueue` |
 | `Participant` | `connectionId`、`role`、`groupId?` | |
-| `TeacherCredential` | `token` | 見 research R6 |
+| `TeacherCredential` | `issue()`、`verify(token)`、`recover(code)`；私有 `token`、`recoveryCode` | 同一時間只有一組有效的憑證與取回碼；取回後兩者都換新（research R6、AC-34、AC-35） |
 | `ActivityStore` | `current()`、`replace(activity)` | 記憶體；同一時間只有一個活動 |
 
 ## 驗證規則摘要

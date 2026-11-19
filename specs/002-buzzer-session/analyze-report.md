@@ -56,6 +56,15 @@
 - E1：T031 改為重複 100 次（SC-002）。
 - 重跑檢查：需求涵蓋 100%；剩下 LOW 3 項（E2、F3、U1），不影響進入實作。
 
+## 重跑結果（2026-11-19，依 PR #3 review 修改後）
+
+spec 依 review 修改（commit `spec(002): 老師身分只保存在取得它的分頁並提供取回連結`，新增 AC-34、AC-35）後，research R6、contracts/session-http.md（新增 `POST /api/teacher/recover`）、data-model 的 `TeacherCredential`、類別圖與 tasks 已同步更新：
+
+- 類別圖：`TeacherCredential` 改為 `issue()`、`verify()`、`recover()`；`createActivity` 回傳 `Activity`（原本畫成回傳老師憑證，與「首頁就發憑證」不一致）。
+- tasks：T009（AC-34、AC-35 測試）、T010（取回 API）、T012（分頁保存憑證與 RecoverPage）。
+- 取回碼只印在伺服器終端機、放在網址 `#` 之後，不寫入檔案或 log，符合原則 VI。
+- 重跑檢查：27 條需求都有任務、59 個任務編號連續、沒有殘留舊用語、類別圖與文件一致；剩下 LOW（AC-04 沒有被任務明確引用，即 E2），沒有 CRITICAL、HIGH 或 MEDIUM。
+
 ## Next Actions
 
 - 沒有 CRITICAL 或 HIGH，依 CLAUDE.md 第 2 節可以進入 `/speckit-implement`。

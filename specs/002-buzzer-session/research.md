@@ -39,9 +39,11 @@
 ## R6. 老師與學生的身分（REQ-BUZ-02、REQ-BUZ-07）
 
 - **Decision**:
-  - 老師：`POST /api/teacher/session` 發出一組隨機憑證（`crypto.randomBytes(32)`，base64url），存在老師瀏覽器的 `localStorage`，所以關閉分頁後在同一個瀏覽器重新開啟仍是老師（spec Edge Cases）。同時只能有一個老師憑證；已有進行中的活動時，只有持有原憑證的瀏覽器能取回老師身分。伺服器重新啟動後憑證失效，老師頁面自動重新申請。HTTP 用 `Authorization: Bearer`，Socket.IO 連線用 `auth.teacherToken`。
+  - 老師：首頁選老師時 `POST /api/teacher/session` 發出一組隨機憑證（`crypto.randomBytes(32)`，base64url），只存在**該分頁**的 `sessionStorage`，同一個瀏覽器的其他分頁（包括學生分頁）都讀不到（AC-06）。同一分頁重新整理時 `sessionStorage` 還在，直接帶著憑證重連。同一時間只有一個有效憑證，已有老師時回 `409 TEACHER_ACTIVE`（AC-34）。HTTP 用 `Authorization: Bearer`，Socket.IO 連線用 `auth.teacherToken`。
+  - 取回老師身分（AC-35）：每次發出憑證時，伺服器在終端機（stdout）印出一次性連結 `http://localhost:3000/teacher/recover#<取回碼>`（`crypto.randomBytes(32)`）。開啟後前端以 `POST /api/teacher/recover` 換取新憑證；舊憑證與這個取回碼同時失效，伺服器再印出下一個連結。取回碼只印在終端機，不寫入檔案或 log 檔；放在 `#` 之後，瀏覽器不會把它送進請求網址。伺服器重新啟動後所有憑證與取回碼失效。
   - 學生：連線後送 `student:join { groupId }`，伺服器回一個 `participantId`（存在 `sessionStorage`，每個分頁各自一位學生，方便用多分頁模擬各組），重新整理後帶著它重連即回到原組別。
-- **Rationale**: 本機模擬不需要帳號密碼，但老師操作必須在伺服器端驗證，學生分頁無法冒充（AC-06）；憑證不寫入檔案或 log（原則 VI）。
+- **Rationale**: 本機模擬不需要帳號密碼，但老師操作必須在伺服器端驗證，學生分頁無法冒充（AC-06）。`sessionStorage` 以分頁為單位，解決 PR #3 review 指出的「同一個瀏覽器的學生分頁讀得到老師憑證」；終端機只有執行系統的人看得到，在本機模擬下等於「持有這台電腦的老師」。憑證與取回碼都不寫入檔案或 log（原則 VI）。
+- **Alternatives considered**: 存在整個瀏覽器共用的儲存空間（同一個瀏覽器的所有分頁都讀得到，與 REQ-BUZ-02 衝突）；HttpOnly cookie（同一個瀏覽器的所有分頁共用，同樣問題）；帳號密碼（作業不需要，還要管理密碼）。
 
 ## R7. 公平模式的判定（REQ-BUZ-17）
 

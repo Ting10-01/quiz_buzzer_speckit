@@ -43,10 +43,10 @@ description: "Task list for 002 搶答活動"
 - [ ] T006 [P] 實作 `server/src/buzz/SequenceClock.ts`：`max(上次的值, performance.timeOrigin + performance.now())`（research R2）
 - [ ] T007 [P] `server/tests/unit/buzz/CommandQueue.test.ts`：指令依 enqueue 順序逐一處理；處理中再 enqueue 的指令排在後面；處理函式是同步的（回傳 Promise 時測試失敗）
 - [ ] T008 實作 `server/src/buzz/CommandQueue.ts`：同步逐一處理，臨界區內不得有 `await`（research R1），依 T004
-- [ ] T009 [P] `server/tests/integration/sessionRoutes.test.ts`：`POST /api/teacher/session` 發出 43 字元 base64url 憑證；帶舊憑證可取回身分；已有進行中活動時其他瀏覽器回 `409 TEACHER_ACTIVE`；伺服器重啟後舊憑證失效並發新憑證
-- [ ] T010 實作 `server/src/session/TeacherCredential.ts` 與 `server/src/http/sessionRoutes.ts` 的 `POST /api/teacher/session`（`crypto.randomBytes(32)`，只存在記憶體，不寫入檔案或 log），並把骨架的 `server/src/http/requireTeacher.ts`（001 T014）改為驗證真正的憑證
+- [ ] T009 [P] `server/tests/integration/sessionRoutes.test.ts`：`POST /api/teacher/session` 發出 43 字元 base64url 憑證並在終端機印出取回連結；已有有效憑證時第二個分頁回 `409 TEACHER_ACTIVE`（AC-34）；`POST /api/teacher/recover` 用正確的取回碼換到新憑證、舊憑證與取回碼同時失效、同一個取回碼第二次使用回 `400 INVALID_RECOVERY_CODE`（AC-35）；憑證與取回碼都沒有寫入檔案或 log 檔
+- [ ] T010 實作 `server/src/session/TeacherCredential.ts` 與 `server/src/http/sessionRoutes.ts` 的 `POST /api/teacher/session` 與 `POST /api/teacher/recover`（`crypto.randomBytes(32)`，只存在記憶體；取回連結只印在終端機，不寫入檔案或 log，依 research R6），並把骨架的 `server/src/http/requireTeacher.ts`（001 T014）改為驗證真正的憑證
 - [ ] T011 [P] 實作 `server/src/store/ActivityStore.ts`：`current()`、`replace(activity)`，同一時間只有一個活動
-- [ ] T012 [P] 實作 `web/src/lib/socket.ts`：老師連線帶 `auth.teacherToken`（從 `localStorage`）；學生連線帶 `participantId`（從 `sessionStorage`）；收到 `view:*` 後呼叫 ack；斷線自動重連
+- [ ] T012 [P] 實作 `web/src/lib/socket.ts`：老師連線帶 `auth.teacherToken`（從該分頁的 `sessionStorage`）；並實作 `web/src/pages/teacher/RecoverPage.tsx`：從網址 `#` 之後讀出取回碼，呼叫 `POST /api/teacher/recover`，成功後存入 `sessionStorage` 並進入控制台（AC-35）；學生連線帶 `participantId`（從 `sessionStorage`）；收到 `view:*` 後呼叫 ack；斷線自動重連
 
 **Checkpoint**: 排序核心、身分與連線工具就緒
 
@@ -248,7 +248,7 @@ US1 → US2 → US3 → US6 → US4 → US5 → Polish
 | 需求 | 任務 |
 | --- | --- |
 | REQ-BUZ-01 兩種角色 | T012、T022、T026 |
-| REQ-BUZ-02 只有老師能操作 | T009、T010、T016、T022 |
+| REQ-BUZ-02 只有老師能操作、老師身分只在一個分頁 | T009、T010、T012、T016、T022 |
 | REQ-BUZ-03 組數 | T013、T015、T018、T025 |
 | REQ-BUZ-04 選組與鎖定 | T013、T018、T026 |
 | REQ-BUZ-05 階段與逐題開放 | T013、T018、T028 |
