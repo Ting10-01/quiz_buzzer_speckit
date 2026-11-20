@@ -45,8 +45,10 @@
 | --- | --- | --- |
 | `AuthService` | `signInWithGoogle`、`getCurrentAccount` | 002 |
 | `GuidedNotesService` | `pickSpreadsheet`、`readWorksheet` | 003 |
-| `ActivityService` | `createActivity`、`updateSettings`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange` | 004 |
-| `SubmissionService` | `submitAnswer`、`listSubmissions`、`judge`、`onJudgement` | 005 |
+| `ActivityService` | `createActivity`、`updateSettings`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange`、`onActivityChange` | 004 |
+| `SubmissionService` | `submitAnswer`、`listSubmissions`、`onSubmissionsChange`、`judge`、`onJudgement` | 005 |
+
+`joinGroup` 之後由服務記住本分頁的組別，`submitAnswer`、`onJudgement`、`leaveGroup` 不傳組別（原則 VI）；`onActivityChange`、`onSubmissionsChange` 供老師端即時更新（R4）。簽章與規則見 [contracts/service-interfaces.md](contracts/service-interfaces.md)。
 | `ResultService` | `getQuestionResult`、`getAllResults`、`writeBack` | 006 |
 | `PhaseMockControl`（mock only） | `advancePhase` | 隨 004 移除 |
 | `JudgementMockControl`（mock only） | `simulateJudgement` | 隨 005 移除 |
@@ -94,6 +96,7 @@
 | --- | --- | --- | --- |
 | `lastImport` | 最近一次辨識成功的 `ImportSuccess` | MockGuidedNotesService | MockActivityService（老師端活動的題目）、MockResultService（M8） |
 | `teacherActivity` | 老師端建立、開放、結束題目後的 `Activity` | MockActivityService | MockSubmissionService、MockResultService |
+| `joinedGroup` | 本分頁所屬的組別；`joinGroup` 設定、`leaveGroup` 清除 | MockActivityService | MockSubmissionService（`submitAnswer`、`onJudgement`、`simulateJudgement`） |
 | `viewerPhaseIndex` | 首頁與學生頁面看到的階段在 M7 序列中的位置 | MockActivityService（`advancePhase`） | MockActivityService（`getCurrentActivity`、`onPhaseChange`） |
 | `submissions` | 各題的送出與判定（老師端的判定、學生端本組的送出） | MockSubmissionService | MockResultService |
 | `pendingValidationFailure` | 活動與送出各一個旗標，由「模擬：驗證失敗」設定，下一次送出時消耗 | MockActivityService、MockSubmissionService | 同左 |
@@ -109,7 +112,7 @@
 
 依 M3 與 M7，同一個分頁中有兩條互不影響的模擬狀態：
 
-- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 改變 `teacherActivity`。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。
+- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 改變 `teacherActivity`。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
 - **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 時改變，使用 `MockFixtures.activity`（4 題、6 組）。
 
 ### 狀態轉換

@@ -46,7 +46,7 @@
 - **Alternatives considered**:
   - REST + Server-Sent Events：會撞到上述 6 條連線限制，本機要開 HTTP/2 又需要 TLS。
   - 輪詢：階段同步有延遲（R11），分頁多時請求量大。
-- **對後續子功能的影響**: 前端的 `onPhaseChange`、`onJudgement` 由真正的實作改為訂閱 Socket.IO 事件，介面不變（類別圖已改為回傳 `Unsubscribe`）。
+- **對後續子功能的影響**: 前端的 `onPhaseChange`、`onActivityChange`、`onSubmissionsChange`、`onJudgement` 由真正的實作改為訂閱 Socket.IO 事件，介面不變（類別圖已改為回傳 `Unsubscribe`）。Socket.IO 設定為只使用 WebSocket 傳輸、不使用長輪詢，由 004 決定（spec D22）。
 
 ## RD-04 模擬實作的位置
 
@@ -66,11 +66,13 @@
   - 活動狀態存進 Google Sheets：有延遲與 API 配額（每位使用者每分鐘約 60 次），並在學習單上多寫資料。
 - **對後續子功能的影響**: 004 在伺服器記憶體建立活動狀態；006 直接寫回 Sheets。伺服器重啟後進行中的活動會消失，這是接受的限制。
 
-## RD-06 老師身分與機敏資料（記錄給 002、003）
+## RD-06 使用者身分與機敏資料（記錄給 002–005）
 
 - **老師身分必須能區分分頁**：本系統用同一個瀏覽器的多個分頁模擬老師與學生；cookie 由所有分頁共用，學生分頁的請求也會帶上老師的 cookie。所以老師的 session **不得**只靠 cookie 識別，架構上要求老師身分能以分頁區分。具體做法由 002 決定。
 - **金鑰位置**：OAuth client secret 與 token 只放在伺服器端的 `.env`、`credentials/`（已列入 `.gitignore`）。
 - **Google Picker 的 API key**：「從 Google 雲端硬碟挑選」使用的 Picker API 需要一把瀏覽器端的 API key，執行時在瀏覽器中一定看得到。可經由 `frontend/.env.local` 注入而不進 repo，但它不是祕密，應在 Google Cloud 主控台限制可用的網域與 API。由 002、003 處理。
+- **學生組別由伺服器判斷**：學生加入組別後，伺服器依連線身分記住該連線的組別；送出答案與接收判定時，前端不傳組別，避免任何分頁冒用其他組別（原則 VI）。介面已依此設計（`submitAnswer`、`onJudgement`、`leaveGroup` 不帶組別），具體的連線身分做法由 004、005 決定。
+- **老師重新整理頁面**：活動進行中老師重新整理時，活動要結束還是回到控制台，由 004 決定（spec D21）；001 目前重新整理一律回到首頁（RD-11）。
 - 001 不使用任何金鑰。
 
 ## RD-07 Logging
@@ -122,11 +124,11 @@
 - **Decision**: `AppRouter` 以 React state 保存目前的頁面與頁面參數，不使用 URL 路由，也不使用路由套件。開啟或重新整理分頁一律回到首頁。
 - **Rationale**: spec 沒有任何以網址進入頁面的需求（學生由首頁選「我是學生」進入）；重新整理回到首頁，與 M7「重新整理回到沒有活動」一致；少一個套件（XI）。
 - **Alternatives considered**: React Router 等 URL 路由：可直接以網址開啟某頁，但重新整理後頁面與重置的模擬狀態不一致，且沒有需求。
-- **對後續子功能的影響**: 004 若需要「學生重新整理後回到原組別」，須先修改 spec。
+- **對後續子功能的影響**: 004 若需要「學生重新整理後回到原組別」或「老師重新整理後回到控制台」（spec D21），須先修改 001 的頁面切換。
 
 ## RD-12 階段推動的切換
 
-- **Decision**: 學生頁面與首頁透過 `ActivityService.onPhaseChange` 訂閱階段，依「階段推動的切換」表切換頁面；`S-Submitted` 透過 `SubmissionService.onJudgement` 訂閱判定。001 由模擬控制列（`advancePhase`、`simulateJudgement`）觸發這些事件。
+- **Decision**: 學生頁面與首頁透過 `ActivityService.onPhaseChange` 訂閱階段，依「階段推動的切換」表切換頁面；`S-Submitted` 透過 `SubmissionService.onJudgement` 訂閱判定；老師端 T-Lobby 透過 `onActivityChange`、T-Live 透過 `onSubmissionsChange` 即時更新。001 由模擬控制列（`advancePhase`、`simulateJudgement`）觸發這些事件。
 - **Rationale**: 頁面對事件的反應在 001 就寫好，004、005 只需以真正的實作推送同樣的事件，頁面不改（feature-split 3.3）。頁面只呈現事件帶來的 `Activity`，不自行推導階段（V）。
 - **與 FR-006 的關係**: 001 不實作跨分頁的階段同步；同步由 004 的真正實作提供。
 
@@ -139,4 +141,4 @@
   - **001 的觸發方式**：「模擬：非預期錯誤」呼叫 `UnexpectedErrorMockControl.failNextCall()`（由 `MockSession` 實作）；仍是模擬實作的服務在下一次被按鈕觸發的呼叫中 reject「模擬：連不上伺服器」（M9）。
 - **Rationale**: 預期中的失敗各有專屬的呈現位置（欄位旁、登入失敗訊息區、寫回結果）；非預期錯誤集中在一個共通位置，002 起接上伺服器與 Google 時不必修改頁面（spec FR-009 的依據）。
 - **Alternatives considered**: 把非預期錯誤也當成回傳值（每個方法的回傳型別都要加上聯集，類別圖的每個簽章都要改，頁面每次呼叫都要多判斷一次）；由 `AppRouter` 統一捕捉並顯示（頁面無法保留原本的狀態與輸入內容，也無法關閉自己的確認視窗）。
-- **未涵蓋的情況**: 訂閱（`onPhaseChange`、`onJudgement`）中斷時如何通知頁面，目前的介面沒有管道；由 004、005 決定，若需要新增管道，須先修改 001 的 spec 與類別圖。
+- **未涵蓋的情況**: 訂閱（`onPhaseChange`、`onActivityChange`、`onSubmissionsChange`、`onJudgement`）中斷時如何通知頁面，目前的介面沒有管道；由 004、005 決定，若需要新增管道，須先修改 001 的 spec 與類別圖。

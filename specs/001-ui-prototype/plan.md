@@ -51,7 +51,7 @@
 | III. 分層架構與依賴抽象 | 頁面層 → 介面層 ← 模擬實作。頁面只依賴 `ServiceRegistry` 與介面；只有組合根（`createServiceRegistry`）引用 `Mock*Service`，以 ESLint `no-restricted-imports` 強制。後續子功能新增真正的實作，只修改 `ServiceRegistry` 中的綁定（見「替換模擬實作的方式」） | 通過 |
 | IV. 外部資料於執行期解析 | 001 不讀取外部資料；模擬的辨識結果是固定資料，不是解析規則。解析規則由 003 定義 | 不適用 |
 | V. 單一權威狀態來源 | 頁面不推導活動階段，只呈現 `ActivityService` 回傳或推播的 `Activity`；001 的權威來源是各分頁的模擬實作，004 起換成伺服器 | 通過 |
-| VI. 最小資訊揭露與機敏資料保護 | 學生頁面不呈現其他組別的作答（FR-054，以 E2E 測試 SC-007）；介面中沒有學生取得他組送出的方法。001 不處理任何機敏資料；`.gitignore` 已排除 `.env`、`credentials/` | 通過 |
+| VI. 最小資訊揭露與機敏資料保護 | 學生頁面不呈現其他組別的作答（FR-054，以 E2E 測試 SC-007）；介面中沒有學生取得他組送出的方法；送出與接收判定不傳組別，由服務依 `joinGroup` 記住本分頁的組別，真正的實作由伺服器依連線身分判斷。001 不處理任何機敏資料；`.gitignore` 已排除 `.env`、`credentials/` | 通過 |
 | VII. 輸入驗證與錯誤訊息 | 頁面能在欄位旁顯示介面回傳的 `ValidationError`，驗證失敗不切換頁面（FR-008）；非預期錯誤顯示在每頁共通的 `ErrorArea`，不切換頁面、不改變已輸入的內容（FR-009）。驗證規則與錯誤種類由負責的子功能定義 | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 至少一個正常案例與一個邊界案例；測試以假的 `ServiceRegistry` 取代服務，不依賴外部服務；人工驗證紀錄寫入 `manual-verification.md` | 通過 |
 | IX. 程式碼規範 | 共用介面元件只實作一次（組件圖「共用介面元件」）；頁面（呈現）與服務（資料）分離；註解與命名用英文 | 通過 |
@@ -69,6 +69,7 @@
 | G-1 | M1、M2：點「用 Google 登入」「從 Google 雲端硬碟挑選」後，顯示模擬帳號選擇、模擬檔案選擇器 | 沒有任何組件負責顯示這兩個選擇器。真正的實作（002、003）會由 Google 的視窗負責，所以它們屬於模擬實作，不屬於頁面 | 類別圖新增 mock only 介面 `MockChoicePrompt`（`onRequest`、`answer`）與 `ChoiceRequest`、`ChoiceOption`，由 `MockSession` 實作；`MockAuthService`、`MockGuidedNotesService` 經 `MockSession.requestChoice` 發出選擇請求。`ServiceRegistry` 增加 `choicePrompt [0..1]`；組件圖中由 `MockControlBar` 使用 `ConfirmDialog` 顯示。時序圖第 1、2 段補上這段呼叫 |
 | G-2 | M3、M4、M8：控制台的題目、最後一題沒有送出、寫回成功或失敗，都取決於老師匯入了哪一份模擬學習單 | 模擬實作之間只畫了 `MockResultService → MockSubmissionService`，其他模擬實作無從得知匯入了哪份學習單 | 類別圖與組件圖新增 `MockSession`（每個分頁一份的模擬狀態），所有 `Mock*Service` 共用它，取代 `MockResultService → MockSubmissionService` 的關聯；`MockFixtures` 維持只放固定資料。時序圖第 2 段補上寫入 `lastImport` |
 | G-3 | FR-009、M9：每頁的共通錯誤訊息區與「模擬：非預期錯誤」（spec 於規劃期間新增，commit `bcadd80`） | 沒有錯誤訊息區、非預期錯誤的型別與觸發它的模擬控制 | 組件圖新增共用元件 `ErrorArea`，所有頁面使用；類別圖新增實體 `UnexpectedError` 與 mock only 介面 `UnexpectedErrorMockControl`（`failNextCall`），由 `MockSession` 實作，`ServiceRegistry` 增加 `unexpectedErrorControl [0..1]`；時序圖新增第 6 段；畫面流程圖以註記說明每頁都可能停留在原頁顯示錯誤 |
+| G-4 | R4：T-Lobby、T-Live 在學生加入、送出時即時更新；原則 VI：前端不得指定組別（plan 審查後新增，spec commit `8676808`） | 老師端只有載入時呼叫的方法；`submitAnswer`、`onJudgement`、`leaveGroup` 由頁面傳入組別 | 類別圖新增 `onActivityChange`、`onSubmissionsChange`；`submitAnswer`、`onJudgement`、`leaveGroup` 移除組別參數，`MockSession` 新增 `joinedGroup`；時序圖第 2–4 段補上訂閱與「服務記住本分頁的組別」（commit `d4fa5c2`） |
 
 ## 替換模擬實作的方式
 

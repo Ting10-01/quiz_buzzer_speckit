@@ -14,7 +14,7 @@
 | 控制 | 介面方法 | 存在條件（ServiceRegistry 欄位） | 出現的頁面 | 效果 |
 | --- | --- | --- | --- | --- |
 | 「模擬：推進到下一個階段」 | `PhaseMockControl.advancePhase(): Promise<Activity>` | `phaseControl` | Main、S-Join、S-Wait、S-Answer、S-Submitted、S-QuestionDone | 依 M7 推進首頁與學生端看到的階段，並經 `onPhaseChange` 通知頁面 |
-| 「模擬：接受」「模擬：不接受」 | `JudgementMockControl.simulateJudgement(judgement): Promise<Submission>` | `judgementControl` | 只在 S-Submitted 的等待判定狀態 | 依 M6 產生本組最近一筆送出的判定，並經 `onJudgement` 通知頁面 |
+| 「模擬：接受」「模擬：不接受」 | `JudgementMockControl.simulateJudgement(judgement): Promise<Submission>` | `judgementControl` | 只在 S-Submitted 的等待判定狀態 | 依 M6 產生本分頁所屬組別（`MockSession.joinedGroup`）最近一筆送出的判定，並經 `onJudgement` 通知頁面 |
 | 「模擬：非預期錯誤」 | `UnexpectedErrorMockControl.failNextCall(): void` | `unexpectedErrorControl` | T-Login、T-Pick、T-Import、T-ImportError、T-Setup、T-Lobby、T-Live、T-QuestionEnd、T-Results、S-Join、S-Wait、S-Answer（FR-061） | 下一次模擬介面呼叫以 `UnexpectedError`「模擬：連不上伺服器」reject，之後恢復正常（M9）。點控制時頁面已載入完成，所以下一次呼叫就是展示者接著點的按鈕所觸發的呼叫 |
 | 「模擬：驗證失敗」 | `ValidationMockControl.failNextValidation(): void` | T-Setup 用 `activityValidationControl`；S-Answer 用 `submissionValidationControl` | 只在 T-Setup 與 S-Answer | 該頁下一次「建立活動」「儲存設定」或「整組送出」回傳 `ValidationError`（`message` 為「模擬：驗證失敗」），之後恢復成功（M3、M5、US5 AC-8） |
 
