@@ -13,7 +13,7 @@
 | 5 | `specs/NNN-*/tasks.md` | 實作任務與順序 |
 | 6 | `CONTRIBUTING.md` | 分支、commit、PR 規範，以及語言規範（程式碼註解、命名、分支用英文；commit 訊息中英皆可） |
 
-- `docs/assignment.md`：作業原文，唯讀，不可修改。spec 的每條需求都必須能追溯到它；實作時以 spec 為準。
+- `docs/assignment.md`：作業原文摘錄，不可修改；只能在文末「助教補充」一節新增助教回覆或公告的原文，並註明日期，不加入解讀。spec 的每條需求都必須能追溯到它；實作時以 spec 為準。
 - `docs/templates/`：Guided Notes 範本樣本，在 `/speckit-specify` 階段用來分析格式。
 
 ## 2. 功能開發流程
