@@ -120,39 +120,42 @@ package "Entities" {
 
 package "Service Interfaces" {
   interface AuthService {
-    +signInWithGoogle(): SignInResult
-    +getCurrentAccount(): TeacherAccount [0..1]
+    +signInWithGoogle(): Promise<SignInResult>
+    +getCurrentAccount(): Promise<TeacherAccount | null>
   }
   interface GuidedNotesService {
-    +pickSpreadsheet(): Spreadsheet [0..1]
-    +readWorksheet(spreadsheetId: string, worksheet: string): ImportSuccess | ImportError
+    +pickSpreadsheet(): Promise<Spreadsheet | null>
+    +readWorksheet(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
   }
   interface ActivityService {
-    +createActivity(settings: ActivitySettings): Activity | ValidationError
-    +updateSettings(settings: ActivitySettings): Activity | ValidationError
-    +openQuestion(questionNumber: number): Activity
-    +endQuestion(questionNumber: number): Activity
-    +joinGroup(groupNumber: number): Activity
-    +leaveGroup(groupNumber: number): void
-    +getCurrentActivity(): Activity [0..1]
-    +onPhaseChange(listener): void
+    +createActivity(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +openQuestion(questionNumber: number): Promise<Activity>
+    +endQuestion(questionNumber: number): Promise<Activity>
+    +joinGroup(groupNumber: number): Promise<Activity>
+    +leaveGroup(groupNumber: number): Promise<void>
+    +getCurrentActivity(): Promise<Activity | null>
+    +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
   }
   interface SubmissionService {
-    +submitAnswer(questionNumber: number, groupNumber: number, answers: string[]): Submission | ValidationError
-    +listSubmissions(questionNumber: number): Submission[]
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Submission[]
-    +onJudgement(groupNumber: number, listener): void
+    +submitAnswer(questionNumber: number, groupNumber: number, answers: string[]): Promise<Submission | ValidationError>
+    +listSubmissions(questionNumber: number): Promise<Submission[]>
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +onJudgement(groupNumber: number, listener: (submission: Submission) => void): Unsubscribe
   }
   interface ResultService {
-    +getQuestionResult(questionNumber: number): QuestionResult
-    +getAllResults(): QuestionResult[]
-    +writeBack(): WriteBackResult
+    +getQuestionResult(questionNumber: number): Promise<QuestionResult>
+    +getAllResults(): Promise<QuestionResult[]>
+    +writeBack(): Promise<WriteBackResult>
+  }
+  interface Unsubscribe <<function type>> {
+    +(): void
   }
   interface PhaseMockControl <<mock only>> {
-    +advancePhase(): Activity
+    +advancePhase(): Promise<Activity>
   }
   interface JudgementMockControl <<mock only>> {
-    +simulateJudgement(judgement: Judgement): Submission
+    +simulateJudgement(judgement: Judgement): Promise<Submission>
   }
   interface ValidationMockControl <<mock only>> {
     +failNextValidation(): void
@@ -177,7 +180,15 @@ package "Service Interfaces" {
   ServiceRegistry o-- PhaseMockControl
   ServiceRegistry o-- JudgementMockControl
   ServiceRegistry o-- ValidationMockControl
+  ActivityService ..> Unsubscribe
+  SubmissionService ..> Unsubscribe
 }
+
+note top of Unsubscribe
+  介面方法一律回傳 Promise，讓真正的實作（002–006）
+  可經網路完成而不需改介面；訂閱回傳取消訂閱的函式，
+  頁面離開時呼叫以停止接收。
+end note
 
 package "Mock Implementations (001)" {
   class MockFixtures <<M1–M8 data>> {
