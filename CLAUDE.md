@@ -15,6 +15,7 @@
 
 - `docs/assignment.md`：作業原文摘錄，不可修改；只能在文末「助教補充」一節新增助教回覆或公告的原文，並註明日期，不加入解讀。spec 的每條需求都必須能追溯到它；實作時以 spec 為準。
 - `docs/templates/`：Guided Notes 範本樣本，在 `/speckit-specify` 階段用來分析格式。
+- `docs/feature-split.md`：子功能拆分，記錄各子功能涵蓋的需求與分支名稱。`/speckit-specify` 時以它決定該子功能涵蓋哪些需求。要調整子功能範圍或加入額外功能時，先修改這份文件。
 
 ## 2. 功能開發流程
 
