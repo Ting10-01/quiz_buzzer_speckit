@@ -15,6 +15,7 @@ participant "GuidedNotesService\n«MockGuidedNotesService»" as Notes
 participant "ActivityService\n«MockActivityService»" as Act
 participant "SubmissionService\n«MockSubmissionService»" as Sub
 participant "ResultService\n«MockResultService»" as Res
+participant "MockSession" as Sess
 
 == 1. 選擇身分與老師登入（R1） ==
 Teacher -> Page : 首頁點「我是老師」
@@ -22,7 +23,12 @@ Page --> Teacher : 登入頁（只有「用 Google 登入」）
 Teacher -> Page : 點「用 Google 登入」
 Page -> Reg : auth
 Page -> Auth : signInWithGoogle()
-note right of Auth : M1：模擬帳號選擇
+Auth -> Sess : requestChoice(帳號選擇)
+Sess --> Bar : ChoiceRequest（MockChoicePrompt.onRequest）
+Bar --> Teacher : 模擬帳號選擇（ConfirmDialog，M1）
+Teacher -> Bar : 選擇一個選項
+Bar -> Sess : answer(choiceId)
+Sess --> Auth : choiceId
 alt 選擇模擬老師帳號
   Auth --> Page : SignInResult(ok, account)
   Page --> Teacher : 挑選學習單頁
@@ -34,9 +40,16 @@ end
 == 2. 匯入學習單與活動設定 ==
 Teacher -> Page : 點「從 Google 雲端硬碟挑選」
 Page -> Notes : pickSpreadsheet()
+Notes -> Sess : requestChoice(檔案選擇)
+Sess --> Bar : ChoiceRequest（MockChoicePrompt.onRequest）
+Bar --> Teacher : 模擬檔案選擇器（ConfirmDialog，M2）
+Teacher -> Bar : 選擇一份學習單
+Bar -> Sess : answer(choiceId)
+Sess --> Notes : choiceId
 Notes --> Page : Spreadsheet（M2：三份模擬學習單之一）
 Page -> Notes : readWorksheet(id, worksheet)
 alt 辨識成功
+  Notes -> Sess : lastImport = ImportSuccess
   Notes --> Page : ImportSuccess
   Page --> Teacher : 確認辨識結果頁
 else 找不到表頭
@@ -60,6 +73,8 @@ end
 Teacher -> Page : 填寫活動設定，點「建立活動」
 Page -> Act : createActivity(settings)
 Act --> Page : Activity(PREPARING)
+Page -> Act : onActivityChange(listener)
+note right of Act : 學生加入或離開組別時通知（004）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・準備中
 
 == 3. 學生選組與作答 ==
@@ -69,6 +84,7 @@ Act --> Page : Activity（M3 固定模擬活動）
 Page --> Student : 選組頁
 Student -> Page : 選組別，點「加入第 n 組」
 Page -> Act : joinGroup(n)
+note right of Act : 服務記住本分頁的組別（MockSession.joinedGroup）；\n真正的實作由伺服器依連線身分判斷
 Act --> Page : Activity(PREPARING)
 Page --> Student : 等待開放頁
 Demo -> Bar : 點「模擬：推進到下一個階段」
@@ -76,10 +92,10 @@ Bar -> Act : advancePhase()（M7，PhaseMockControl）
 Act --> Page : 階段：搶答中（第 1 題）
 Page --> Student : 作答頁
 Student -> Page : 填寫每一格，點「整組送出」
-Page -> Sub : submitAnswer(q, n, answers)
+Page -> Sub : submitAnswer(q, answers)
 Sub --> Page : Submission(PENDING)
 Page --> Student : 等待判定頁
-Page -> Sub : onJudgement(n, listener)
+Page -> Sub : onJudgement(listener)
 alt 判定：接受
   Demo -> Bar : 點「模擬：接受」
   Bar -> Sub : simulateJudgement(ACCEPTED)（M6，JudgementMockControl）
@@ -91,7 +107,7 @@ else 判定：不接受
   Sub --> Page : Judgement.REJECTED
   Page --> Student : 作答頁（被拒絕，保留上次答案）
   Student -> Page : 修改答案，點「整組送出」（重送，FR-056）
-  Page -> Sub : submitAnswer(q, n, answers)
+  Page -> Sub : submitAnswer(q, answers)
   Sub --> Page : Submission(PENDING)
   Page --> Student : 等待判定頁
 end
@@ -108,6 +124,8 @@ Page -> Act : openQuestion(n)
 Act --> Page : Activity(OPEN, n)
 Page -> Sub : listSubmissions(n)
 Sub --> Page : Submission[]（M4：依送出順序）
+Page -> Sub : onSubmissionsChange(n, listener)
+note right of Sub : 學生送出時以新的列表通知（005）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・搶答中
 loop 老師判定可判定的答案（哪些可判定由 005 定義）
   Teacher -> Page : 點「接受」或「不接受」
@@ -141,5 +159,18 @@ else 僅檢視的學習單
   Res --> Page : WriteBackResult(failure: 沒有編輯權限)
 end
 Page --> Teacher : 結果頁顯示寫回結果
+
+== 6. 非預期錯誤（FR-009、M9） ==
+Demo -> Bar : 點「模擬：非預期錯誤」
+Bar -> Sess : failNextCall()（UnexpectedErrorMockControl）
+Teacher -> Page : 點會呼叫介面的按鈕（例：「開放第 n 題」）
+Page -> Act : openQuestion(n)
+Act -> Sess : 讀取並清除 pendingUnexpectedError
+Act --> Page : reject UnexpectedError（「模擬：連不上伺服器」）
+Page --> Teacher : 停留在原頁面，共通錯誤訊息區（ErrorArea）顯示訊息
+Teacher -> Page : 再點同一個按鈕
+Page -> Act : openQuestion(n)
+Act --> Page : Activity(OPEN, n)
+Page --> Teacher : 清除錯誤訊息，依原本的流程切換頁面
 
 @enduml

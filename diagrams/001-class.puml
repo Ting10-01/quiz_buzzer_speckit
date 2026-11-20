@@ -64,11 +64,9 @@ package "Entities" {
     FINISHED
   }
   class ActivitySettings {
-    name: string [0..1]
     groupCount: number
   }
   class Activity {
-    name: string [0..1]
     groupCount: number
     phase: ActivityPhase
     currentQuestion: number [0..1]
@@ -105,6 +103,9 @@ package "Entities" {
     field: string
     message: string
   }
+  class UnexpectedError {
+    message: string
+  }
 
   SignInResult --> TeacherAccount
   SignInResult --> SignInFailure
@@ -122,43 +123,66 @@ package "Entities" {
 
 package "Service Interfaces" {
   interface AuthService {
-    +signInWithGoogle(): SignInResult
-    +getCurrentAccount(): TeacherAccount [0..1]
+    +signInWithGoogle(): Promise<SignInResult>
+    +getCurrentAccount(): Promise<TeacherAccount | null>
   }
   interface GuidedNotesService {
-    +pickSpreadsheet(): Spreadsheet [0..1]
-    +readWorksheet(spreadsheetId: string, worksheet: string): ImportSuccess | ImportError
+    +pickSpreadsheet(): Promise<Spreadsheet | null>
+    +readWorksheet(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
   }
   interface ActivityService {
-    +createActivity(settings: ActivitySettings): Activity | ValidationError
-    +updateSettings(settings: ActivitySettings): Activity | ValidationError
-    +openQuestion(questionNumber: number): Activity
-    +endQuestion(questionNumber: number): Activity
-    +joinGroup(groupNumber: number): Activity
-    +leaveGroup(groupNumber: number): void
-    +getCurrentActivity(): Activity [0..1]
-    +onPhaseChange(listener): void
+    +createActivity(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +openQuestion(questionNumber: number): Promise<Activity>
+    +endQuestion(questionNumber: number): Promise<Activity>
+    +joinGroup(groupNumber: number): Promise<Activity>
+    +leaveGroup(): Promise<void>
+    +getCurrentActivity(): Promise<Activity | null>
+    +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
+    +onActivityChange(listener: (activity: Activity) => void): Unsubscribe
   }
   interface SubmissionService {
-    +submitAnswer(questionNumber: number, groupNumber: number, answers: string[]): Submission | ValidationError
-    +listSubmissions(questionNumber: number): Submission[]
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Submission[]
-    +onJudgement(groupNumber: number, listener): void
+    +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
+    +listSubmissions(questionNumber: number): Promise<Submission[]>
+    +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +onJudgement(listener: (submission: Submission) => void): Unsubscribe
   }
   interface ResultService {
-    +getQuestionResult(questionNumber: number): QuestionResult
-    +getAllResults(): QuestionResult[]
-    +writeBack(): WriteBackResult
+    +getQuestionResult(questionNumber: number): Promise<QuestionResult>
+    +getAllResults(): Promise<QuestionResult[]>
+    +writeBack(): Promise<WriteBackResult>
+  }
+  interface Unsubscribe <<function type>> {
+    +(): void
   }
   interface PhaseMockControl <<mock only>> {
-    +advancePhase(): Activity
+    +advancePhase(): Promise<Activity>
   }
   interface JudgementMockControl <<mock only>> {
-    +simulateJudgement(judgement: Judgement): Submission
+    +simulateJudgement(judgement: Judgement): Promise<Submission>
   }
   interface ValidationMockControl <<mock only>> {
     +failNextValidation(): void
   }
+  interface UnexpectedErrorMockControl <<mock only>> {
+    +failNextCall(): void
+  }
+  interface MockChoicePrompt <<mock only>> {
+    +onRequest(listener: (request: ChoiceRequest) => void): Unsubscribe
+    +answer(choiceId: string | null): void
+  }
+  class ChoiceRequest <<mock only>> {
+    title: string
+    options: ChoiceOption[]
+  }
+  class ChoiceOption <<mock only>> {
+    id: string
+    label: string
+  }
+  ChoiceRequest "1" *-- "1..*" ChoiceOption
+  MockChoicePrompt ..> ChoiceRequest
+  MockChoicePrompt ..> Unsubscribe
   class ServiceRegistry {
     +auth: AuthService
     +guidedNotes: GuidedNotesService
@@ -169,6 +193,8 @@ package "Service Interfaces" {
     +judgementControl: JudgementMockControl [0..1]
     +activityValidationControl: ValidationMockControl [0..1]
     +submissionValidationControl: ValidationMockControl [0..1]
+    +unexpectedErrorControl: UnexpectedErrorMockControl [0..1]
+    +choicePrompt: MockChoicePrompt [0..1]
     +isMockMode(): boolean
   }
   ServiceRegistry o-- AuthService
@@ -179,7 +205,23 @@ package "Service Interfaces" {
   ServiceRegistry o-- PhaseMockControl
   ServiceRegistry o-- JudgementMockControl
   ServiceRegistry o-- ValidationMockControl
+  ServiceRegistry o-- UnexpectedErrorMockControl
+  ServiceRegistry o-- MockChoicePrompt
+  ActivityService ..> Unsubscribe
+  SubmissionService ..> Unsubscribe
 }
+
+note top of Unsubscribe
+  介面方法一律回傳 Promise，讓真正的實作（002–006）
+  可經網路完成而不需改介面；訂閱回傳取消訂閱的函式，
+  頁面離開時呼叫以停止接收。
+  非預期錯誤（例如連不上伺服器）以 UnexpectedError
+  reject，頁面顯示在共通錯誤訊息區（FR-009）。
+  joinGroup 之後由服務記住本分頁的組別；submitAnswer、
+  onJudgement、leaveGroup 不傳組別，真正的實作由伺服器
+  依連線身分判斷（原則 VI）。onActivityChange、
+  onSubmissionsChange 供老師端即時更新（R4）。
+end note
 
 package "Mock Implementations (001)" {
   class MockFixtures <<M1–M8 data>> {
@@ -189,6 +231,16 @@ package "Mock Implementations (001)" {
     +activity: Activity
     +groupMembers: Group[]
     +submissionsByQuestion
+  }
+  class MockSession <<per tab>> {
+    +lastImport: ImportSuccess [0..1]
+    +teacherActivity: Activity [0..1]
+    +joinedGroup: number [0..1]
+    +viewerPhaseIndex: number
+    +submissions: Submission[]
+    +pendingValidationFailure
+    +pendingUnexpectedError: boolean
+    +requestChoice(request: ChoiceRequest): Promise<string | null>
   }
   class MockAuthService <<M1>>
   class MockGuidedNotesService <<M2>>
@@ -205,17 +257,32 @@ package "Mock Implementations (001)" {
   MockSubmissionService ..|> JudgementMockControl
   MockActivityService ..|> ValidationMockControl
   MockSubmissionService ..|> ValidationMockControl
+  MockSession ..|> UnexpectedErrorMockControl
+  MockSession ..|> MockChoicePrompt
   MockAuthService --> MockFixtures
   MockGuidedNotesService --> MockFixtures
   MockActivityService --> MockFixtures
   MockSubmissionService --> MockFixtures
   MockResultService --> MockFixtures
-  MockResultService --> MockSubmissionService : judgements
+  MockAuthService --> MockSession
+  MockGuidedNotesService --> MockSession
+  MockActivityService --> MockSession
+  MockSubmissionService --> MockSession
+  MockResultService --> MockSession
 }
 
 note bottom of ActivitySettings
-  name 是否保留待釐清（spec FR-023）；
+  不提供活動名稱（spec FR-023，2026-11-21 clarify）；
   欄位的驗證規則與預設值由 004 定義
+end note
+
+note bottom of MockSession
+  每個分頁一份，重新整理即重置；所有模擬實作共用。
+  lastImport 決定老師端活動的題目與寫回結果（M3、M4、M8）。
+  M1、M2 的選擇器經 requestChoice 發出，
+  由模擬控制列以 ConfirmDialog 顯示並 answer。
+  pendingUnexpectedError 由「模擬：非預期錯誤」設定（M9），
+  下一次由按鈕觸發的介面呼叫以 UnexpectedError reject。
 end note
 
 note right of MockSubmissionService
@@ -228,6 +295,9 @@ note bottom of ServiceRegistry
   任何一個介面為模擬實作時 isMockMode() 為 true。
   phaseControl、judgementControl 只在對應介面
   為模擬實作時存在，模擬控制列依此顯示控制。
+  unexpectedErrorControl 在任一介面為模擬實作時存在；
+  choicePrompt 在 auth 或 guidedNotes 為模擬實作時存在。
+  綁定集中在組合根 createServiceRegistry()。
 end note
 
 
