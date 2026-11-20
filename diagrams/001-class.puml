@@ -103,6 +103,9 @@ package "Entities" {
     field: string
     message: string
   }
+  class UnexpectedError {
+    message: string
+  }
 
   SignInResult --> TeacherAccount
   SignInResult --> SignInFailure
@@ -160,6 +163,24 @@ package "Service Interfaces" {
   interface ValidationMockControl <<mock only>> {
     +failNextValidation(): void
   }
+  interface UnexpectedErrorMockControl <<mock only>> {
+    +failNextCall(): void
+  }
+  interface MockChoicePrompt <<mock only>> {
+    +onRequest(listener: (request: ChoiceRequest) => void): Unsubscribe
+    +answer(choiceId: string | null): void
+  }
+  class ChoiceRequest <<mock only>> {
+    title: string
+    options: ChoiceOption[]
+  }
+  class ChoiceOption <<mock only>> {
+    id: string
+    label: string
+  }
+  ChoiceRequest "1" *-- "1..*" ChoiceOption
+  MockChoicePrompt ..> ChoiceRequest
+  MockChoicePrompt ..> Unsubscribe
   class ServiceRegistry {
     +auth: AuthService
     +guidedNotes: GuidedNotesService
@@ -170,6 +191,8 @@ package "Service Interfaces" {
     +judgementControl: JudgementMockControl [0..1]
     +activityValidationControl: ValidationMockControl [0..1]
     +submissionValidationControl: ValidationMockControl [0..1]
+    +unexpectedErrorControl: UnexpectedErrorMockControl [0..1]
+    +choicePrompt: MockChoicePrompt [0..1]
     +isMockMode(): boolean
   }
   ServiceRegistry o-- AuthService
@@ -180,6 +203,8 @@ package "Service Interfaces" {
   ServiceRegistry o-- PhaseMockControl
   ServiceRegistry o-- JudgementMockControl
   ServiceRegistry o-- ValidationMockControl
+  ServiceRegistry o-- UnexpectedErrorMockControl
+  ServiceRegistry o-- MockChoicePrompt
   ActivityService ..> Unsubscribe
   SubmissionService ..> Unsubscribe
 }
@@ -188,6 +213,8 @@ note top of Unsubscribe
   介面方法一律回傳 Promise，讓真正的實作（002–006）
   可經網路完成而不需改介面；訂閱回傳取消訂閱的函式，
   頁面離開時呼叫以停止接收。
+  非預期錯誤（例如連不上伺服器）以 UnexpectedError
+  reject，頁面顯示在共通錯誤訊息區（FR-009）。
 end note
 
 package "Mock Implementations (001)" {
@@ -198,6 +225,15 @@ package "Mock Implementations (001)" {
     +activity: Activity
     +groupMembers: Group[]
     +submissionsByQuestion
+  }
+  class MockSession <<per tab>> {
+    +lastImport: ImportSuccess [0..1]
+    +teacherActivity: Activity [0..1]
+    +viewerPhaseIndex: number
+    +submissions: Submission[]
+    +pendingValidationFailure
+    +pendingUnexpectedError: boolean
+    +requestChoice(request: ChoiceRequest): Promise<string | null>
   }
   class MockAuthService <<M1>>
   class MockGuidedNotesService <<M2>>
@@ -214,17 +250,32 @@ package "Mock Implementations (001)" {
   MockSubmissionService ..|> JudgementMockControl
   MockActivityService ..|> ValidationMockControl
   MockSubmissionService ..|> ValidationMockControl
+  MockSession ..|> UnexpectedErrorMockControl
+  MockSession ..|> MockChoicePrompt
   MockAuthService --> MockFixtures
   MockGuidedNotesService --> MockFixtures
   MockActivityService --> MockFixtures
   MockSubmissionService --> MockFixtures
   MockResultService --> MockFixtures
-  MockResultService --> MockSubmissionService : judgements
+  MockAuthService --> MockSession
+  MockGuidedNotesService --> MockSession
+  MockActivityService --> MockSession
+  MockSubmissionService --> MockSession
+  MockResultService --> MockSession
 }
 
 note bottom of ActivitySettings
   不提供活動名稱（spec FR-023，2026-11-21 clarify）；
   欄位的驗證規則與預設值由 004 定義
+end note
+
+note bottom of MockSession
+  每個分頁一份，重新整理即重置；所有模擬實作共用。
+  lastImport 決定老師端活動的題目與寫回結果（M3、M4、M8）。
+  M1、M2 的選擇器經 requestChoice 發出，
+  由模擬控制列以 ConfirmDialog 顯示並 answer。
+  pendingUnexpectedError 由「模擬：非預期錯誤」設定（M9），
+  下一次由按鈕觸發的介面呼叫以 UnexpectedError reject。
 end note
 
 note right of MockSubmissionService
@@ -237,6 +288,9 @@ note bottom of ServiceRegistry
   任何一個介面為模擬實作時 isMockMode() 為 true。
   phaseControl、judgementControl 只在對應介面
   為模擬實作時存在，模擬控制列依此顯示控制。
+  unexpectedErrorControl 在任一介面為模擬實作時存在；
+  choicePrompt 在 auth 或 guidedNotes 為模擬實作時存在。
+  綁定集中在組合根 createServiceRegistry()。
 end note
 
 

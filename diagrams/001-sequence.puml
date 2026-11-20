@@ -15,6 +15,7 @@ participant "GuidedNotesService\n«MockGuidedNotesService»" as Notes
 participant "ActivityService\n«MockActivityService»" as Act
 participant "SubmissionService\n«MockSubmissionService»" as Sub
 participant "ResultService\n«MockResultService»" as Res
+participant "MockSession" as Sess
 
 == 1. 選擇身分與老師登入（R1） ==
 Teacher -> Page : 首頁點「我是老師」
@@ -22,7 +23,12 @@ Page --> Teacher : 登入頁（只有「用 Google 登入」）
 Teacher -> Page : 點「用 Google 登入」
 Page -> Reg : auth
 Page -> Auth : signInWithGoogle()
-note right of Auth : M1：模擬帳號選擇
+Auth -> Sess : requestChoice(帳號選擇)
+Sess --> Bar : ChoiceRequest（MockChoicePrompt.onRequest）
+Bar --> Teacher : 模擬帳號選擇（ConfirmDialog，M1）
+Teacher -> Bar : 選擇一個選項
+Bar -> Sess : answer(choiceId)
+Sess --> Auth : choiceId
 alt 選擇模擬老師帳號
   Auth --> Page : SignInResult(ok, account)
   Page --> Teacher : 挑選學習單頁
@@ -34,9 +40,16 @@ end
 == 2. 匯入學習單與活動設定 ==
 Teacher -> Page : 點「從 Google 雲端硬碟挑選」
 Page -> Notes : pickSpreadsheet()
+Notes -> Sess : requestChoice(檔案選擇)
+Sess --> Bar : ChoiceRequest（MockChoicePrompt.onRequest）
+Bar --> Teacher : 模擬檔案選擇器（ConfirmDialog，M2）
+Teacher -> Bar : 選擇一份學習單
+Bar -> Sess : answer(choiceId)
+Sess --> Notes : choiceId
 Notes --> Page : Spreadsheet（M2：三份模擬學習單之一）
 Page -> Notes : readWorksheet(id, worksheet)
 alt 辨識成功
+  Notes -> Sess : lastImport = ImportSuccess
   Notes --> Page : ImportSuccess
   Page --> Teacher : 確認辨識結果頁
 else 找不到表頭
@@ -141,5 +154,18 @@ else 僅檢視的學習單
   Res --> Page : WriteBackResult(failure: 沒有編輯權限)
 end
 Page --> Teacher : 結果頁顯示寫回結果
+
+== 6. 非預期錯誤（FR-009、M9） ==
+Demo -> Bar : 點「模擬：非預期錯誤」
+Bar -> Sess : failNextCall()（UnexpectedErrorMockControl）
+Teacher -> Page : 點會呼叫介面的按鈕（例：「開放第 n 題」）
+Page -> Act : openQuestion(n)
+Act -> Sess : 讀取並清除 pendingUnexpectedError
+Act --> Page : reject UnexpectedError（「模擬：連不上伺服器」）
+Page --> Teacher : 停留在原頁面，共通錯誤訊息區（ErrorArea）顯示訊息
+Teacher -> Page : 再點同一個按鈕
+Page -> Act : openQuestion(n)
+Act --> Page : Activity(OPEN, n)
+Page --> Teacher : 清除錯誤訊息，依原本的流程切換頁面
 
 @enduml

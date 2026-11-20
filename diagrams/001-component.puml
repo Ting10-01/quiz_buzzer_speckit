@@ -11,7 +11,7 @@ package "頁面層（Presentation）" {
   component "MockModeBadge\n「模擬模式」標示" as Badge
   component "MockControlBar\n模擬控制列（FR-061）" as Bar
 
-  package "老師端頁面" {
+  package "老師端頁面" as TeacherPages {
     component "HomePage (Main)" as PMain
     component "TeacherLoginPage (T-Login)" as PLogin
     component "PickPage (T-Pick)" as PPick
@@ -21,7 +21,7 @@ package "頁面層（Presentation）" {
     component "TeacherResultsPage\n(T-Results / T-WriteBack)" as PTResults
   }
 
-  package "學生端頁面" {
+  package "學生端頁面" as StudentPages {
     component "JoinPage (S-Join)" as PJoin
     component "StudentPlayPage\n(S-Wait / S-Answer / S-Submitted / S-QuestionDone)" as PPlay
     component "StudentResultsPage (S-Results)" as PSResults
@@ -34,6 +34,7 @@ package "頁面層（Presentation）" {
     component "GroupGrid" as CGroups
     component "ConfirmDialog" as CDialog
     component "SheetPreview" as CPreview
+    component "ErrorArea\n共通錯誤訊息區（FR-009）" as CError
   }
 }
 
@@ -46,6 +47,8 @@ package "介面層（Service Interfaces）" {
   component "PhaseMockControl" <<interface>> as IPhaseCtl
   component "JudgementMockControl" <<interface>> as IJudgeCtl
   component "ValidationMockControl" <<interface>> as IValidCtl
+  component "UnexpectedErrorMockControl" <<interface>> as IErrCtl
+  component "MockChoicePrompt" <<interface>> as IChoice
   component "ServiceRegistry\n綁定介面與實作" as Registry
 }
 
@@ -56,6 +59,7 @@ package "模擬實作（001 提供）" {
   component "MockSubmissionService (M4, M5, M6)" as MSub
   component "MockResultService (M8)" as MResult
   component "MockFixtures\n固定的模擬資料" as Fixtures
+  component "MockSession\n每個分頁的模擬狀態" as Session
 }
 
 
@@ -88,10 +92,13 @@ PTResults --> CPreview
 PImport --> CPreview
 PPlay --> CProgress
 PJoin --> CGroups
+TeacherPages --> CError
+StudentPages --> CError
 
 Badge ..> Registry : isMockMode()
 Badge --> Bar
-Bar ..> Registry : phaseControl / judgementControl /\nvalidation controls
+Bar ..> Registry : phaseControl / judgementControl /\nvalidation / unexpectedError controls /\nchoicePrompt
+Bar --> CDialog : 顯示模擬選擇器（M1、M2）
 Registry --> IAuth
 Registry --> INotes
 Registry --> IActivity
@@ -100,6 +107,8 @@ Registry --> IResult
 Registry --> IPhaseCtl
 Registry --> IJudgeCtl
 Registry --> IValidCtl
+Registry --> IErrCtl
+Registry --> IChoice
 
 MAuth -up-|> IAuth
 MNotes -up-|> INotes
@@ -110,6 +119,13 @@ MActivity -up-|> IPhaseCtl
 MSub -up-|> IJudgeCtl
 MActivity -up-|> IValidCtl
 MSub -up-|> IValidCtl
+Session -up-|> IErrCtl
+Session -up-|> IChoice
+MAuth --> Session
+MNotes --> Session
+MActivity --> Session
+MSub --> Session
+MResult --> Session
 MAuth --> Fixtures
 MNotes --> Fixtures
 MActivity --> Fixtures
@@ -125,8 +141,9 @@ note bottom of Fixtures
   004 → ActivityService（取代 M3、M7）
   005 → SubmissionService（取代 M4、M5、M6）
   006 → ResultService（取代 M8）
-  後續子功能新增實作並在 ServiceRegistry 綁定，
-  不修改 001 的頁面。
+  後續子功能新增實作，只修改 ServiceRegistry 的綁定
+  （組合根 createServiceRegistry），不修改 001 的頁面。
+  所有頁面使用 ErrorArea 顯示非預期錯誤（FR-009）。
 end note
 
 @enduml
