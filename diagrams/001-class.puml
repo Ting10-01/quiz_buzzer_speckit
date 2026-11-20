@@ -64,11 +64,9 @@ package "Entities" {
     FINISHED
   }
   class ActivitySettings {
-    name: string [0..1]
     groupCount: number
   }
   class Activity {
-    name: string [0..1]
     groupCount: number
     phase: ActivityPhase
     currentQuestion: number [0..1]
@@ -214,7 +212,7 @@ package "Mock Implementations (001)" {
 }
 
 note bottom of ActivitySettings
-  name 是否保留待釐清（spec FR-023）；
+  不提供活動名稱（spec FR-023，2026-11-21 clarify）；
   欄位的驗證規則與預設值由 004 定義
 end note
 
