@@ -1,0 +1,132 @@
+@startuml 001-component
+title 001 組件圖：畫面與流程原型
+
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle rectangle
+skinparam nodesep 20
+skinparam ranksep 60
+
+package "頁面層（Presentation）" {
+  component "AppRouter\n頁面切換" as Router
+  component "MockModeBadge\n「模擬模式」標示" as Badge
+  component "MockControlBar\n模擬控制列（FR-061）" as Bar
+
+  package "老師端頁面" {
+    component "HomePage (Main)" as PMain
+    component "TeacherLoginPage (T-Login)" as PLogin
+    component "PickPage (T-Pick)" as PPick
+    component "ImportPage\n(T-Import / T-ImportError)" as PImport
+    component "SetupPage (T-Setup)" as PSetup
+    component "ConsolePage\n(T-Lobby / T-Live / T-EndConfirm / T-QuestionEnd)" as PConsole
+    component "TeacherResultsPage\n(T-Results / T-WriteBack)" as PTResults
+  }
+
+  package "學生端頁面" {
+    component "JoinPage (S-Join)" as PJoin
+    component "StudentPlayPage\n(S-Wait / S-Answer / S-Submitted / S-QuestionDone)" as PPlay
+    component "StudentResultsPage (S-Results)" as PSResults
+  }
+
+  package "共用介面元件" {
+    component "AppHeader" as CHeader
+    component "QuestionProgress" as CProgress
+    component "SubmissionTable" as CSubTable
+    component "GroupGrid" as CGroups
+    component "ConfirmDialog" as CDialog
+    component "SheetPreview" as CPreview
+  }
+}
+
+package "介面層（Service Interfaces）" {
+  component "AuthService" <<interface>> as IAuth
+  component "GuidedNotesService" <<interface>> as INotes
+  component "ActivityService" <<interface>> as IActivity
+  component "SubmissionService" <<interface>> as ISub
+  component "ResultService" <<interface>> as IResult
+  component "PhaseMockControl" <<interface>> as IPhaseCtl
+  component "JudgementMockControl" <<interface>> as IJudgeCtl
+  component "ValidationMockControl" <<interface>> as IValidCtl
+  component "ServiceRegistry\n綁定介面與實作" as Registry
+}
+
+package "模擬實作（001 提供）" {
+  component "MockAuthService (M1)" as MAuth
+  component "MockGuidedNotesService (M2)" as MNotes
+  component "MockActivityService (M3, M7)" as MActivity
+  component "MockSubmissionService (M4, M5, M6)" as MSub
+  component "MockResultService (M8)" as MResult
+  component "MockFixtures\n固定的模擬資料" as Fixtures
+}
+
+
+Router --> PMain
+Router --> PJoin
+Router --> PLogin
+
+PLogin ..> IAuth
+PPick ..> IAuth
+PPick ..> INotes
+PImport ..> INotes
+PSetup ..> IActivity
+PConsole ..> IActivity
+PConsole ..> ISub
+PConsole ..> IResult
+PTResults ..> IResult
+PMain ..> IActivity
+PJoin ..> IActivity
+PPlay ..> IActivity
+PPlay ..> ISub
+PPlay ..> IResult
+PSResults ..> IResult
+
+PConsole --> CSubTable
+PConsole --> CProgress
+PConsole --> CGroups
+PConsole --> CDialog
+PTResults --> CDialog
+PTResults --> CPreview
+PImport --> CPreview
+PPlay --> CProgress
+PJoin --> CGroups
+
+Badge ..> Registry : isMockMode()
+Badge --> Bar
+Bar ..> Registry : phaseControl / judgementControl /\nvalidation controls
+Registry --> IAuth
+Registry --> INotes
+Registry --> IActivity
+Registry --> ISub
+Registry --> IResult
+Registry --> IPhaseCtl
+Registry --> IJudgeCtl
+Registry --> IValidCtl
+
+MAuth -up-|> IAuth
+MNotes -up-|> INotes
+MActivity -up-|> IActivity
+MSub -up-|> ISub
+MResult -up-|> IResult
+MActivity -up-|> IPhaseCtl
+MSub -up-|> IJudgeCtl
+MActivity -up-|> IValidCtl
+MSub -up-|> IValidCtl
+MAuth --> Fixtures
+MNotes --> Fixtures
+MActivity --> Fixtures
+MSub --> Fixtures
+MResult --> Fixtures
+
+
+note bottom of Fixtures
+  頁面只依賴介面（原則 III）。
+  後續子功能新增真正的實作取代模擬實作：
+  002 → AuthService（取代 M1）
+  003 → GuidedNotesService（取代 M2）
+  004 → ActivityService（取代 M3、M7）
+  005 → SubmissionService（取代 M4、M5、M6）
+  006 → ResultService（取代 M8）
+  後續子功能新增實作並在 ServiceRegistry 綁定，
+  不修改 001 的頁面。
+end note
+
+@enduml

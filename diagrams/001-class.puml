@@ -1,0 +1,234 @@
+@startuml 001-class
+title 001 類別圖：介面、模擬實作與資料
+
+skinparam defaultFontName "PingFang TC"
+hide empty members
+left to right direction
+
+package "Entities" {
+  enum Role {
+    TEACHER
+    STUDENT
+  }
+  class TeacherAccount {
+    name: string
+    email: string
+  }
+  enum SignInFailure {
+    CANCELLED
+    NOT_TEACHER
+  }
+  class SignInResult {
+    ok: boolean
+    account: TeacherAccount [0..1]
+    failure: SignInFailure [0..1]
+  }
+  class Spreadsheet {
+    id: string
+    title: string
+    editable: boolean
+    worksheets: string[]
+    selectedWorksheet: string
+  }
+  enum QuestionType {
+    SINGLE
+    GROUP
+  }
+  class Question {
+    number: number
+    type: QuestionType
+    text: string [0..1]
+  }
+  class SubQuestion {
+    index: number
+    blankCell: string
+  }
+  class ImportSuccess {
+    spreadsheet: Spreadsheet
+    headerRow: number
+    headerColumns: string[]
+    questions: Question[]
+  }
+  class ImportError {
+    code: string
+    reason: string
+    foundHeaders: string[]
+    acceptedHeaders: string[]
+    fixSteps: string[]
+  }
+  enum ActivityPhase {
+    NO_ACTIVITY
+    PREPARING
+    OPEN
+    QUESTION_ENDED
+    FINISHED
+  }
+  class ActivitySettings {
+    name: string [0..1]
+    groupCount: number
+  }
+  class Activity {
+    name: string [0..1]
+    groupCount: number
+    phase: ActivityPhase
+    currentQuestion: number [0..1]
+  }
+  class Group {
+    number: number
+    memberCount: number
+  }
+  enum Judgement {
+    PENDING
+    ACCEPTED
+    REJECTED
+    UNJUDGED
+  }
+  class Submission {
+    questionNumber: number
+    groupNumber: number
+    answers: string[]
+    rank: number
+    elapsedMs: number
+    judgement: Judgement
+  }
+  class QuestionResult {
+    questionNumber: number
+    winner: Submission [0..1]
+    submissionCount: number
+  }
+  class WriteBackResult {
+    ok: boolean
+    cellCount: number
+    failureReason: string [0..1]
+  }
+  class ValidationError {
+    field: string
+    message: string
+  }
+
+  SignInResult --> TeacherAccount
+  SignInResult --> SignInFailure
+  ImportSuccess --> Spreadsheet
+  ImportSuccess "1" *-- "1..*" Question
+  Question "1" *-- "1..*" SubQuestion
+  Question --> QuestionType
+  Activity --> Spreadsheet
+  Activity "1" *-- "1..*" Question
+  Activity "1" *-- "1..*" Group
+  Activity --> ActivityPhase
+  Submission --> Judgement
+  QuestionResult "1" o-- "0..*" Submission : submissions
+}
+
+package "Service Interfaces" {
+  interface AuthService {
+    +signInWithGoogle(): SignInResult
+    +getCurrentAccount(): TeacherAccount [0..1]
+  }
+  interface GuidedNotesService {
+    +pickSpreadsheet(): Spreadsheet [0..1]
+    +readWorksheet(spreadsheetId: string, worksheet: string): ImportSuccess | ImportError
+  }
+  interface ActivityService {
+    +createActivity(settings: ActivitySettings): Activity | ValidationError
+    +updateSettings(settings: ActivitySettings): Activity | ValidationError
+    +openQuestion(questionNumber: number): Activity
+    +endQuestion(questionNumber: number): Activity
+    +joinGroup(groupNumber: number): Activity
+    +leaveGroup(groupNumber: number): void
+    +getCurrentActivity(): Activity [0..1]
+    +onPhaseChange(listener): void
+  }
+  interface SubmissionService {
+    +submitAnswer(questionNumber: number, groupNumber: number, answers: string[]): Submission | ValidationError
+    +listSubmissions(questionNumber: number): Submission[]
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Submission[]
+    +onJudgement(groupNumber: number, listener): void
+  }
+  interface ResultService {
+    +getQuestionResult(questionNumber: number): QuestionResult
+    +getAllResults(): QuestionResult[]
+    +writeBack(): WriteBackResult
+  }
+  interface PhaseMockControl <<mock only>> {
+    +advancePhase(): Activity
+  }
+  interface JudgementMockControl <<mock only>> {
+    +simulateJudgement(judgement: Judgement): Submission
+  }
+  interface ValidationMockControl <<mock only>> {
+    +failNextValidation(): void
+  }
+  class ServiceRegistry {
+    +auth: AuthService
+    +guidedNotes: GuidedNotesService
+    +activity: ActivityService
+    +submission: SubmissionService
+    +result: ResultService
+    +phaseControl: PhaseMockControl [0..1]
+    +judgementControl: JudgementMockControl [0..1]
+    +activityValidationControl: ValidationMockControl [0..1]
+    +submissionValidationControl: ValidationMockControl [0..1]
+    +isMockMode(): boolean
+  }
+  ServiceRegistry o-- AuthService
+  ServiceRegistry o-- GuidedNotesService
+  ServiceRegistry o-- ActivityService
+  ServiceRegistry o-- SubmissionService
+  ServiceRegistry o-- ResultService
+  ServiceRegistry o-- PhaseMockControl
+  ServiceRegistry o-- JudgementMockControl
+  ServiceRegistry o-- ValidationMockControl
+}
+
+package "Mock Implementations (001)" {
+  class MockFixtures <<M1–M8 data>> {
+    +teacherAccount: TeacherAccount
+    +spreadsheets: Spreadsheet[]
+    +importResults
+    +activity: Activity
+    +groupMembers: Group[]
+    +submissionsByQuestion
+  }
+  class MockAuthService <<M1>>
+  class MockGuidedNotesService <<M2>>
+  class MockActivityService <<M3, M7>>
+  class MockSubmissionService <<M4, M5, M6>>
+  class MockResultService <<M8>>
+
+  MockAuthService ..|> AuthService
+  MockGuidedNotesService ..|> GuidedNotesService
+  MockActivityService ..|> ActivityService
+  MockSubmissionService ..|> SubmissionService
+  MockResultService ..|> ResultService
+  MockActivityService ..|> PhaseMockControl
+  MockSubmissionService ..|> JudgementMockControl
+  MockActivityService ..|> ValidationMockControl
+  MockSubmissionService ..|> ValidationMockControl
+  MockAuthService --> MockFixtures
+  MockGuidedNotesService --> MockFixtures
+  MockActivityService --> MockFixtures
+  MockSubmissionService --> MockFixtures
+  MockResultService --> MockFixtures
+  MockResultService --> MockSubmissionService : judgements
+}
+
+note bottom of ActivitySettings
+  name 是否保留待釐清（spec FR-023）；
+  欄位的驗證規則與預設值由 004 定義
+end note
+
+note right of MockSubmissionService
+  M6：判定結果只在展示者點
+  「模擬：接受／不接受」時產生
+end note
+
+note bottom of ServiceRegistry
+  頁面只透過 ServiceRegistry 取得介面；
+  任何一個介面為模擬實作時 isMockMode() 為 true。
+  phaseControl、judgementControl 只在對應介面
+  為模擬實作時存在，模擬控制列依此顯示控制。
+end note
+
+
+@enduml
