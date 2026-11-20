@@ -136,15 +136,17 @@ package "Service Interfaces" {
     +openQuestion(questionNumber: number): Promise<Activity>
     +endQuestion(questionNumber: number): Promise<Activity>
     +joinGroup(groupNumber: number): Promise<Activity>
-    +leaveGroup(groupNumber: number): Promise<void>
+    +leaveGroup(): Promise<void>
     +getCurrentActivity(): Promise<Activity | null>
     +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
+    +onActivityChange(listener: (activity: Activity) => void): Unsubscribe
   }
   interface SubmissionService {
-    +submitAnswer(questionNumber: number, groupNumber: number, answers: string[]): Promise<Submission | ValidationError>
+    +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
     +listSubmissions(questionNumber: number): Promise<Submission[]>
+    +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
     +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
-    +onJudgement(groupNumber: number, listener: (submission: Submission) => void): Unsubscribe
+    +onJudgement(listener: (submission: Submission) => void): Unsubscribe
   }
   interface ResultService {
     +getQuestionResult(questionNumber: number): Promise<QuestionResult>
@@ -215,6 +217,10 @@ note top of Unsubscribe
   頁面離開時呼叫以停止接收。
   非預期錯誤（例如連不上伺服器）以 UnexpectedError
   reject，頁面顯示在共通錯誤訊息區（FR-009）。
+  joinGroup 之後由服務記住本分頁的組別；submitAnswer、
+  onJudgement、leaveGroup 不傳組別，真正的實作由伺服器
+  依連線身分判斷（原則 VI）。onActivityChange、
+  onSubmissionsChange 供老師端即時更新（R4）。
 end note
 
 package "Mock Implementations (001)" {
@@ -229,6 +235,7 @@ package "Mock Implementations (001)" {
   class MockSession <<per tab>> {
     +lastImport: ImportSuccess [0..1]
     +teacherActivity: Activity [0..1]
+    +joinedGroup: number [0..1]
     +viewerPhaseIndex: number
     +submissions: Submission[]
     +pendingValidationFailure
