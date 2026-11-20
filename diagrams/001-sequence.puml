@@ -1,0 +1,145 @@
+@startuml 001-sequence
+title 001 時序圖：主要流程（以模擬實作執行）
+
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+
+actor "老師" as Teacher
+actor "學生" as Student
+actor "展示者" as Demo
+boundary "頁面\n(Pages)" as Page
+boundary "模擬控制列\n(MockControlBar)" as Bar
+control "ServiceRegistry" as Reg
+participant "AuthService\n«MockAuthService»" as Auth
+participant "GuidedNotesService\n«MockGuidedNotesService»" as Notes
+participant "ActivityService\n«MockActivityService»" as Act
+participant "SubmissionService\n«MockSubmissionService»" as Sub
+participant "ResultService\n«MockResultService»" as Res
+
+== 1. 選擇身分與老師登入（R1） ==
+Teacher -> Page : 首頁點「我是老師」
+Page --> Teacher : 登入頁（只有「用 Google 登入」）
+Teacher -> Page : 點「用 Google 登入」
+Page -> Reg : auth
+Page -> Auth : signInWithGoogle()
+note right of Auth : M1：模擬帳號選擇
+alt 選擇模擬老師帳號
+  Auth --> Page : SignInResult(ok, account)
+  Page --> Teacher : 挑選學習單頁
+else 取消／模擬非老師帳號
+  Auth --> Page : SignInResult(failure)
+  Page --> Teacher : 登入頁顯示失敗訊息
+end
+
+== 2. 匯入學習單與活動設定 ==
+Teacher -> Page : 點「從 Google 雲端硬碟挑選」
+Page -> Notes : pickSpreadsheet()
+Notes --> Page : Spreadsheet（M2：三份模擬學習單之一）
+Page -> Notes : readWorksheet(id, worksheet)
+alt 辨識成功
+  Notes --> Page : ImportSuccess
+  Page --> Teacher : 確認辨識結果頁
+else 找不到表頭
+  Notes --> Page : ImportError
+  Page --> Teacher : 找不到表頭頁
+  Teacher -> Page : 點「重新讀取」
+  Page -> Notes : readWorksheet(id, worksheet)
+  Notes --> Page : ImportSuccess（M2：視為已修正）
+  Page --> Teacher : 確認辨識結果頁
+end
+Teacher -> Page : 點「確認匯入，下一步」
+Page --> Teacher : 活動設定頁（建立模式）
+opt 展示驗證錯誤的顯示（FR-008）
+  Demo -> Bar : 點「模擬：驗證失敗」
+  Bar -> Act : failNextValidation()（M3，ValidationMockControl）
+  Teacher -> Page : 點「建立活動」
+  Page -> Act : createActivity(settings)
+  Act --> Page : ValidationError（模擬；驗證規則由 004 定義）
+  Page --> Teacher : 停留在活動設定頁，組數欄位旁顯示「模擬：驗證失敗」
+end
+Teacher -> Page : 填寫活動設定，點「建立活動」
+Page -> Act : createActivity(settings)
+Act --> Page : Activity(PREPARING)
+Page --> Teacher : 控制台・準備中
+
+== 3. 學生選組與作答 ==
+Student -> Page : 首頁點「我是學生」
+Page -> Act : getCurrentActivity()
+Act --> Page : Activity（M3 固定模擬活動）
+Page --> Student : 選組頁
+Student -> Page : 選組別，點「加入第 n 組」
+Page -> Act : joinGroup(n)
+Act --> Page : Activity(PREPARING)
+Page --> Student : 等待開放頁
+Demo -> Bar : 點「模擬：推進到下一個階段」
+Bar -> Act : advancePhase()（M7，PhaseMockControl）
+Act --> Page : 階段：搶答中（第 1 題）
+Page --> Student : 作答頁
+Student -> Page : 填寫每一格，點「整組送出」
+Page -> Sub : submitAnswer(q, n, answers)
+Sub --> Page : Submission(PENDING)
+Page --> Student : 等待判定頁
+Page -> Sub : onJudgement(n, listener)
+alt 判定：接受
+  Demo -> Bar : 點「模擬：接受」
+  Bar -> Sub : simulateJudgement(ACCEPTED)（M6，JudgementMockControl）
+  Sub --> Page : Judgement.ACCEPTED
+  Page --> Student : 等待判定頁（已接受）
+else 判定：不接受
+  Demo -> Bar : 點「模擬：不接受」
+  Bar -> Sub : simulateJudgement(REJECTED)（M6，JudgementMockControl）
+  Sub --> Page : Judgement.REJECTED
+  Page --> Student : 作答頁（被拒絕，保留上次答案）
+  Student -> Page : 修改答案，點「整組送出」（重送，FR-056）
+  Page -> Sub : submitAnswer(q, n, answers)
+  Sub --> Page : Submission(PENDING)
+  Page --> Student : 等待判定頁
+end
+Demo -> Bar : 點「模擬：推進到下一個階段」
+Bar -> Act : advancePhase()
+Act --> Page : 階段：本題已結束（最後一題時為已結束 → 全部結果頁）
+Page -> Res : getQuestionResult(q)
+Res --> Page : QuestionResult
+Page --> Student : 本題結果頁
+
+== 4. 老師主持與判定（R3、R4、R10、E4） ==
+Teacher -> Page : 點「開放第 n 題」
+Page -> Act : openQuestion(n)
+Act --> Page : Activity(OPEN, n)
+Page -> Sub : listSubmissions(n)
+Sub --> Page : Submission[]（M4：依送出順序）
+Page --> Teacher : 控制台・搶答中
+loop 老師判定可判定的答案（哪些可判定由 005 定義）
+  Teacher -> Page : 點「接受」或「不接受」
+  Page -> Sub : judge(n, group, judgement)
+  Sub --> Page : Submission[]（更新判定狀態）
+  Page --> Teacher : 更新答案列表
+end
+Teacher -> Page : 點「結束這一題」
+Page --> Teacher : 結束確認視窗
+Teacher -> Page : 點「結束並公布結果」
+Page -> Act : endQuestion(n)
+Act --> Page : Activity(QUESTION_ENDED 或 FINISHED)
+Page -> Res : getQuestionResult(n)
+Res --> Page : QuestionResult
+alt 非最後一題
+  Page --> Teacher : 控制台・本題已結束
+else 最後一題
+  Page -> Res : getAllResults()
+  Res --> Page : QuestionResult[]
+  Page --> Teacher : 結果與寫回頁
+end
+
+== 5. 寫回（R5、R5.1） ==
+Teacher -> Page : 點「寫回 Google Sheets」
+Page --> Teacher : 確認寫回視窗
+Teacher -> Page : 點「寫回」
+Page -> Res : writeBack()
+alt 可編輯的學習單
+  Res --> Page : WriteBackResult(ok, cellCount)
+else 僅檢視的學習單
+  Res --> Page : WriteBackResult(failure: 沒有編輯權限)
+end
+Page --> Teacher : 結果頁顯示寫回結果
+
+@enduml
