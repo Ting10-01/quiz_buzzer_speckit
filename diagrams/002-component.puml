@@ -1,0 +1,102 @@
+@startuml 002-component
+title 002 組件圖：老師登入與伺服器骨架
+
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 55
+
+package "前端 frontend/（瀏覽器的老師分頁）" {
+  package "001 提供（不修改）" as F001 {
+    component "TeacherLoginPage (T-Login)" as PLogin
+    component "PickPage (T-Pick)" as PPick
+    component "AuthService" <<interface>> as IAuth
+    component "createServiceRegistry\n組合根（只改 auth 的綁定）" as Registry
+  }
+  package "002 新增" as F002 {
+    component "HttpAuthService\n取代 MockAuthService（M1）" as HAuth
+    component "GoogleIdentityClient" <<interface>> as IGis
+    component "GisGoogleIdentityClient\n載入 Google 登入元件、開啟登入視窗" as Gis
+    component "ApiClient\n帶 Bearer、把錯誤轉成 UnexpectedError" as Api
+    component "TeacherCredentialStore\nsessionStorage（只在本分頁）" as Cred
+  }
+}
+
+package "伺服器 server/（002 建立骨架）" {
+  component "buildApp\n伺服器組合根（Fastify）" as App
+  component "loadConfig\n讀取環境變數" as Config
+  component "loggerOptions\npino，遮蔽機敏欄位" as Logger
+  component "authRoutes\n/api/auth/*" as Routes
+  component "requireTeacher\npreHandler：驗證 Bearer" as Guard
+  component "TeacherAuth\n老師綁定、發出與驗證老師憑證" as TAuth
+  component "GoogleOAuthGateway" <<interface>> as IGw
+  component "GoogleAuthLibraryGateway\n授權碼交換、驗證 id_token" as Gw
+  component "GoogleClientProvider\nauthorizedClient()" as Provider
+  component "attachSocketServer\nSocket.IO 掛載與 handshake 老師驗證" as Sock
+}
+
+package "其他子功能（使用 002 提供的能力）" as Others {
+  component "003 匯入的路由與檔案選擇器" as U003
+  component "004 活動路由與即時推播" as U004
+  component "005 送出與判定的路由" as U005
+  component "006 結果與寫回的路由" as U006
+}
+
+cloud "Google" {
+  component "Google 登入視窗\n（Identity Services）" as GIS
+  component "OAuth 權杖端點" as GToken
+  component "Sheets / Drive API" as GApi
+}
+
+PLogin ..> IAuth : signInWithGoogle()
+PPick ..> IAuth : getCurrentAccount()
+Registry --> IAuth
+Registry --> HAuth : auth 綁定
+HAuth -up-|> IAuth
+HAuth --> IGis
+Gis -up-|> IGis
+HAuth --> Api
+HAuth --> Cred
+Api --> Cred : 讀取老師憑證
+Gis --> GIS : 授權碼（popup）
+
+Api --> Routes : HTTP（Authorization: Bearer）
+App --> Config
+App --> Logger
+App --> Routes
+App --> Guard
+App --> Sock
+Routes --> Guard : me、picker-token
+Routes --> TAuth : signIn(code)
+Routes --> Provider : picker-token
+Guard --> TAuth : verify(token)
+Sock --> TAuth : verify(teacherToken)\nonRotate → 中斷舊老師連線
+TAuth --> IGw : exchangeCode(code)
+Gw -up-|> IGw
+Gw --> GToken
+TAuth --> Provider : replace(tokens)
+Provider --> IGw : createClient(tokens)
+
+U003 ..> Guard
+U004 ..> Guard
+U005 ..> Guard
+U006 ..> Guard
+U003 ..> Provider : authorizedClient()
+U006 ..> Provider : authorizedClient()
+U004 ..> Sock : TEACHER_ROOM、socket.data.isTeacher
+U005 ..> Sock : TEACHER_ROOM
+Provider ..> GApi : 由 003、006 呼叫
+
+note bottom of Cred
+  老師憑證只存在取得它的分頁（原則 VI）；
+  同一瀏覽器的學生分頁讀不到。
+  伺服器不使用 cookie 判斷老師身分。
+end note
+
+note bottom of TAuth
+  老師綁定、老師憑證、Google 授權
+  只存在伺服器記憶體，不寫入檔案。
+  金鑰只從環境變數讀取（loadConfig）。
+end note
+
+@enduml

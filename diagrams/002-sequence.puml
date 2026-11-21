@@ -1,0 +1,130 @@
+@startuml 002-sequence
+title 002 時序圖：老師登入、重新登入、拒絕非老師、提供 Google 授權
+
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+
+actor "老師" as Teacher
+actor "學生分頁" as Student
+boundary "TeacherLoginPage /\nPickPage（001）" as Page
+participant "HttpAuthService" as Auth
+participant "GisGoogleIdentityClient" as Gis
+participant "TeacherCredentialStore\n(sessionStorage)" as Cred
+participant "ApiClient" as Api
+participant "authRoutes" as Routes
+participant "requireTeacher" as Guard
+participant "TeacherAuth" as TAuth
+participant "GoogleAuthLibraryGateway" as Gw
+participant "GoogleClientProvider" as Provider
+participant "attachSocketServer\n(handshake)" as Sock
+participant "Google" as Google
+
+== 1. 老師用 Google 登入（REQ-AUTH-01～05） ==
+Teacher -> Page : 點「用 Google 登入」
+Page -> Auth : signInWithGoogle()
+Auth -> Api : GET /api/auth/config
+Api -> Routes : GET /api/auth/config
+alt 缺少 Google 環境變數
+  Routes --> Api : 503 GOOGLE_NOT_CONFIGURED
+  Api --> Auth : reject ApiError
+  Auth --> Page : reject UnexpectedError（伺服器尚未設定 Google 登入…）
+else 已設定
+  Routes --> Api : 200 { clientId }
+  Api --> Auth : clientId
+  Auth -> Gis : requestCode(clientId, [openid, email, drive.file])
+  Gis -> Google : 開啟登入視窗（popup，prompt=consent select_account）
+  Teacher -> Google : 選擇帳號並同意權限
+  alt 關閉視窗或取消
+    Gis --> Auth : { error: CANCELLED }
+    Auth --> Page : SignInResult(failure: CANCELLED)
+    Page --> Teacher : 「已取消登入」
+  else 取得授權碼
+    Google --> Gis : code
+    Gis --> Auth : { code }
+    Auth -> Api : POST /api/auth/google { code }
+    Api -> Routes : POST /api/auth/google（X-Requested-With）
+    Routes -> TAuth : signIn(code)
+    TAuth -> Gw : exchangeCode(code)
+    Gw -> Google : 換取授權、驗證 id_token（最多 15 秒）
+    Google --> Gw : tokens、id_token(sub, email)、scope
+    Gw --> TAuth : GoogleSignIn
+    note right of TAuth : await 之後同步檢查並綁定，\n不會有兩個帳號同時成為老師
+    alt 沒有同意 drive.file
+      TAuth --> Routes : SignInOutcome(SCOPE_DENIED)
+      Routes --> Api : 403 SCOPE_DENIED
+      Api --> Auth : reject ApiError(SCOPE_DENIED)
+      Auth --> Page : SignInResult(failure: SCOPE_DENIED)
+    else 已有老師且 sub 不同
+      TAuth --> Routes : SignInOutcome(NOT_TEACHER)（丟棄這組授權）
+      Routes --> Api : 403 NOT_TEACHER
+      Api --> Auth : reject ApiError(NOT_TEACHER)
+      Auth --> Page : SignInResult(failure: NOT_TEACHER)
+      Page --> Teacher : 「此帳號不是老師帳號」
+    else 還沒有老師，或 sub 相同（重新登入）
+      TAuth -> TAuth : 產生新的 teacherToken（舊的作廢）
+      TAuth -> Provider : replace(tokens)
+      Provider -> Gw : createClient(tokens)
+      TAuth -> Sock : onRotate → 中斷舊的老師連線
+      TAuth --> Routes : SignInOutcome(ok, teacherToken, account)
+      Routes --> Api : 200 { teacherToken, account }
+      Api --> Auth : 回應
+      Auth -> Cred : set(teacherToken)
+      Auth --> Page : SignInResult(ok, account)
+      Page --> Teacher : 挑選學習單頁（001）
+      Page -> Auth : getCurrentAccount()
+      Auth -> Api : GET /api/auth/me
+      Api -> Cred : get()
+      Api -> Routes : GET /api/auth/me（Authorization: Bearer）
+      Routes -> Guard : preHandler
+      Guard -> TAuth : verify(token)
+      TAuth --> Guard : true
+      Routes -> TAuth : currentAccount()
+      Routes --> Api : 200 TeacherAccount
+      Api --> Auth : TeacherAccount
+      Auth --> Page : TeacherAccount
+    end
+  end
+end
+
+== 2. 伺服器拒絕非老師（REQ-AUTH-06～08） ==
+Student -> Api : 老師專用請求（本分頁沒有老師憑證）
+Api -> Guard : 沒有 Authorization 或憑證錯誤／作廢
+Guard -> TAuth : verify(token)
+TAuth --> Guard : false
+Guard --> Api : 401 UNAUTHORIZED「需要老師登入」（不執行路由）
+Student -> Sock : 建立即時連線
+alt 沒有帶 auth.teacherToken
+  Sock --> Student : 接受為一般連線（不加入 TEACHER_ROOM）
+else 帶了錯誤或作廢的 teacherToken
+  Sock -> TAuth : verify(teacherToken)
+  TAuth --> Sock : false
+  Sock --> Student : 拒絕連線 UNAUTHORIZED
+end
+Teacher -> Sock : 建立即時連線（auth.teacherToken）
+Sock -> TAuth : verify(teacherToken)
+TAuth --> Sock : true
+Sock --> Teacher : 接受；socket.data.isTeacher = true，加入 TEACHER_ROOM
+
+== 3. 提供 Google 授權給 003、006（REQ-AUTH-09、10） ==
+Page -> Api : GET /api/auth/picker-token（003 的檔案選擇器）
+Api -> Routes : Authorization: Bearer
+Routes -> Guard : preHandler（同第 2 段）
+Routes -> Provider : authorizedClient()
+alt 還沒有老師登入
+  Provider --> Routes : throw TeacherNotSignedInError
+  Routes --> Api : 401 NOT_SIGNED_IN
+else 已登入
+  Provider --> Routes : OAuth2Client
+  Routes -> Google : getAccessToken()（過期時以長期授權更新）
+  alt 授權已被撤銷（invalid_grant）
+    Routes --> Api : 401 GOOGLE_AUTH_EXPIRED「Google 授權已失效…」
+  else 成功
+    Routes --> Api : 200 PickerToken { accessToken, apiKey, appId }
+  end
+end
+note over Provider, Google
+  003 讀取、006 寫回時，在伺服器端呼叫 authorizedClient()，
+  再以它呼叫 Sheets / Drive API；授權失效時以 isGoogleAuthExpired(err) 判斷。
+end note
+
+@enduml
