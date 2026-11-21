@@ -1,0 +1,131 @@
+@startuml 004-sequence
+title 004 時序圖：建立活動、加入組別、逐題開放與結束、重新整理
+
+skinparam defaultFontName "PingFang TC"
+skinparam shadowing false
+autonumber
+
+actor "老師" as T
+participant "老師頁面\n（T-Setup / Console）" as TP
+participant "學生頁面\n（S-Join / S-Wait / S-Answer）" as SP
+participant "HttpActivityService\n（各分頁）" as HS
+participant "activityRoutes" as RT
+participant "ActivityGateway" as GW
+participant "ActivityManager" as AM
+participant "CommandQueue" as Q
+participant "ActivityStore" as ST
+participant "GroupMembership" as GM
+participant "ActivityBroadcaster" as BC
+participant "ImportStore\n（003）" as IS
+
+== 1. 建立活動（R3、D4、D5） ==
+T -> TP : 組數 4，按「建立活動」
+TP -> HS : createActivity({ groupCount: 4 })
+HS -> RT : ApiClient.request（002，帶 Bearer）\nPOST /api/activity
+RT -> RT : app.requireTeacher（002）
+RT -> AM : createActivity(settings)
+AM -> Q : run(...)
+activate Q
+Q -> AM : 已有活動？→ ActivityRuleError(ACTIVITY_EXISTS)\n組數不是 2–20 的整數？→ ValidationError
+AM -> IS : latest()
+IS --> AM : ImportSuccess（沒有時 NO_IMPORT）
+AM -> ST : commit(PREPARING, 4 組, 題目)
+ST -> BC : listener(version)（只排程）
+deactivate Q
+AM --> RT : ActivitySnapshot(v1)
+RT --> HS : 200 { version: 1, activity }\n（組數不合法時也是 200，body 為 ValidationError）
+HS -> HS : apply(v1)
+HS --> TP : Activity(PREPARING) → T-Lobby
+BC -> GW : 下一輪事件迴圈：emit activity:snapshot(v1)\nTEACHER_ROOM：完整；students 房間：PUBLIC
+GW -->> HS : activity:snapshot(v1)
+HS -> HS : apply(v1) → 版本不比手上新，忽略（老師分頁）\n其他分頁：更新並通知
+HS -->> SP : onPhaseChange(Activity)\nS-Join（沒有活動）→ S-Join（有活動）
+
+== 2. 學生加入組別（R7、原則 VI） ==
+SP -> HS : joinGroup(3)
+HS -> GW : group:join { groupNumber: 3 }（ack）
+GW -> AM : joinGroup(socket, 3)
+AM -> Q : run(...)
+activate Q
+Q -> AM : 組別超出組數？已鎖定且原本在別組？→ GroupAck.error
+AM -> GM : join(socket, 3)
+GM --> AM : studentToken（第一次加入時產生）
+AM -> ST : commit(人數改變)
+deactivate Q
+AM --> GW : GroupAck { snapshot(v2), studentToken }
+GW --> HS : ack
+HS -> HS : sessionStorage 存 studentToken；apply(v2)
+HS --> SP : Activity(PREPARING) → S-Wait
+BC -> GW : emit activity:snapshot(v2)
+GW -->> HS : （老師分頁）activity:snapshot(v2)
+HS -->> TP : onActivityChange → 第 3 組 1 人
+
+== 3. 開放第 n 題（R3、R11） ==
+T -> TP : 「開放第 n 題」
+TP -> HS : openQuestion(n)
+HS -> RT : POST /api/activity/questions/n/open
+RT -> AM : openQuestion(n)
+AM -> Q : run(...)
+activate Q
+Q -> AM : 已是 OPEN(n)？→ 回傳目前狀態（連點只生效一次）\nn 不是下一題？→ ActivityRuleError(QUESTION_NOT_NEXT)
+AM -> AM : openedAt[n] = SequenceClock.stamp()
+AM -> ST : commit(OPEN, n)
+deactivate Q
+RT --> HS : 200 snapshot(v3)
+HS --> TP : Activity(OPEN, n) → T-Live
+BC -> GW : emit activity:snapshot(v3)（所有連線）
+GW -->> HS : activity:snapshot(v3)
+HS -->> SP : onPhaseChange → S-Answer（第 n 題）
+
+== 4. 結束第 n 題（老師按鈕，或 005 接受後自動結束） ==
+alt 老師
+  TP -> HS : endQuestion(n)
+  HS -> RT : POST /api/activity/questions/n/end
+  RT -> AM : endQuestion(n)
+else 005 在判定指令內
+  note over AM : 005 的 judge 已在 CommandQueue.run 內，\n呼叫 endQuestion(n) 就地執行
+end
+AM -> Q : run(...)
+activate Q
+Q -> AM : 已結束？→ 回傳目前狀態\n不是目前開放的題目？→ ActivityRuleError(QUESTION_NOT_OPEN)
+AM -> AM : endedAt[n] = SequenceClock.stamp()
+alt n 是最後一題（D9）
+  AM -> ST : commit(FINISHED, n)
+else
+  AM -> ST : commit(QUESTION_ENDED, n)
+end
+deactivate Q
+BC -> GW : emit activity:snapshot
+GW -->> HS : activity:snapshot
+HS -->> SP : onPhaseChange → S-QuestionDone 或 S-Results
+
+== 5. 學生重新整理後回到原組別（REQ-ACT-13） ==
+SP -> SP : 重新整理 → 首頁 →「我是學生」→ S-Join
+HS -> GW : 連線 handshake auth { studentToken }
+GW -> GM : attach(socket, studentToken)
+GW -->> HS : activity:snapshot（目前狀態，REQ-ACT-15）
+SP -> HS : joinGroup(3)
+HS -> GW : group:join { groupNumber: 3 }
+GW -> AM : joinGroup(socket, 3)
+AM -> GM : 同一個 studentToken 已在第 3 組 → 不重複計算
+AM --> GW : GroupAck { snapshot }
+GW --> HS : ack
+HS --> SP : Activity(OPEN, n) → S-Answer
+note right of SP
+  第 1 題開放後選第 5 組：
+  GroupAck.error = ValidationError
+  「第 1 題開放後不能換組，你在第 3 組」
+  （需請 001 修改 C2）
+end note
+
+== 6. 老師重新整理後重新登入（D21） ==
+T -> TP : 重新整理 → 首頁 →「我是老師」→ 用 Google 登入（002）
+note over GW : 002 換發老師憑證：\nio.in(TEACHER_ROOM).disconnectSockets(true)\n中斷所有舊老師連線
+TP -> HS : getCurrentActivity()
+HS -> HS : TeacherCredentialStore.get() ≠ connectedTeacherToken\n→ RealtimeClient.reconnect()
+HS -> GW : 連線 handshake auth { teacherToken（新） }
+GW -> GW : 002 驗證 → TEACHER_ROOM，isTeacher = true
+GW -->> HS : activity:snapshot（TEACHER）
+HS --> TP : Activity(OPEN, n)
+TP -> TP : 直接進入 T-Live（第 n 題）（需請 001 修改 C1）
+@enduml
