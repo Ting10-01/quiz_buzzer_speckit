@@ -1,0 +1,71 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>搶答板 首頁</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0a0d0c;--surface:#121715;--sheet:#0e1211;--raised:#1e2522;--active:#232b28;--divider:#2a3330;--rule:#19201d;--grid:#222a27;--control:#3d4743;--chart3:#6c7470;--text:#f3f5f4;--text2:#e6eae8;--muted:#b3bab6;--faint:#959c98;--accent:#f2d45c;--accent-text:#f2d45c;--accent-stroke:#f2d45c;--accent-hover:#f6e08a;--on-accent:#1b1700;--accent-soft:#2a2614;--pos:#5fd394;--pos-bg:#14281c;--pos-ink:#6ad99c;--neg:#f0788c;--neg-bg:#2c1a20;--neg-ink:#f2879a;--on-neg:#1a0a0e;--warn:#e9b65a;--warn-bg:#2b2414;--warn-ink:#ecbd66;--scrim:rgba(5, 7, 6, 0.74);}
+:root:has([data-theme="light"]){--ground:#f5f6f5;--surface:#ffffff;--sheet:#fafbfa;--raised:#eef1ef;--active:#e6eae8;--divider:#dde2df;--rule:#e7ebe9;--grid:#e1e6e3;--control:#c6cdc9;--chart3:#9aa29e;--text:#121614;--text2:#2a302d;--muted:#4f5753;--faint:#646c68;--accent:#efc419;--accent-text:#7a5d00;--accent-stroke:#a07a00;--accent-hover:#5c4600;--on-accent:#1b1700;--accent-soft:#fbf1c8;--pos:#247b50;--pos-bg:#dcfae5;--pos-ink:#0b5a2f;--neg:#c4242a;--neg-bg:#ffedea;--neg-ink:#831c1e;--on-neg:#ffffff;--warn:#b45309;--warn-bg:#fffbeb;--warn-ink:#92400e;--scrim:rgba(18, 22, 20, 0.45);}
+body{margin:0;background:var(--ground)}
+a{color: var(--accent-text)}a:hover{color: var(--accent-hover)}
+.role{transition:background .2s cubic-bezier(.2,.8,.2,1),transform .12s cubic-bezier(.2,.8,.2,1)}
+.role:hover{background:var(--raised)}
+.role:active{transform:scale(.99)}
+.role:focus-visible{outline:2px solid var(--accent-stroke);outline-offset:3px}
+@keyframes beat{0%,100%{opacity:1}50%{opacity:.35}}
+.dot-live{animation:beat 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@media (prefers-reduced-motion: reduce){.dot-live{animation:none}.role{transition:none}}
+</style>
+</head><body>
+<div data-theme="light" style="min-height: 100vh; background: var(--ground); color: var(--text); font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 32px; border-bottom: 1px solid var(--rule)">
+    <div style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" style="fill: var(--raised)"></rect><path d="M6 15.5c2.5-3 4.5-4.5 6.5-4.5" stroke-width="1.6" fill="none" stroke-linecap="round" style="stroke: var(--text)"></path><circle cx="16.5" cy="10" r="2.6" style="fill: var(--accent)"></circle></svg>
+      <span>搶答板</span>
+    </div>
+    <span style="margin-left: auto; color: var(--faint); font-size: 13px">本機執行 · localhost:3000</span>
+  </header>
+
+  <main style="max-width: 1040px; margin: 0 auto; padding: 88px 24px 64px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -0.01em">課堂搶答</h1>
+      <p style="margin: 0; color: var(--muted); font-size: 16px; max-width: 560px">選擇你的身分。老師匯入學習單、控制搶答；學生以組別為單位作答，最快送出的組別搶到題目。</p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; background: var(--surface); border-radius: 20px; padding: 16px 22px">
+      <span style="color: var(--muted); font-size: 13px">目前活動</span>
+      <span style="font-weight: 600; font-size: 15px">計算機概論基礎 學習單</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px 0 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); font-size: 12.5px; font-weight: 500"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warn)"></span>準備中</span>
+      <span style="margin-left: auto; color: var(--muted); font-size: 13px">4 題 · 6 組 · 13 個分頁在線</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+      <a class="role" href="T-Connect.dc.html" style="display: flex; flex-direction: column; gap: 14px; background: var(--surface); border-radius: 20px; padding: 28px; color: var(--text); text-decoration: none">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--muted)"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16v4"></path><path d="M7 9l3 3 6-5"></path></svg>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 20px; font-weight: 600">我是老師</span>
+          <span style="color: var(--muted); font-size: 14px">建立活動的這個分頁會成為控制台。</span>
+        </div>
+        <ul style="margin: 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 4px">
+          <li>連結 Google 帳號，從雲端硬碟挑選學習單</li>
+          <li>一題一題開放，可設定每題倒數，即時看順位</li>
+          <li>把搶到的答案直接寫回 Google Sheets</li>
+        </ul>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; background: var(--text); color: var(--ground); font-weight: 600; font-size: 14px">建立活動</span>
+      </a>
+      <a class="role" href="S-Join.dc.html" style="display: flex; flex-direction: column; gap: 14px; background: var(--surface); border-radius: 20px; padding: 28px; color: var(--text); text-decoration: none">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--muted)"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"></path><path d="M15 14.5c2.8 0 5 1.6 5 4.5"></path></svg>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 20px; font-weight: 600">我是學生</span>
+          <span style="color: var(--muted); font-size: 14px">同一組可以有多位同學，任何人送出都代表整組。</span>
+        </div>
+        <ul style="margin: 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 4px">
+          <li>選擇組別，等老師開放題目</li>
+          <li>老師開放哪一題就答哪一題，題組要整組送出</li>
+          <li>每題結束馬上看到誰搶到</li>
+        </ul>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--control); color: var(--text); font-weight: 600; font-size: 14px">加入活動</span>
+      </a>
+    </div>
+
+    <p style="margin: 0; color: var(--faint); font-size: 13px">所有畫面都在這台電腦上執行；用多個瀏覽器分頁模擬老師與各組學生。</p>
+  </main>
+</div>
+</body></html>
