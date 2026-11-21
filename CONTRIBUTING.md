@@ -164,6 +164,7 @@ loop over merge ranges with for        ← 只寫怎麼做
 ## 4. Pull Request
 
 - 一個子功能一個 PR；修 bug 一個 PR。
+- 例外：多個子功能的規格文件（`/speckit-specify` 到 `/speckit-analyze` 的產物，不含程式碼）可以合在一個 PR，分支用 `spec/簡短描述`；每個子功能的 commit 仍依 2.4 分開。
 - **必須由另一位成員 review 並 approve 後才能合併。** 自己不能合併自己的 PR。
 - 使用 **rebase and merge**，保留每一個 commit 與它的「為什麼」和 Refs。不使用 squash merge，因為它會把整個 PR 壓成一個 commit，失去逐一追溯與單獨回退的能力。
 - PR 標題遵守 commit 訊息的標題格式。
