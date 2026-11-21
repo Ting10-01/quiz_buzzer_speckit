@@ -1,0 +1,98 @@
+@startuml 006-component
+title 006 結果與寫回 — 組件圖
+
+skinparam defaultFontName "PingFang TC"
+skinparam shadowing false
+skinparam componentStyle uml2
+
+actor "老師" as Teacher
+actor "學生" as Student
+cloud "Google Sheets API\n（老師的學習單）" as Google
+
+package "前端（瀏覽器分頁）" {
+  package "001 頁面（不修改）" #EEEEEE {
+    [ConsolePage\n(T-Live / T-QuestionEnd)] as PConsole
+    [TeacherResultsPage\n(T-Results / T-WriteBack)] as PTResults
+    [StudentPlayPage\n(S-QuestionDone)] as PPlay
+    [StudentResultsPage\n(S-Results)] as PSResults
+  }
+  () "ResultService\n（001 介面）" as IResult
+  [createServiceRegistry\n（只換 result 的綁定）] as Registry
+  [ServerResultService] as SRS
+  [RealtimeClient\n（004，共用連線）] as RC #EEEEEE
+  [ApiClient\n（002，自動帶老師憑證）] as Api #EEEEEE
+}
+
+package "伺服器（server/，002 的 buildApp）" {
+  [resultSocketHandlers\nresult:question / result:all] as SockH
+  [resultsRoutes\nPOST /api/results/write-back] as Routes
+  [ResultQuery] as Query
+  [WriteBackService] as WBS
+  () "SpreadsheetWriter" as IWriter
+  [GoogleSheetsWriter] as GSW
+
+  package "其他子功能" #EEEEEE {
+    [app.io\n（002）] as IO
+    [app.requireTeacher\n（002）] as ReqT
+    [app.googleClients\nGoogleClientProvider（002）] as GCP
+    [ImportStore\n（003）] as ImpStore
+    [app.spreadsheetReader.load\n＋GuidedNotesParser.parse\n（003，重新解析，不讀寫 ImportStore）] as Reparse
+    [ActivityStore\n（004）] as ActStore
+    [GroupMembership\n（004）] as Members
+    [SubmissionStore\n（005）] as SubStore
+  }
+}
+
+Teacher --> PTResults : 寫回 Google Sheets
+Teacher --> PConsole
+Student --> PPlay
+Student --> PSResults
+
+PConsole ..> IResult
+PTResults ..> IResult
+PPlay ..> IResult
+PSResults ..> IResult
+Registry --> SRS : result = new ServerResultService(realtime, api)
+SRS -up-|> IResult
+SRS --> RC : emitWithAck\nresult:question / result:all
+SRS --> Api : request('POST', '/api/results/write-back')
+
+RC --> IO
+IO --> SockH
+SockH --> Members : groupOf(socket)
+SockH --> Query
+Query --> ActStore : current()：phase、questions、endedAt
+Query --> SubStore : list(n)、winner(n)
+
+Api --> Routes
+Routes --> ReqT : preHandler
+Routes --> WBS
+WBS --> ActStore : 活動已結束？使用哪份學習單
+WBS --> ImpStore : latest()：blankCell、marker
+WBS --> Reparse : 版面檢查；sheetId 與現有工作表名稱
+WBS --> Query : allResults(null)
+WBS ..> IWriter
+GSW -up-|> IWriter
+GSW --> GCP : authorizedClient()
+GSW --> Google : duplicateSheet /\nvalues.batchUpdate（RAW）
+Reparse --> Google
+
+note right of Query
+  公布範圍（REQ-RES-01～04）：
+  題目未結束 → 不提供
+  題目已結束、活動未結束 → 成功組別與答案、
+    送出組數、本組自己的送出
+  活動已結束 → 每題所有送出
+end note
+
+note bottom of WBS
+  1. 活動已結束、學習單是活動使用的那份
+  2. 重新解析：題號與填空格位置和匯入時一致
+  3. 建立備份工作表「原名-備份-YYYYMMDD-HHmm」
+  4. 一次 values.batchUpdate（RAW）寫入
+     有成功組別的題目：marker＋答案
+  任一步失敗 → 不寫入任何填空格，
+  回 200 WriteBackResult(ok=false)
+  （Google 授權失效為 401 ErrorBody）
+end note
+@enduml
