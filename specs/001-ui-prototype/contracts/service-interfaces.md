@@ -63,4 +63,6 @@
 | `getAllResults()` | `Promise<QuestionResult[]>` | T-Live、T-QuestionEnd、S-QuestionDone 的題目進度；T-Results；S-Results | FR-030、FR-040、FR-057、FR-058 |
 | `writeBack()` | `Promise<WriteBackResult>` | T-WriteBack「寫回」 | 關閉視窗，在 T-Results 顯示成功與格數，或失敗與原因（FR-042） |
 
+**比第一名慢的時間由服務提供**：`QuestionResult.behindFirstMs` 與 `submissions` 同順序，單位為毫秒，由服務計算；頁面只換算成秒顯示，不自行由 `elapsedMs` 相減（FR-003、FR-040）。「第一名」的定義由 006 決定（D23）；001 的模擬實作以 `rank` 1 的送出為基準。
+
 **學生端只取得可公開的結果**：學生頁面（S-QuestionDone、S-Results）呼叫 `getQuestionResult`、`getAllResults` 時，回傳的 `QuestionResult` 只包含可以公開給學生的內容（例如其他組別的答案、順位是否公開）。公開範圍由 006 決定，並在伺服器端依連線身分過濾，不得只靠頁面隱藏（原則 VI）。頁面只呈現回傳的內容，不自行過濾或推導。001 的模擬實作不過濾。

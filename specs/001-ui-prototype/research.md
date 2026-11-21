@@ -41,7 +41,7 @@
   - 以 room 依「老師、第 n 組」推送，在伺服器端落實 R9 與 VI。
   - 推送完整快照，客戶端不自行推導狀態（V）。
   - WebSocket 不受瀏覽器對同一網域 6 條 HTTP/1.1 連線的限制；本系統以多個分頁模擬（1 位老師 + 6 組學生就超過 6 個分頁），SSE 會在第 7 個分頁卡住。
-  - 指令走 REST，002 的「伺服器拒絕非老師的請求」用 HTTP middleware 最好實作與測試。
+  - 指令走 REST，002 的「伺服器拒絕未登入者使用老師功能的請求」用 HTTP middleware 最好實作與測試。
   - 搶答順位一律以伺服器收到請求的順序決定，與通訊方式無關。
 - **Alternatives considered**:
   - REST + Server-Sent Events：會撞到上述 6 條連線限制，本機要開 HTTP/2 又需要 TLS。
@@ -101,7 +101,7 @@
 
 - **Decision**: 原生 CSS + CSS Modules。設計稿 `:root` 中深色主題的 CSS 變數原樣放進 `frontend/src/styles/tokens.css`；**只做深色主題**，不實作 `data-theme`、`prefers-color-scheme` 或淺色變數。設計稿的 inline style 整理成各元件的 CSS Module。
 - **學生頁面版面**: `AppRouter` 為學生頁面套上 390 px 寬、水平置中的欄位；不另外設計桌面版面，也不做完整的響應式設計（spec Assumptions）。
-- **字型**: 沿用設計稿的 Inter 與 Noto Sans TC（Google Fonts），後備字型為 `system-ui`。
+- **字型**: 沿用設計稿的 Inter 與 Noto Sans TC，以 `@fontsource/inter`、`@fontsource/noto-sans-tc` 套件從本機載入，後備字型為 `system-ui`。不使用 Google Fonts，避免自動化測試（含 Playwright）連到外部服務（原則 VIII），離線時也能正確顯示。
 - **Rationale**: 顏色變數不需改寫；CSS Modules 讓每個元件的樣式各自獨立（IX）；不需要執行期套件。只做一種主題，每頁只需人工驗證一次。
 - **Alternatives considered**: Tailwind CSS（JSX 中的 utility class 不易與設計稿對照，同樣的組合容易重複）；CSS-in-JS（執行期產生樣式，沒有額外好處）。
 - **對後續子功能的影響**: 顏色集中在變數中，之後要新增主題時只新增一組變數值。

@@ -16,7 +16,6 @@ package "Entities" {
   }
   enum SignInFailure {
     CANCELLED
-    NOT_TEACHER
   }
   class SignInResult {
     ok: boolean
@@ -93,6 +92,7 @@ package "Entities" {
     questionNumber: number
     winner: Submission [0..1]
     submissionCount: number
+    behindFirstMs: number[]
   }
   class WriteBackResult {
     ok: boolean

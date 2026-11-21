@@ -23,7 +23,7 @@ legend bottom left
   |= 代號 |= 類型 |= 從 → 到 |= 觸發 |
   | <color:#1F5FAD>**H1**</color> | <color:#1F5FAD>點擊</color> | Main → S-Join（沒有活動） | 我是學生（沒有活動） |
   | <color:#C05621>**H2**</color> | <color:#C05621>階段</color> | Main → Main | 目前活動資訊更新 |
-  | <color:#1F5FAD>**T1**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Login | 用 Google 登入（取消／非老師帳號） |
+  | <color:#1F5FAD>**T1**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Login | 用 Google 登入（取消） |
   | <color:#1F5FAD>**T2**</color> | <color:#1F5FAD>點擊</color> | T-Pick → T-ImportError | 從雲端硬碟挑選（找不到表頭） |
   | <color:#1F5FAD>**T3**</color> | <color:#1F5FAD>點擊</color> | T-Pick → Main | 取消 |
   | <color:#1F5FAD>**T4**</color> | <color:#1F5FAD>點擊</color> | T-Import → T-Import | 切換工作表／重新挑選（辨識成功） |

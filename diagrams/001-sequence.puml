@@ -32,7 +32,7 @@ Sess --> Auth : choiceId
 alt 選擇模擬老師帳號
   Auth --> Page : SignInResult(ok, account)
   Page --> Teacher : 挑選學習單頁
-else 取消／模擬非老師帳號
+else 取消
   Auth --> Page : SignInResult(failure)
   Page --> Teacher : 登入頁顯示失敗訊息
 end
@@ -65,6 +65,7 @@ Page --> Teacher : 活動設定頁（建立模式）
 opt 展示驗證錯誤的顯示（FR-008）
   Demo -> Bar : 點「模擬：驗證失敗」
   Bar -> Act : failNextValidation()（M3，ValidationMockControl）
+  Bar --> Demo : 控制列顯示「已設定：下一次送出會回傳驗證錯誤」（FR-061）
   Teacher -> Page : 點「建立活動」
   Page -> Act : createActivity(settings)
   Act --> Page : ValidationError（模擬；驗證規則由 004 定義）
@@ -163,6 +164,7 @@ Page --> Teacher : 結果頁顯示寫回結果
 == 6. 非預期錯誤（FR-009、M9） ==
 Demo -> Bar : 點「模擬：非預期錯誤」
 Bar -> Sess : failNextCall()（UnexpectedErrorMockControl）
+Bar --> Demo : 控制列顯示「已設定：下一次介面呼叫會回傳非預期錯誤」（FR-061）
 Teacher -> Page : 點會呼叫介面的按鈕（例：「開放第 n 題」）
 Page -> Act : openQuestion(n)
 Act -> Sess : 讀取並清除 pendingUnexpectedError
