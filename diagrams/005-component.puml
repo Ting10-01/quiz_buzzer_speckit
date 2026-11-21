@@ -1,0 +1,96 @@
+@startuml 005-component
+title 005 組件圖：搶答與判定
+
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 50
+
+actor "學生（各組，每組可多個分頁）" as Student
+actor "老師" as Teacher
+
+package "前端（瀏覽器）" {
+  package "001 的頁面（不修改，只依介面呈現）" #EEEEEE {
+    component "StudentPlayPage\n(S-Answer / S-Submitted)" as PPlay
+    component "ConsolePage\n(T-Live)" as PConsole
+  }
+  component "SubmissionService" <<interface>> as ISub
+  component "createServiceRegistry()\n組合根：只改 submission 的綁定" as Registry
+  component "ServerSubmissionService\n（005 新增）" as SSub
+  component "RealtimeClient\n（004 提供，每分頁一條連線）" as SockClient #EEEEEE
+  component "ApiClient\n（002 提供，帶 Bearer）" as TeacherHttp #EEEEEE
+}
+
+package "伺服器（Fastify + Socket.IO，唯一權威來源）" {
+  package "005 搶答與判定" {
+    component "SubmissionGateway\nSocket.IO：submission:submit" as Gateway
+    component "SubmissionRoutes\nHTTP：列出送出、判定" as Routes
+    component "SubmissionEngine\n驗證、順位、判定、自動結束" as Engine
+    component "SubmissionStore\n每題送出、判定、成功組別" as Store
+    component "SubmissionVisibility\n依角色產生送出資料" as Visibility
+    component "SubmissionNotifier\n推送老師列表、通知該組判定" as Notifier
+  }
+  package "002 老師登入" #EEEEEE {
+    component "buildApp\n(app.register)" as BuildApp
+    component "app.requireTeacher\npreHandler" as ReqTeacher
+    component "app.io\nTEACHER_ROOM" as SockAuth
+    component "pino logger" as Logger
+  }
+  package "004 活動與階段" #EEEEEE {
+    component "CommandQueue\n開放、結束、送出、判定\n共用同一個順序" as Queue
+    component "SequenceClock\nstamp()" as Clock
+    component "ActivityStore\n階段、目前題號、題目、openedAt" as ActStore
+    component "GroupMembership\ngroupOf(socket)" as Membership
+    component "ActivityManager\nendQuestion(n)" as EndQ
+  }
+  package "006 結果與寫回" #EEEEEE {
+    component "ResultService（伺服器）" as Res006
+  }
+}
+
+Student --> PPlay : 填寫、整組送出
+Teacher --> PConsole : 接受／不接受
+
+PPlay ..> ISub : submitAnswer / onJudgement
+PConsole ..> ISub : listSubmissions / onSubmissionsChange / judge
+Registry --> ISub
+SSub -up-|> ISub
+Registry --> SSub
+SSub --> SockClient : emitWithAck(submission:submit)\n監聽 submissions:changed、submission:judged
+SSub --> TeacherHttp : GET 送出列表\nPOST 判定
+
+SockClient <--> Gateway : WebSocket（app.io）
+TeacherHttp --> Routes : HTTP REST
+
+BuildApp --> Routes : app.register
+Gateway ..> Membership : 依連線判斷組別（原則 VI）
+Gateway --> Queue : run(submit)
+Routes ..> ReqTeacher : 只有老師（REQ-SUB-17）
+Routes --> Queue : run(judge)
+Routes --> Store : 列出送出（唯讀）
+Queue --> Engine : 一筆處理完才處理下一筆
+Engine ..> ActStore : 讀取階段、題目、openedAt；\nsubscribe：結束時把待判定改為未判定
+Engine --> Clock : 接受時間
+Engine --> Store : 寫入送出、判定
+Engine ..> EndQ : 接受後自動結束本題（同一個 run 內）
+Engine ..> Notifier : 處理完後才通知（不在臨界區）
+Engine ..> Logger : 記錄順位與判定
+Notifier --> Visibility
+Visibility --> Store
+Notifier ..> SockAuth : 列表只送 io.to(TEACHER_ROOM)
+Notifier ..> Membership : 判定只送 groupOf = 該組的連線
+Res006 ..> Store : 每題送出與成功組別
+
+note right of Queue
+  時序正確（REQ-SUB-07、NFR-01）：
+  004 的開放、結束題目與 005 的送出、判定
+  在同一條佇列（004 REQ-ACT-17），
+  臨界區只做「驗證 → 取順位 → 寫入」，
+  中間沒有 await、沒有網路傳送。
+end note
+
+note bottom of Visibility
+  R9：學生只收到本組的送出，
+  而且不含順位（REQ-SUB-16）
+end note
+@enduml
