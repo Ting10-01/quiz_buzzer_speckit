@@ -1,6 +1,6 @@
 # Data Model: 畫面與流程原型
 
-本文件與 [`diagrams/001-class.puml`](../../diagrams/001-class.puml) 一一對應：類別名稱、欄位、關聯與類別圖相同。類別圖中以關聯表示的部分，在 TypeScript 中寫成欄位（下表「關聯欄位」）。類別圖於規劃期間依 plan「圖表的修訂」更新（commit `71e75ef`）。
+本文件與 [`diagrams/001-class.puml`](../../diagrams/001-class.puml) 一一對應：類別名稱、欄位、關聯與類別圖相同。類別圖中以關聯表示的部分，在 TypeScript 中寫成欄位（下表「關聯欄位」）。類別圖於規劃期間依 plan「圖表的修訂」更新（commit `spec(001): clarify spec and diagrams`）。
 
 型別位置：實體在 `shared/src/entities.ts`；介面在 `frontend/src/services/interfaces.ts`（契約見 [contracts/service-interfaces.md](contracts/service-interfaces.md)）。
 
@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `Role`（enum） | `TEACHER`、`STUDENT` | — | 身分 |
 | `TeacherAccount` | `name: string`、`email: string` | — | 老師帳號 |
-| `SignInFailure`（enum） | `CANCELLED`、`NOT_TEACHER` | — | — |
+| `SignInFailure`（enum） | `CANCELLED` | — | — |
 | `SignInResult` | `ok: boolean`、`account?: TeacherAccount`、`failure?: SignInFailure` | — | — |
 | `Spreadsheet` | `id: string`、`title: string`、`editable: boolean`、`worksheets: string[]`、`selectedWorksheet: string` | — | 學習單 |
 | `QuestionType`（enum） | `SINGLE`、`GROUP` | — | — |
@@ -24,7 +24,7 @@
 | `Group` | `number: number`、`memberCount: number` | — | 組別 |
 | `Judgement`（enum） | `PENDING`、`ACCEPTED`、`REJECTED`、`UNJUDGED` | — | — |
 | `Submission` | `questionNumber: number`、`groupNumber: number`、`answers: string[]`、`rank: number`、`elapsedMs: number`、`judgement: Judgement` | — | 送出 |
-| `QuestionResult` | `questionNumber: number`、`winner?: Submission`、`submissionCount: number` | `submissions: Submission[]`（0..*） | 題目結果 |
+| `QuestionResult` | `questionNumber: number`、`winner?: Submission`、`submissionCount: number`、`behindFirstMs: number[]` | `submissions: Submission[]`（0..*） | 題目結果 |
 | `WriteBackResult` | `ok: boolean`、`cellCount: number`、`failureReason?: string` | — | 寫回結果 |
 | `ValidationError` | `field: string`、`message: string` | — | — |
 | `UnexpectedError` | `message: string` | — | 非預期錯誤 |
@@ -32,9 +32,10 @@
 ### 規則與說明
 
 - **題組算一題**：`Question` 是以題號為單位的一題；單題只有一個 `SubQuestion`（spec Key Entities）。`Submission.answers` 的順序對應 `Question.subQuestions` 的順序。
+- **以 Google 登入的人即為老師**（FR-013）：Google 帳號無法提供是否為老師的資訊，`SignInFailure` 只有 `CANCELLED`；其他失敗種類（例如授權失敗）由 002 新增。
 - **活動沒有名稱**（FR-023）：`Activity`、`ActivitySettings` 沒有名稱欄位。
 - **`ActivityPhase` 與題號**：`OPEN`、`QUESTION_ENDED` 時 `currentQuestion` 必有值；沒有活動時 `getCurrentActivity()` 回傳 `null`，頁面據此顯示「目前沒有活動」（FR-010、FR-050）。
-- **「比第一名慢的秒數」**（FR-040）：由 `QuestionResult.submissions` 中各筆 `elapsedMs` 與第一筆相減得到，屬於呈現邏輯，不另設欄位。
+- **「比第一名慢的秒數」**（FR-040）：由結果介面計算後放在 `QuestionResult.behindFirstMs`，與 `submissions` 同順序、單位為毫秒；頁面只換算成秒顯示，不自行計算（FR-003）。「第一名」的定義由 006 決定（D23）；001 的模擬實作以最早送出（`rank` 1）的 `elapsedMs` 為基準，第一名自己為 0。
 - **判定狀態的種類由 005 定義**（FR-031）：001 的模擬實作使用 `PENDING`、`ACCEPTED`、`REJECTED`；`UNJUDGED` 保留給 005（D12）。
 - **驗證規則**（組數範圍、空白答案等）不在 001 定義；實體本身不帶驗證規則（D4–D7、D14）。
 - **`UnexpectedError`** 不是回傳值，而是介面 Promise reject 的值；種類與訊息由負責的子功能定義（FR-009）。
@@ -47,8 +48,6 @@
 | `GuidedNotesService` | `pickSpreadsheet`、`readWorksheet` | 003 |
 | `ActivityService` | `createActivity`、`updateSettings`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange`、`onActivityChange` | 004 |
 | `SubmissionService` | `submitAnswer`、`listSubmissions`、`onSubmissionsChange`、`judge`、`onJudgement` | 005 |
-
-`joinGroup` 之後由服務記住本分頁的組別，`submitAnswer`、`onJudgement`、`leaveGroup` 不傳組別（原則 VI）；`onActivityChange`、`onSubmissionsChange` 供老師端即時更新（R4）。簽章與規則見 [contracts/service-interfaces.md](contracts/service-interfaces.md)。
 | `ResultService` | `getQuestionResult`、`getAllResults`、`writeBack` | 006 |
 | `PhaseMockControl`（mock only） | `advancePhase` | 隨 004 移除 |
 | `JudgementMockControl`（mock only） | `simulateJudgement` | 隨 005 移除 |
@@ -57,6 +56,8 @@
 | `MockChoicePrompt`（mock only） | `onRequest`、`answer` | `auth` 與 `guidedNotes` 都換成真正的實作後移除 |
 | `ChoiceRequest`（mock only） | `title: string`、`options: ChoiceOption[]`（1..*） | 同上 |
 | `ChoiceOption`（mock only） | `id: string`、`label: string` | 同上 |
+
+`joinGroup` 之後由服務記住本分頁的組別，`submitAnswer`、`onJudgement`、`leaveGroup` 不傳組別（原則 VI）；`onActivityChange`、`onSubmissionsChange` 供老師端即時更新（R4）。簽章與規則見 [contracts/service-interfaces.md](contracts/service-interfaces.md)。
 
 ### `ServiceRegistry`
 

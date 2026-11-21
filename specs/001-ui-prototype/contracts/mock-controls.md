@@ -18,6 +18,8 @@
 | 「模擬：非預期錯誤」 | `UnexpectedErrorMockControl.failNextCall(): void` | `unexpectedErrorControl` | T-Login、T-Pick、T-Import、T-ImportError、T-Setup、T-Lobby、T-Live、T-QuestionEnd、T-Results、S-Join、S-Wait、S-Answer（FR-061） | 下一次模擬介面呼叫以 `UnexpectedError`「模擬：連不上伺服器」reject，之後恢復正常（M9）。點控制時頁面已載入完成，所以下一次呼叫就是展示者接著點的按鈕所觸發的呼叫 |
 | 「模擬：驗證失敗」 | `ValidationMockControl.failNextValidation(): void` | T-Setup 用 `activityValidationControl`；S-Answer 用 `submissionValidationControl` | 只在 T-Setup 與 S-Answer | 該頁下一次「建立活動」「儲存設定」或「整組送出」回傳 `ValidationError`（`message` 為「模擬：驗證失敗」），之後恢復成功（M3、M5、US5 AC-8） |
 
+點「模擬：驗證失敗」「模擬：非預期錯誤」後，控制列立即顯示已設定的提示，分別為「已設定：下一次送出會回傳驗證錯誤」「已設定：下一次介面呼叫會回傳非預期錯誤」；提示在數秒後或切換頁面時消失（FR-061、US5 AC-11）。提示只確認點擊已生效，不追蹤錯誤是否已被消耗，因此不需要在模擬控制介面新增查詢方法。
+
 控制列不屬於任何頁面的按鈕，不列入 spec「頁面與按鈕」表。目前頁面由 `AppRouter` 提供給 `MockControlBar`。
 
 ## 模擬選擇器
@@ -31,5 +33,5 @@ M1 的模擬帳號選擇與 M2 的模擬檔案選擇器由 `MockAuthService`、`
 
 | 請求來源 | 選項 | 結果 |
 | --- | --- | --- |
-| `signInWithGoogle()`（M1） | 模擬老師帳號／模擬非老師帳號／取消 | 成功／失敗 `NOT_TEACHER`／失敗 `CANCELLED` |
+| `signInWithGoogle()`（M1） | 模擬老師帳號／取消；關閉 | 成功／失敗 `CANCELLED`；關閉視為取消 |
 | `pickSpreadsheet()`（M2） | 題組＋單題範本／單題範本／表頭錯誤範例；關閉 | 對應的 `Spreadsheet`；關閉回傳 `null` |

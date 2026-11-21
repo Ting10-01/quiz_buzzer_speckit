@@ -16,15 +16,15 @@
 - 活動狀態只存在伺服器記憶體；學習單的來源與寫回目標是 Google Sheets
 - 伺服器 logging 使用 pino，並遮蔽機敏欄位（002 起使用）
 - 測試：Vitest + Testing Library（單元與元件）、Playwright（端對端，多分頁）
-- 樣式：原生 CSS + CSS Modules；`tokens.css` 只放深色主題的 CSS 變數
+- 樣式：原生 CSS + CSS Modules；`tokens.css` 只放深色主題的 CSS 變數；字型以 `@fontsource` 套件從本機載入，不連外部字型服務（原則 VIII）
 
-**以三張圖為藍圖**：本計畫的組件、類別、介面與呼叫順序一律依 [`diagrams/001-component.puml`](../../diagrams/001-component.puml)、[`diagrams/001-class.puml`](../../diagrams/001-class.puml)、[`diagrams/001-sequence.puml`](../../diagrams/001-sequence.puml)，畫面切換依 [`diagrams/001-screen-flow.puml`](../../diagrams/001-screen-flow.puml)。圖中的每個組件對應「Project Structure」中的一個檔案（對照見 [research.md](research.md) RD-10）；[data-model.md](data-model.md) 的實體與介面和類別圖一一對應。規劃時發現的圖表缺漏已補進圖表（commit `71e75ef`），見「圖表的修訂」。
+**以三張圖為藍圖**：本計畫的組件、類別、介面與呼叫順序一律依 [`diagrams/001-component.puml`](../../diagrams/001-component.puml)、[`diagrams/001-class.puml`](../../diagrams/001-class.puml)、[`diagrams/001-sequence.puml`](../../diagrams/001-sequence.puml)，畫面切換依 [`diagrams/001-screen-flow.puml`](../../diagrams/001-screen-flow.puml)。圖中的每個組件對應「Project Structure」中的一個檔案（對照見 [research.md](research.md) RD-10）；[data-model.md](data-model.md) 的實體與介面和類別圖一一對應。規劃時發現的圖表缺漏已補進圖表（commit `spec(001): clarify spec and diagrams`），見「圖表的修訂」。
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5（strict 模式）；Node.js 24 LTS（開發工具與之後的伺服器）
 
-**Primary Dependencies**: React、React DOM、Vite（含內建的 CSS Modules）。001 不使用路由套件與狀態管理套件（[research.md](research.md) RD-11）
+**Primary Dependencies**: React、React DOM、Vite（含內建的 CSS Modules）、`@fontsource/inter`、`@fontsource/noto-sans-tc`（本機字型）。001 不使用路由套件與狀態管理套件（[research.md](research.md) RD-11）
 
 **Storage**: N/A。模擬實作的狀態只存在各分頁的記憶體中，重新整理即重置（M7）
 
@@ -47,7 +47,7 @@
 | 原則 | 檢查 | 結果 |
 | --- | --- | --- |
 | I. PlantUML 設計優先 | 三張圖與 PNG 都存在，計畫以它們為藍圖；規劃時發現的缺漏已先更新圖表並重新產生 PNG（見「圖表的修訂」） | 通過 |
-| II. 規格先行與可追溯性 | 計畫沒有加入 spec 沒有的行為；只做深色主題與學生頁面置中（commit `157642e`）、共通錯誤訊息區（FR-009，commit `bcadd80`）都已先修改 spec。每條 FR、AC 在 tasks 階段對應任務與測試 | 通過 |
+| II. 規格先行與可追溯性 | 計畫沒有加入 spec 沒有的行為；只做深色主題與學生頁面置中（commit `spec(001): clarify spec and diagrams`）、共通錯誤訊息區（FR-009，commit `spec(001): clarify spec and diagrams`）都已先修改 spec。每條 FR、AC 在 tasks 階段對應任務與測試 | 通過 |
 | III. 分層架構與依賴抽象 | 頁面層 → 介面層 ← 模擬實作。頁面只依賴 `ServiceRegistry` 與介面；只有組合根（`createServiceRegistry`）引用 `Mock*Service`，以 ESLint `no-restricted-imports` 強制。後續子功能新增真正的實作，只修改 `ServiceRegistry` 中的綁定（見「替換模擬實作的方式」） | 通過 |
 | IV. 外部資料於執行期解析 | 001 不讀取外部資料；模擬的辨識結果是固定資料，不是解析規則。解析規則由 003 定義 | 不適用 |
 | V. 單一權威狀態來源 | 頁面不推導活動階段，只呈現 `ActivityService` 回傳或推播的 `Activity`；001 的權威來源是各分頁的模擬實作，004 起換成伺服器 | 通過 |
@@ -55,21 +55,22 @@
 | VII. 輸入驗證與錯誤訊息 | 頁面能在欄位旁顯示介面回傳的 `ValidationError`，驗證失敗不切換頁面（FR-008）；非預期錯誤顯示在每頁共通的 `ErrorArea`，不切換頁面、不改變已輸入的內容（FR-009）。驗證規則與錯誤種類由負責的子功能定義 | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 至少一個正常案例與一個邊界案例；測試以假的 `ServiceRegistry` 取代服務，不依賴外部服務；人工驗證紀錄寫入 `manual-verification.md` | 通過 |
 | IX. 程式碼規範 | 共用介面元件只實作一次（組件圖「共用介面元件」）；頁面（呈現）與服務（資料）分離；註解與命名用英文 | 通過 |
-| X. 人工把關 | 本計畫經人工審查確認後才執行 `/speckit-tasks` | 待審查 |
+| X. 人工把關 | 本計畫經人工審查確認後才執行 `/speckit-tasks` | 通過（2026-11-21 人工審查） |
 | XI. 簡潔 | 不建立伺服器、路由套件、狀態管理套件、前端 logging 框架、淺色主題、響應式版面；`ServiceRegistry` 與介面是 FR-003 要求的抽象，不是預設 | 通過 |
 
 **Phase 1 設計後重新檢查**：data-model、contracts、quickstart 沒有引入新的違反；結果同上表。
 
 ## 圖表的修訂
 
-規劃時發現下列設計是 spec 要求、但圖表原本沒有畫出的。經使用者確認，已更新類別圖、組件圖、時序圖與畫面流程圖並重新產生 PNG（commit `71e75ef`）；data-model 與修訂後的類別圖一致。
+規劃時發現下列設計是 spec 要求、但圖表原本沒有畫出的。經使用者確認，已更新類別圖、組件圖、時序圖與畫面流程圖並重新產生 PNG（commit `spec(001): clarify spec and diagrams`）；data-model 與修訂後的類別圖一致。
 
 | 編號 | spec 的要求 | 原本的圖表缺少什麼 | 修訂內容 |
 | --- | --- | --- | --- |
 | G-1 | M1、M2：點「用 Google 登入」「從 Google 雲端硬碟挑選」後，顯示模擬帳號選擇、模擬檔案選擇器 | 沒有任何組件負責顯示這兩個選擇器。真正的實作（002、003）會由 Google 的視窗負責，所以它們屬於模擬實作，不屬於頁面 | 類別圖新增 mock only 介面 `MockChoicePrompt`（`onRequest`、`answer`）與 `ChoiceRequest`、`ChoiceOption`，由 `MockSession` 實作；`MockAuthService`、`MockGuidedNotesService` 經 `MockSession.requestChoice` 發出選擇請求。`ServiceRegistry` 增加 `choicePrompt [0..1]`；組件圖中由 `MockControlBar` 使用 `ConfirmDialog` 顯示。時序圖第 1、2 段補上這段呼叫 |
 | G-2 | M3、M4、M8：控制台的題目、最後一題沒有送出、寫回成功或失敗，都取決於老師匯入了哪一份模擬學習單 | 模擬實作之間只畫了 `MockResultService → MockSubmissionService`，其他模擬實作無從得知匯入了哪份學習單 | 類別圖與組件圖新增 `MockSession`（每個分頁一份的模擬狀態），所有 `Mock*Service` 共用它，取代 `MockResultService → MockSubmissionService` 的關聯；`MockFixtures` 維持只放固定資料。時序圖第 2 段補上寫入 `lastImport` |
-| G-3 | FR-009、M9：每頁的共通錯誤訊息區與「模擬：非預期錯誤」（spec 於規劃期間新增，commit `bcadd80`） | 沒有錯誤訊息區、非預期錯誤的型別與觸發它的模擬控制 | 組件圖新增共用元件 `ErrorArea`，所有頁面使用；類別圖新增實體 `UnexpectedError` 與 mock only 介面 `UnexpectedErrorMockControl`（`failNextCall`），由 `MockSession` 實作，`ServiceRegistry` 增加 `unexpectedErrorControl [0..1]`；時序圖新增第 6 段；畫面流程圖以註記說明每頁都可能停留在原頁顯示錯誤 |
-| G-4 | R4：T-Lobby、T-Live 在學生加入、送出時即時更新；原則 VI：前端不得指定組別（plan 審查後新增，spec commit `8676808`） | 老師端只有載入時呼叫的方法；`submitAnswer`、`onJudgement`、`leaveGroup` 由頁面傳入組別 | 類別圖新增 `onActivityChange`、`onSubmissionsChange`；`submitAnswer`、`onJudgement`、`leaveGroup` 移除組別參數，`MockSession` 新增 `joinedGroup`；時序圖第 2–4 段補上訂閱與「服務記住本分頁的組別」（commit `d4fa5c2`） |
+| G-3 | FR-009、M9：每頁的共通錯誤訊息區與「模擬：非預期錯誤」（spec 於規劃期間新增，commit `spec(001): clarify spec and diagrams`） | 沒有錯誤訊息區、非預期錯誤的型別與觸發它的模擬控制 | 組件圖新增共用元件 `ErrorArea`，所有頁面使用；類別圖新增實體 `UnexpectedError` 與 mock only 介面 `UnexpectedErrorMockControl`（`failNextCall`），由 `MockSession` 實作，`ServiceRegistry` 增加 `unexpectedErrorControl [0..1]`；時序圖新增第 6 段；畫面流程圖以註記說明每頁都可能停留在原頁顯示錯誤 |
+| G-4 | R4：T-Lobby、T-Live 在學生加入、送出時即時更新；原則 VI：前端不得指定組別（plan 審查後新增，spec commit `spec(001): clarify spec and diagrams`） | 老師端只有載入時呼叫的方法；`submitAnswer`、`onJudgement`、`leaveGroup` 由頁面傳入組別 | 類別圖新增 `onActivityChange`、`onSubmissionsChange`；`submitAnswer`、`onJudgement`、`leaveGroup` 移除組別參數，`MockSession` 新增 `joinedGroup`；時序圖第 2–4 段補上訂閱與「服務記住本分頁的組別」（commit `spec(001): clarify spec and diagrams`） |
+| G-5 | FR-040：比第一名慢的秒數由結果介面提供，頁面不自行計算（analyze 後修改，spec commit `spec(001): revise spec for analyze findings and teacher sign-in`） | `QuestionResult` 沒有這個值，原本由頁面以 `elapsedMs` 相減，與 FR-003 衝突 | 類別圖 `QuestionResult` 新增 `behindFirstMs: number[]`（與 `submissions` 同順序）；data-model、contract 同步 |
 
 ## 替換模擬實作的方式
 
