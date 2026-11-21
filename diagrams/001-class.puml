@@ -1,0 +1,279 @@
+@startuml
+title 001 Guided Notes 匯入 — 類別圖
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Google 授權" {
+  class GoogleAuthService {
+    +authUrl(): String
+    +handleCallback(code: String, state: String): LinkedAccount
+    +status(): AuthState
+    +unlink(): void
+    +pickerSession(): PickerSession
+    +authorizedClient(): AuthorizedClient
+  }
+
+  class PickerSession {
+    +accessToken: String
+    +appId: String
+    +apiKey: String
+  }
+
+  class AuthState {
+    +status: AuthStatus
+    +account: LinkedAccount [0..1]
+  }
+
+  enum AuthStatus {
+    UNLINKED
+    LINKED
+    EXPIRED
+  }
+
+  class LinkedAccount {
+    +email: String
+  }
+
+  interface TokenStore {
+    +load(): StoredToken [0..1]
+    +save(token: StoredToken): void
+    +clear(): void
+  }
+
+  class LocalTokenStore
+
+  class StoredToken
+}
+
+package "Import" {
+  class ImportService {
+    -pending: PendingImport [0..1]
+    +listSheets(spreadsheetId: String): SpreadsheetInfo
+    +preview(spreadsheetId: String, sheetId: int [0..1]): ImportPreview
+    +confirm(): QuestionSet
+    +cancel(): void
+  }
+
+  class SpreadsheetInfo {
+    +title: String
+    +sheets: SheetInfo[]
+    +defaultSheetId: int
+    +canEdit: boolean
+  }
+
+  class SheetInfo {
+    +sheetId: int
+    +name: String
+  }
+
+  class PendingImport {
+    +source: GuidedNotesSource
+    +preview: ImportPreview
+  }
+
+  class ImportPreview {
+    +source: GuidedNotesSource
+    +mapping: ColumnMapping
+    +questionSet: QuestionSet
+    +warnings: ImportWarning[]
+  }
+
+  class GuidedNotesParser {
+    +parse(sheet: Sheet): ImportPreview
+    -validateNumbering(questions: Question[]): void
+  }
+
+  class HeaderLocator {
+    +NUMBER_HEADERS: String[] = 題號、編號、題次
+    +ANSWER_HEADERS: String[] = 作答、答案、回答
+    +QUESTION_HEADERS: String[] = 題目、問題、題幹
+    +locate(sheet: Sheet): ColumnMapping [0..1]
+  }
+
+  class QuestionScanner {
+    +scan(sheet: Sheet, mapping: ColumnMapping): ScanResult
+    -readSlot(sheet: Sheet, row: int, mapping: ColumnMapping): AnswerSlot
+    -splitMarker(text: String): MarkerSplit
+  }
+
+  class ScanResult {
+    +questions: Question[]
+    +warnings: ImportWarning[]
+  }
+
+  class MarkerSplit {
+    +marker: String [0..1]
+    +rest: String [0..1]
+  }
+
+  class ColumnMapping {
+    +headerRow: int
+    +numberCol: int
+    +answerCol: int
+    +questionCol: int [0..1]
+    +matchedHeaders: String[]
+  }
+
+  class ImportWarning {
+    +code: WarningCode
+    +questionNumber: int [0..1]
+    +cell: CellRef [0..1]
+    +text: String
+  }
+
+  enum WarningCode {
+    OLD_ANSWER
+    READ_ONLY
+  }
+
+  class ImportError {
+    +code: ImportErrorCode
+    +message: String
+    +cell: CellRef [0..1]
+    +expectedHeaders: String[]
+  }
+
+  enum ImportErrorCode {
+    NOT_LINKED
+    AUTH_EXPIRED
+    NO_ACCESS
+    NETWORK_ERROR
+    NO_HEADER
+    NO_QUESTIONS
+    INVALID_NUMBERING
+    TOO_MANY_QUESTIONS
+  }
+}
+
+package "Domain（與 002、003 共用）" {
+  class QuestionSet {
+    +source: GuidedNotesSource
+    +mapping: ColumnMapping
+    +questions: Question[]
+    +questionCount(): int
+    +groupCount(): int
+  }
+
+  class GuidedNotesSource {
+    +spreadsheetId: String
+    +spreadsheetTitle: String
+    +sheetId: int
+    +sheetName: String
+  }
+
+  class Question {
+    +number: int
+    +kind: QuestionKind
+    +slots: AnswerSlot[]
+  }
+
+  enum QuestionKind {
+    SINGLE
+    GROUP
+  }
+
+  class AnswerSlot {
+    +slotId: String
+    +label: String
+    +questionText: String [0..1]
+    +marker: String [0..1]
+    +oldAnswer: String [0..1]
+    +cell: CellRef
+  }
+
+  class CellRef {
+    +sheetId: int
+    +sheetName: String
+    +row: int
+    +col: int
+    +toA1(): String
+  }
+
+  class QuestionSetStore {
+    +save(questionSet: QuestionSet): void
+    +current(): QuestionSet [0..1]
+  }
+}
+
+package "Spreadsheet 抽象" {
+  interface SpreadsheetReader {
+    +info(spreadsheetId: String): SpreadsheetInfo
+    +open(spreadsheetId: String, sheetId: int): Sheet
+  }
+
+  interface Sheet {
+    +id(): int
+    +name(): String
+    +maxRow(): int
+    +maxCol(): int
+    +textAt(row: int, col: int): String
+    +valueAt(row: int, col: int): CellValue
+    +mergedRangeAt(row: int, col: int): RowRange [0..1]
+  }
+
+  class RowRange {
+    +firstRow: int
+    +lastRow: int
+    +firstCol: int
+    +lastCol: int
+  }
+
+  class GoogleSheetsReader
+}
+
+GoogleAuthService --> TokenStore
+GoogleAuthService ..> AuthState : creates
+GoogleAuthService ..> PickerSession : creates
+AuthState --> AuthStatus
+AuthState o-- "0..1" LinkedAccount
+LocalTokenStore ..|> TokenStore
+TokenStore ..> StoredToken
+ImportService --> SpreadsheetReader
+ImportService --> GuidedNotesParser
+ImportService --> QuestionSetStore
+ImportService *-- "0..1" PendingImport
+ImportService ..> ImportError : throws
+SpreadsheetInfo *-- "1..*" SheetInfo
+PendingImport --> GuidedNotesSource
+PendingImport --> ImportPreview
+ImportPreview o-- ColumnMapping
+ImportPreview o-- QuestionSet
+ImportPreview *-- "0..*" ImportWarning
+GuidedNotesParser --> HeaderLocator
+GuidedNotesParser --> QuestionScanner
+GuidedNotesParser ..> ImportError : throws
+HeaderLocator ..> ColumnMapping : creates
+QuestionScanner ..> ScanResult : creates
+QuestionScanner ..> MarkerSplit
+ImportWarning --> WarningCode
+ImportWarning --> CellRef
+ImportError --> ImportErrorCode
+QuestionSet *-- GuidedNotesSource
+QuestionSet *-- "1..*" Question
+QuestionSet --> ColumnMapping
+Question --> QuestionKind
+Question *-- "1..*" AnswerSlot
+AnswerSlot *-- CellRef
+QuestionSetStore o-- "0..1" QuestionSet
+GoogleSheetsReader ..|> SpreadsheetReader
+GoogleSheetsReader --> GoogleAuthService : authorizedClient()
+SpreadsheetReader ..> SpreadsheetInfo : creates
+SpreadsheetReader ..> Sheet : creates
+Sheet ..> RowRange
+
+note right of AnswerSlot
+  slotId：單題為 "3"，題組小題為 "1-1"、"1-2"
+  marker：填空格內的「（1）」等標記
+  oldAnswer：標記以外的舊答案（有就發 OLD_ANSWER 警告）
+  questionText：題目欄的敘述（沒有題目欄就沒有）
+  cell：解析出的填空格位置（不是預設值）
+end note
+
+note right of GoogleAuthService
+  授權範圍只限老師在選擇器挑選過的檔案
+  PickerSession 只交給老師自己的瀏覽器開啟選擇器
+  StoredToken 只存在本機、不進版控、不寫入 log
+  003 寫回答案時沿用同一個授權
+end note
+@enduml

@@ -1,0 +1,92 @@
+@startuml
+title 001 Guided Notes 匯入 — 時序圖
+skinparam shadowing false
+autonumber
+
+actor "老師" as T
+participant "ImportPage" as P
+participant "GoogleAuthService" as A
+participant "Google\n授權畫面" as G
+participant "Google\n檔案選擇器" as GP2
+participant "ImportService" as S
+participant "SpreadsheetReader\n（Google Sheets）" as R
+participant "GuidedNotesParser" as GP
+participant "HeaderLocator" as HL
+participant "QuestionScanner" as QS
+database "QuestionSetStore" as Store
+
+== 第一次使用：連結 Google 帳號（REQ-IMP-02） ==
+T -> P : 按「連結 Google 帳號」
+P -> A : authUrl()
+A --> P : 授權網址
+P -> G : 導向 Google 授權畫面
+T -> G : 登入並同意授權
+alt 同意
+  G -> A : handleCallback(code, state)
+  A -> A : 驗證 state，換取授權並存到本機
+  A --> P : 已連結（顯示帳號 email）
+else 取消或拒絕
+  G -> A : handleCallback(錯誤)
+  A --> P : 尚未授權，可重新連結
+end
+
+== 匯入學習單 ==
+T -> P : 按「從 Google 雲端硬碟挑選」
+P -> A : pickerSession()
+A --> P : 選擇器所需的授權\n（未連結 → NOT_LINKED；失效 → AUTH_EXPIRED）
+P -> GP2 : 開啟選擇器（只顯示試算表）
+alt 老師關閉選擇器沒有挑選
+  GP2 --> P : 取消
+  P --> T : 維持原狀（既有題目清單不變），流程結束
+else 挑選了一份試算表
+  GP2 --> P : spreadsheetId
+end
+note over P, R : 以下為挑選了試算表之後的流程
+P -> S : listSheets(spreadsheetId)
+S -> R : info(spreadsheetId)
+R -> A : authorizedClient()
+A --> R : 已授權的連線\n（未連結 → NOT_LINKED；失效 → AUTH_EXPIRED）
+R --> S : 試算表名稱、工作表清單、是否可編輯\n（無法讀取 → NO_ACCESS；15 秒內連不上 → NETWORK_ERROR）
+S --> P : 工作表清單與預設工作表
+P -> S : preview(spreadsheetId, sheetId)
+S -> R : open(spreadsheetId, sheetId)
+R --> S : sheet（儲存格內容與合併範圍）
+S -> GP : parse(sheet)
+
+GP -> HL : locate(sheet)
+HL -> HL : 找同時含「題號／編號／題次」\n與「作答／答案／回答」的第一列；\n同列有「題目／問題／題幹」就記為題目欄
+HL --> GP : ColumnMapping 或無
+
+opt 找不到表頭
+  GP --> S : ImportError(NO_HEADER, expectedHeaders)
+  S --> P : 錯誤
+  P --> T : 列出各欄接受的表頭寫法，\n請修改學習單後重新匯入（既有題目清單不變）
+end
+
+GP -> QS : scan(sheet, mapping)
+loop 表頭列以下的每一列
+  QS -> QS : 題號欄是正整數？否 → 略過此列
+  QS -> QS : 題號儲存格跨列合併？\n是 → 題組；否 → 單題
+  QS -> QS : 作答欄 → 拆出小題標記與舊答案\n有舊答案 → ImportWarning(OLD_ANSWER)
+  QS -> QS : 題目欄（有的話）→ 題目敘述
+end
+QS --> GP : questions + warnings
+GP -> GP : validateNumbering(questions)\n（不重複、由上到下遞增、可跳號、≤ 200 題）
+
+alt 解析成功
+  GP --> S : ImportPreview(source, mapping, questionSet, warnings)
+  S -> S : 只有檢視權限 → 加上 ImportWarning(READ_ONLY)
+  S -> S : 暫存 PendingImport
+  S --> P : 預覽資料
+  P --> T : 顯示試算表與工作表名稱、找到的表頭文字、\n題數、題組數、每題題號與填空格位置、\n舊答案與無法寫回的警告
+  T -> P : 確認匯入
+  P -> S : confirm()
+  S -> Store : save(questionSet)
+  S --> P : 匯入完成
+  P --> T : 顯示「已匯入 N 題」
+else 解析失敗
+  GP --> S : ImportError(code, message, cell)
+  S --> P : 錯誤
+  P --> T : 顯示錯誤原因與修正方式\n（既有題目清單不變）
+end
+@enduml

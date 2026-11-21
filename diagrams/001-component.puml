@@ -1,0 +1,86 @@
+@startuml
+title 001 Guided Notes 匯入 — 組件圖
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam defaultTextAlignment center
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #888888
+}
+
+actor "老師" as Teacher
+
+cloud "Google（雲端）" {
+  [Google 授權畫面] as GoogleConsent
+  [Google 檔案選擇器] as GooglePicker
+  [Google Sheets\n（老師的學習單）] as GoogleSheets
+}
+
+package "老師端（瀏覽器）" {
+  [ImportPage] as ImportPage
+}
+
+package "系統端（本機）" {
+  [GoogleAuthService] as Auth
+  () "TokenStore" as ITokenStore
+  [LocalTokenStore] as LocalTokens
+  [ImportService] as ImportService
+
+  package "Guided Notes 解析" {
+    [GuidedNotesParser] as Parser
+    [HeaderLocator] as HeaderLocator
+    [QuestionScanner] as QuestionScanner
+  }
+
+  () "SpreadsheetReader" as IReader
+  [GoogleSheetsReader] as SheetsReader
+  [QuestionSetStore] as Store
+  () "QuestionSetProvider" as IProvider
+}
+
+package "其他子功能" #EEEEEE {
+  [002 ActivityService] as Activity002
+  [003 ResultsService] as Results003
+}
+
+Teacher --> ImportPage : 連結 Google 帳號 / 挑選試算表 /\n選工作表 / 確認匯入
+ImportPage --> Auth : 連結、查詢狀態、解除連結、\n取得選擇器所需的授權
+Auth ..> GoogleConsent : 導向授權畫面，取回授權
+Auth ..> ITokenStore : 保存 / 讀取 / 刪除授權資料
+LocalTokens - ITokenStore
+ImportPage ..> GooglePicker : 開啟選擇器（只顯示試算表），\n取回挑選的試算表 ID
+ImportPage --> ImportService : listSheets(spreadsheetId) /\npreview(spreadsheetId, sheet) / confirm()
+ImportService ..> IReader : info() / open()
+SheetsReader - IReader
+SheetsReader --> Auth : 取得已授權的連線
+SheetsReader ..> GoogleSheets : 讀取儲存格內容與合併範圍（唯讀）
+ImportService --> Parser : parse(sheet)
+Parser --> HeaderLocator : locate(sheet)
+Parser --> QuestionScanner : scan(sheet, mapping)
+ImportService --> Store : save(questionSet)
+Store - IProvider
+Activity002 ..> IProvider : 讀取題目清單
+Results003 ..> IProvider : 讀取學習單來源與填空格位置
+Results003 ..> Auth : 用同一個授權寫回試算表
+
+note bottom of Auth
+  老師以自己的 Google 帳號登入並同意授權
+  只能存取老師在選擇器中挑選過的檔案
+  用戶端設定只放在環境變數；
+  老師的授權資料只存在本機、不進版控（原則 VI）
+end note
+
+note bottom of HeaderLocator
+  依同義詞清單在執行期找欄位：
+  題號／編號／題次、作答／答案／回答、
+  題目／問題／題幹（可以沒有）
+  找不到時拒絕匯入並列出可用寫法
+  （不寫死任何儲存格位置，原則 IV）
+end note
+
+note bottom of QuestionScanner
+  題號儲存格跨列合併 → 題組
+  合併範圍內每一列 → 一個小題填空格
+  填空格已有舊答案 → 警告，照常匯入
+end note
+@enduml
