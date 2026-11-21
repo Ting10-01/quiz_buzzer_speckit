@@ -1,0 +1,217 @@
+@startuml 006-class
+title 006 類別圖：結果查詢與寫回
+
+skinparam defaultFontName "PingFang TC"
+hide empty members
+set separator none
+left to right direction
+
+package "001 實體與介面（006 不修改）" #EEEEEE {
+  class QuestionResult {
+    questionNumber: number
+    winner: Submission [0..1]
+    submissionCount: number
+    submissions: Submission[]
+  }
+  class Submission {
+    questionNumber: number
+    groupNumber: number
+    answers: string[]
+    rank: number
+    elapsedMs: number
+    judgement: Judgement
+  }
+  class SubQuestion {
+    index: number
+    blankCell: string
+    marker: string
+  }
+  class WriteBackResult {
+    ok: boolean
+    cellCount: number
+    failureReason: string [0..1]
+  }
+  interface ResultService {
+    +getQuestionResult(questionNumber: number): Promise<QuestionResult>
+    +getAllResults(): Promise<QuestionResult[]>
+    +writeBack(): Promise<WriteBackResult>
+  }
+  QuestionResult o-- "0..*" Submission
+}
+
+package "Frontend（frontend/src/services）" {
+  class ServerResultService {
+    -realtime: RealtimeClient
+    -api: ApiClient
+    +getQuestionResult(questionNumber: number): Promise<QuestionResult>
+    +getAllResults(): Promise<QuestionResult[]>
+    +writeBack(): Promise<WriteBackResult>
+  }
+  ServerResultService ..|> ResultService
+}
+
+package "Server（server/src/results）" {
+  class ResultQuery {
+    -activities: ActivityStore
+    -submissions: SubmissionStore
+    +questionResult(questionNumber: number, viewerGroup: number | null): QuestionResult
+    +allResults(viewerGroup: number | null): QuestionResult[]
+    -isEnded(state: ActivityState, questionNumber: number): boolean
+    -visible(full: QuestionResult, finished: boolean, viewerGroup: number | null): QuestionResult
+  }
+  class ResultQueryError {
+    code: ResultQueryErrorCode
+    message: string
+  }
+  enum ResultQueryErrorCode {
+    NO_ACTIVITY
+    QUESTION_NOT_FOUND
+    QUESTION_NOT_ENDED
+  }
+  class WriteBackService {
+    -inProgress: boolean
+    -activities: ActivityStore
+    -imports: ImportStore
+    -reader: SpreadsheetReader
+    -parser: GuidedNotesParser
+    -query: ResultQuery
+    -writer: SpreadsheetWriter
+    -now: () => Date
+    +writeBack(): Promise<WriteBackResult>
+    -firstLayoutMismatch(stored: ImportSuccess, current: ImportSuccess | ImportError): number | null
+    -planCells(stored: ImportSuccess, results: QuestionResult[]): CellText[]
+    -mapGoogleError(error: unknown, step: WriteBackStep): WriteBackFailure
+  }
+  class WriteBackFailure {
+    code: WriteBackErrorCode
+    message: string
+  }
+  enum WriteBackErrorCode {
+    NOT_FINISHED
+    IMPORT_CHANGED
+    LAYOUT_CHANGED
+    NO_EDIT_PERMISSION
+    SHEET_NOT_FOUND
+    GOOGLE_AUTH_EXPIRED
+    GOOGLE_UNAVAILABLE
+    BACKUP_FAILED
+    WRITE_UNCONFIRMED
+    IN_PROGRESS
+  }
+  enum WriteBackStep {
+    READ
+    BACKUP
+    WRITE
+  }
+  class CellText {
+    cell: string
+    text: string
+  }
+  class cellTextRules <<functions>> {
+    +composeCellText(marker: string, answer: string): string
+    +backupName(worksheet: string, now: Date, existing: string[]): string
+  }
+  interface SpreadsheetWriter {
+    +duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string): Promise<void>
+    +writeTexts(spreadsheetId: string, worksheet: string, cells: CellText[]): Promise<void>
+  }
+  class GoogleSheetsWriter {
+    -clients: GoogleClientProvider
+    -timeoutMs: number = 15000
+  }
+  class resultSocketHandlers <<function>> {
+    +registerResultHandlers(io, query: ResultQuery, members: GroupMembership): void
+  }
+  class resultsRoutes <<Fastify plugin>> {
+    +POST /api/results/write-back { preHandler: app.requireTeacher }
+  }
+
+  GoogleSheetsWriter ..|> SpreadsheetWriter
+  ResultQuery ..> ResultQueryError : throws
+  ResultQueryError --> ResultQueryErrorCode
+  WriteBackService --> ResultQuery
+  WriteBackService --> SpreadsheetWriter
+  WriteBackService ..> WriteBackFailure : throws
+  WriteBackFailure --> WriteBackErrorCode
+  WriteBackService ..> WriteBackStep
+  WriteBackService ..> CellText
+  WriteBackService ..> cellTextRules
+  WriteBackService ..> SubQuestion : blankCell、marker
+  SpreadsheetWriter ..> CellText
+  resultSocketHandlers --> ResultQuery
+  resultsRoutes --> WriteBackService
+  resultsRoutes ..> WriteBackFailure : → 200 WriteBackResult(ok=false)；\nGOOGLE_AUTH_EXPIRED → 401 ErrorBody
+  ResultQuery ..> QuestionResult
+  WriteBackService ..> WriteBackResult
+}
+
+package "其他子功能（介面依各自 contracts）" #EEEEEE {
+  class RealtimeClient <<004 frontend>> {
+    +emitWithAck<T>(event: string, payload: unknown): Promise<T>
+  }
+  class ApiClient <<002 frontend>> {
+    +request<T>(method: string, path: string, body?: unknown): Promise<T>
+  }
+  class ActivityStore <<004>> {
+    +current(): ActivityState | null
+  }
+  class ActivityState <<004>> {
+    spreadsheet: Spreadsheet
+    questions: Question[]
+    phase: ActivityPhase
+    currentQuestion: number [0..1]
+    openedAt: Map<number, number>
+    endedAt: Map<number, number>
+  }
+  class GroupMembership <<004>> {
+    +groupOf(socket: { id: string }): number | null
+  }
+  class SubmissionStore <<005>> {
+    +list(questionNumber: number): Submission[]
+    +winner(questionNumber: number): Submission | null
+  }
+  class ImportStore <<003>> {
+    +latest(): Readonly<ImportSuccess> | null
+  }
+  interface SpreadsheetReader <<003, app.spreadsheetReader>> {
+    +load(spreadsheetId: string): Promise<LoadedSpreadsheet>
+  }
+  class GuidedNotesParser <<003>> {
+    +parse(grid: SheetGrid, spreadsheet: Spreadsheet): ImportSuccess | ImportError
+  }
+  class GoogleClientProvider <<002>> {
+    +authorizedClient()
+  }
+  class isGoogleAuthExpired <<002 function>> {
+    +(error: unknown): boolean
+  }
+}
+
+ServerResultService --> RealtimeClient
+ServerResultService --> ApiClient
+ResultQuery --> ActivityStore
+ResultQuery --> SubmissionStore
+ActivityStore ..> ActivityState
+WriteBackService --> ActivityStore
+WriteBackService --> ImportStore
+WriteBackService --> SpreadsheetReader
+WriteBackService --> GuidedNotesParser
+WriteBackService ..> isGoogleAuthExpired
+GoogleSheetsWriter --> GoogleClientProvider
+resultSocketHandlers --> GroupMembership
+
+note bottom of ResultQuery
+  isEnded：state.endedAt.has(questionNumber)
+  visible()：
+  finished → 原樣（所有送出，依順位）
+  否則 → winner、submissionCount 原樣；
+  submissions 只留 groupNumber = viewerGroup 的那一筆
+  （老師與沒有加入組別的連線為空）
+end note
+
+note bottom of CellText
+  cell 為 003 匯入時的 blankCell（A1，不含工作表名稱）；
+  text = composeCellText(marker, answer)：
+  marker 為空 → answer；否則 marker + answer
+end note
+@enduml

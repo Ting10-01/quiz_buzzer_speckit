@@ -1,0 +1,114 @@
+@startuml 006-sequence
+title 006 結果與寫回 — 時序圖
+
+skinparam defaultFontName "PingFang TC"
+skinparam shadowing false
+autonumber
+
+actor "學生" as S
+participant "StudentPlayPage /\nStudentResultsPage（001）" as SP
+actor "老師" as T
+participant "TeacherResultsPage（001）" as TP
+participant "ServerResultService" as SRS
+participant "RealtimeClient（004）/\nApiClient（002）" as CL
+participant "resultSocketHandlers\n（app.io）" as SH
+participant "GroupMembership\n（004）" as GM
+participant "ResultQuery" as RQ
+participant "ActivityStore\n（004）" as AS
+participant "SubmissionStore\n（005）" as SS
+participant "resultsRoutes\n＋app.requireTeacher（002）" as RT
+participant "WriteBackService" as WB
+participant "ImportStore\n（003）" as IS
+participant "SpreadsheetReader /\nGuidedNotesParser（003）" as RP
+participant "SpreadsheetWriter\n«GoogleSheetsWriter»" as SW
+
+== 一題結束後公布該題結果（R8、R9；REQ-RES-01～03） ==
+note over SP : 004 推送 onPhaseChange（QUESTION_ENDED），\n頁面切換到 S-QuestionDone
+SP -> SRS : getQuestionResult(n)
+SRS -> CL : emitWithAck('result:question', { questionNumber: n })
+CL -> SH : result:question
+SH -> GM : groupOf(socket)
+GM --> SH : 第 5 組（老師或未加入為 null）
+SH -> RQ : questionResult(n, 5)
+RQ -> AS : current()
+alt 沒有活動 / 沒有這一題 / endedAt 沒有第 n 題
+  RQ --> SH : ResultQueryError
+  SH --> CL : ack { ok: false, code, message }
+  CL --> SRS : ack
+  SRS --> SP : reject UnexpectedError（「這一題還沒結束，結果尚未公布」等）
+else 第 n 題已結束
+  RQ -> SS : list(n)、winner(n)
+  RQ -> RQ : visible(full, phase === FINISHED, 5)\n活動未結束 → 只留第 5 組的送出
+  RQ --> SH : QuestionResult
+  SH --> CL : ack { ok: true, result }
+  CL --> SRS : ack
+  SRS --> SP : QuestionResult
+  SP --> S : 成功組別與答案、本組的送出
+end
+
+== 整輪結束後的全部結果（R4、R8；REQ-RES-04） ==
+note over SP : 004 推送 FINISHED，頁面切換到 S-Results
+SP -> SRS : getAllResults()
+SRS -> CL : emitWithAck('result:all', {})
+CL -> SH : result:all
+SH -> GM : groupOf(socket)
+SH -> RQ : allResults(group)
+RQ -> AS : current()
+RQ -> SS : 每一題 list(n)、winner(n)
+RQ --> SH : QuestionResult[]（活動已結束 → 每題所有送出）
+SH --> CL : ack { ok: true, results }
+CL --> SRS : ack
+SRS --> SP : QuestionResult[]
+SP --> S : 每題所有組別的順位與答案，本組醒目標示
+
+== 寫回 Google Sheets（R5、R5.1；REQ-RES-07～20） ==
+T -> TP : 按「寫回 Google Sheets」
+TP --> T : T-WriteBack：「這些填空格原本的內容會被覆蓋，\n寫回前會先建立備份工作表」
+T -> TP : 按「寫回」
+TP -> SRS : writeBack()
+SRS -> CL : request('POST', '/api/results/write-back')
+CL -> RT : POST（Authorization: Bearer <老師憑證>）
+alt 老師憑證無效
+  RT --> CL : 401 { code: UNAUTHORIZED, message }
+  CL --> SRS : ApiError(UNAUTHORIZED)
+  SRS --> TP : WriteBackResult(ok=false, 「老師登入已失效…」)
+else 老師
+  RT -> WB : writeBack()
+  WB -> WB : inProgress？（是 → IN_PROGRESS）
+  WB -> AS : current()：phase、spreadsheet
+  WB -> IS : latest()
+  IS --> WB : ImportSuccess（blankCell、marker）
+  WB -> WB : 未結束 → NOT_FINISHED；學習單不同 → IMPORT_CHANGED
+  WB -> RQ : allResults(null)
+  RQ --> WB : QuestionResult[]（每題成功組別與答案）
+  WB -> WB : planCells()：有成功組別的題目，\n每個小題 composeCellText(marker, answer)
+  alt 沒有任何格子要寫
+    WB --> RT : { ok: true, cellCount: 0 }
+  else 有格子要寫
+    WB -> RP : app.spreadsheetReader.load(spreadsheetId)
+    RP --> WB : LoadedSpreadsheet（editable、sheets: SheetGrid[]）\n（SheetsReadError → mapGoogleError(READ)：\nGOOGLE_AUTH_EXPIRED / SHEET_NOT_FOUND / GOOGLE_UNAVAILABLE）
+    WB -> WB : 找不到工作表 → SHEET_NOT_FOUND；\neditable = false → NO_EDIT_PERMISSION
+    WB -> RP : new GuidedNotesParser().parse(grid, latest.spreadsheet)
+    RP --> WB : ImportSuccess / ImportError（不更新 ImportStore）
+    WB -> WB : firstLayoutMismatch() 有題號 → LAYOUT_CHANGED
+    WB -> WB : backupName(worksheet, now, 現有工作表名稱)
+    WB -> SW : duplicateSheet(spreadsheetId, grid.sheetId, 備份名稱)
+    note right of SW : 失敗 → mapGoogleError(BACKUP)，不寫入
+    WB -> SW : writeTexts(spreadsheetId, worksheet, cells)
+    note right of SW : 一次 values.batchUpdate、RAW；\n15 秒沒有回應 → WRITE_UNCONFIRMED
+    SW --> WB : 完成
+    WB --> RT : { ok: true, cellCount }
+  end
+  note over WB : 任何 WriteBackFailure → 丟給 resultsRoutes；\n最後 inProgress = false
+  alt 成功，或 GOOGLE_AUTH_EXPIRED 以外的 WriteBackFailure
+    RT --> CL : 200 WriteBackResult（ok=true，或 ok=false + failureReason）
+    CL --> SRS : WriteBackResult
+  else GOOGLE_AUTH_EXPIRED
+    RT --> CL : 401 ErrorBody { code: GOOGLE_AUTH_EXPIRED, message }
+    CL --> SRS : ApiError(401, GOOGLE_AUTH_EXPIRED, message)
+    SRS -> SRS : WriteBackResult(ok=false, failureReason=message)
+  end
+  SRS --> TP : WriteBackResult
+end
+TP --> T : 寫回成功與格數，或寫回失敗與原因
+@enduml

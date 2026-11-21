@@ -1,0 +1,103 @@
+@startuml 005-sequence
+title 005 時序圖：送出、依序判定、自動結束
+
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+autonumber
+
+actor "第 2 組學生" as S2
+actor "第 5 組學生" as S5
+actor "老師" as T
+participant "ServerSubmissionService\n（學生分頁）" as FS
+participant "ServerSubmissionService\n（老師分頁）" as FT
+participant "SubmissionGateway" as GW
+participant "SubmissionRoutes" as RT
+participant "GroupMembership\n«004»" as GM
+participant "CommandQueue\n«004»" as Q
+participant "SubmissionEngine" as EN
+participant "ActivityStore\n«004»" as AS
+participant "SequenceClock\n«004»" as CL
+participant "SubmissionStore" as ST
+participant "ActivityManager\n«004»" as AC
+participant "SubmissionNotifier" as NT
+
+== 0. 老師開放第 n 題（004，同一條 CommandQueue） ==
+note over AS : 004 在 run 內 commit：phase = OPEN、currentQuestion = n、\nopenedAt[n] = SequenceClock.stamp()
+
+== 1. 兩組幾乎同時送出（R6、R7、E1、R10） ==
+S2 -> FS : 整組送出
+FS -> GW : RealtimeClient.emitWithAck(submission:submit,\n{n, answers, requestId=a1})
+S5 -> GW : submission:submit {n, answers, requestId=b7}\n（經第 5 組的分頁）
+GW -> GM : groupOf(socket)
+GM --> GW : 2
+GW -> Q : run(() => engine.submit(group, request))
+group 臨界區（a1）：沒有 await、沒有網路傳送
+  Q -> EN : submit(2, a1)
+  EN -> AS : current()
+  EN -> EN : validate：第 n 題開放中、本組未送過、\n格數等於小題數、每格非空白且 ≤ 200 字
+  EN -> CL : stamp()
+  EN -> ST : append(rank = 1, elapsedMs = stamp − openedAt[n], PENDING)
+  EN --> Q : SubmitReply(ok)（log seq = processed）
+end
+GW -> GM : groupOf(socket)
+GM --> GW : 5
+GW -> Q : run(() => engine.submit(group, request))
+group 臨界區（b7）
+  Q -> EN : submit(5, b7)
+  EN -> ST : append(rank = 2, elapsedMs ≥ #1)
+  EN --> Q : SubmitReply(ok)
+end
+GW --> FS : ack SubmitReply（Submission 不含 rank，R9）
+FS --> S2 : 等待判定頁
+EN ->> NT : submissionsChanged(n)
+NT ->> FT : submissions:changed（只送 io.to(TEACHER_ROOM)，\n200 ms 內合併為一次完整列表）
+FT --> T : 答案列表：#1 第 2 組、#2 第 5 組
+
+opt 同組另一人、重複抵達或結束後才到
+  GW -> Q : run(() => engine.submit(group, request))
+  Q -> EN : submit(…)
+  alt 同一個 requestId 再次抵達（連點、網路重試）
+    EN --> GW : 第一次的 SubmitReply（不產生新紀錄）
+  else 本組已有送出（同組另一人、被拒絕後再送）
+    EN --> GW : ValidationError(submit, 「本組已送出此題」)
+  else 第 n 題不在開放中
+    EN --> GW : ValidationError(submit, 「這一題目前不能作答」)
+  end
+end
+
+== 2. 老師依順序判定：不接受 #1（E4、D10、D16） ==
+T -> FT : 順位 1 的「不接受」
+FT -> RT : ApiClient.request(POST /api/questions/n/judgements,\n{group 2, REJECTED})，帶 Bearer
+RT -> RT : app.requireTeacher（002）
+RT -> Q : run(() => engine.judge(…))
+group 臨界區
+  Q -> EN : judge(n, 2, REJECTED)
+  EN -> ST : firstPending() 是第 2 組 → REJECTED
+  EN --> RT : 完整列表
+end
+RT --> FT : Submission[]（#2 成為可判定）
+EN ->> NT : judged(第 2 組)、submissionsChanged(n)
+NT ->> FS : submission:judged（只送 groupOf = 2 的連線）
+FS --> S2 : 作答頁・被拒絕（不能重送）
+
+== 3. 老師接受 #2：本題自動結束（R10、D11、D13、D12） ==
+T -> FT : 順位 2 的「接受」
+FT -> RT : POST …/judgements {group 5, ACCEPTED}
+RT -> Q : run(() => engine.judge(…))
+group 臨界區：接受與結束在同一步
+  Q -> EN : judge(n, 5, ACCEPTED)
+  EN -> ST : 第 5 組 → ACCEPTED，winnerGroup = 5
+  EN -> AC : endQuestion(n)
+  AC -> AS : phase = QUESTION_ENDED（最後一題為 FINISHED）
+  AS -> EN : subscribe listener（phase ≠ OPEN，仍在 run 內）
+  EN -> ST : closeQuestion(n)：其餘 PENDING → UNJUDGED
+  EN --> RT : 完整列表
+end
+RT --> FT : Submission[]
+EN ->> NT : judged(第 5 組)、submissionsChanged(n)
+note over AS, FT
+  004 廣播階段改變：所有學生切到本題結果；
+  老師的 T-Live 依 onPhaseChange 切到 T-QuestionEnd 或 T-Results
+  （需請 001 修改第 2 項）。006 由 SubmissionStore 取得結果
+end note
+@enduml

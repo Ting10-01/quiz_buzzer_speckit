@@ -1,0 +1,104 @@
+@startuml 003-component
+title 003 組件圖：匯入學習單
+
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 50
+
+actor "老師" as Teacher
+
+cloud "Google（雲端）" {
+  component "Google Picker\n檔案選擇器" as GPicker
+  component "Sheets API v4\nspreadsheets.get（includeGridData）" as GSheets
+  component "Drive API v3\nfiles.get（capabilities.canEdit）" as GDrive
+}
+
+package "frontend（瀏覽器，老師分頁）" {
+  package "001 頁面（不修改）" #EEEEEE {
+    component "PickPage (T-Pick)" as PPick
+    component "ImportPage\n(T-Import / T-ImportError)" as PImport
+  }
+  component "GuidedNotesService" <<interface>> as INotes
+  component "createServiceRegistry()\n綁定 guidedNotes" as Registry
+  component "HttpGuidedNotesService\n（003 新增）" as HttpNotes
+  component "GooglePickerLauncher\n（003 新增）" as Launcher
+  component "ApiClient.request()\n帶老師憑證、錯誤轉 ApiError（002）" as TFetch #EEEEEE
+}
+
+package "server（本機 Fastify）" {
+  package "002 提供" #EEEEEE {
+    component "buildApp(config, deps)\n組合根：app.register(...)" as BuildApp
+    component "app.requireTeacher\npreHandler" as ReqTeacher
+    component "GET /api/auth/picker-token" as PickerToken
+    component "app.googleClients\nGoogleClientProvider.authorizedClient()\nisGoogleAuthExpired()" as ClientProvider
+  }
+  package "003 guided-notes" {
+    component "guidedNotesRoutes\nGET /api/guided-notes/spreadsheets/:id\nPOST /api/guided-notes/read" as Routes
+    component "GuidedNotesImporter" as Importer
+    component "SpreadsheetReader" <<interface>> as IReader
+    component "GoogleSheetsReader" as SheetsReader
+    component "SheetGrid\n儲存格與合併範圍" as Grid
+    package "解析（不碰網路）" {
+      component "GuidedNotesParser" as Parser
+      component "HeaderLocator" as Header
+      component "QuestionScanner" as Scanner
+      component "importErrors\nImportError 的原因與修正方式" as Errors
+    }
+    component "ImportStore\nlatest()" as Store
+  }
+  package "其他子功能" #EEEEEE {
+    component "004 建立活動" as Act004
+    component "006 寫回" as Res006
+  }
+}
+
+Teacher --> PPick : 從 Google 雲端硬碟挑選
+Teacher --> PImport : 切換工作表 / 重新挑選 / 重新讀取
+PPick ..> INotes
+PImport ..> INotes
+Registry --> HttpNotes : 取代 MockGuidedNotesService
+HttpNotes -up-|> INotes
+HttpNotes --> Launcher : pick()
+HttpNotes --> TFetch : 呼叫 003 API
+Launcher --> TFetch : 取得 picker token
+Launcher ..> GPicker : 開啟（只顯示 Google 試算表）
+
+TFetch --> PickerToken
+TFetch --> Routes
+BuildApp --> Routes : app.register(guidedNotesRoutes)
+BuildApp --> Store : 建立，app.importStore
+BuildApp --> SheetsReader : 建立，app.spreadsheetReader
+Routes --> ReqTeacher : { preHandler: app.requireTeacher }
+Routes --> Importer : describe() / read()
+Importer --> IReader : load(spreadsheetId)
+SheetsReader -up-|> IReader
+SheetsReader --> ClientProvider : authorizedClient()
+SheetsReader ..> GSheets : 讀取（唯讀）
+SheetsReader ..> GDrive : 能否編輯
+SheetsReader ..> Grid : 建立
+Importer --> Parser : parse(grid, spreadsheet)
+Importer --> Header : 選預設工作表
+Parser --> Header : locate()
+Parser --> Scanner : scan()
+Parser --> Errors
+Importer --> Store : 成功時 save()
+Act004 ..> Store : latest()
+Res006 ..> Store : latest()
+Res006 ..> IReader : 版面檢查 load()
+Res006 ..> Parser : 版面檢查 parse()
+
+note bottom of Store
+  只存在伺服器記憶體；
+  只有 readWorksheet 成功時才取代（D2）。
+  001 的「確認匯入」沒有介面呼叫，
+  所以以最近一次成功的結果為準。
+end note
+
+note bottom of Header
+  同義詞在執行期比對（原則 IV）：
+  題號／編號／題次、作答／答案／回答、
+  題目／問題／題幹（可以沒有）。
+  找不到 → ImportError NO_HEADER，不猜測。
+end note
+@enduml
