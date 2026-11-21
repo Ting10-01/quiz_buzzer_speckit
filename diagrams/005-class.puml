@@ -1,0 +1,225 @@
+@startuml 005-class
+title 005 類別圖：搶答與判定
+
+skinparam defaultFontName "PingFang TC"
+hide empty members
+set separator none
+skinparam classAttributeIconSize 0
+
+package "001 實體與介面（shared/src/entities.ts、frontend/src/services/interfaces.ts）" #EEEEEE {
+  enum Judgement {
+    PENDING
+    ACCEPTED
+    REJECTED
+    UNJUDGED
+  }
+  class Submission {
+    questionNumber: number
+    groupNumber: number
+    answers: string[]
+    rank: number [0..1]
+    elapsedMs: number
+    judgement: Judgement
+  }
+  class ValidationError {
+    field: string
+    message: string
+  }
+  interface SubmissionService {
+    +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
+    +listSubmissions(questionNumber: number): Promise<Submission[]>
+    +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +onJudgement(listener: (submission: Submission) => void): Unsubscribe
+  }
+  Submission --> Judgement
+}
+
+package "共用事件型別（shared/src/submissionEvents.ts）" {
+  class SubmitRequest {
+    questionNumber: number
+    answers: string[]
+    requestId: string
+  }
+  class SubmitReply {
+    ok: boolean
+    submission: Submission [0..1]
+    error: ValidationError [0..1]
+  }
+  class JudgeRequest {
+    groupNumber: number
+    judgement: Judgement
+  }
+  class SubmissionsChanged {
+    questionNumber: number
+    submissions: Submission[]
+  }
+  class SubmissionJudged {
+    submission: Submission
+  }
+  SubmitReply --> Submission
+  SubmitReply --> ValidationError
+  SubmissionsChanged o-- "0..*" Submission
+  SubmissionJudged --> Submission
+}
+
+package "前端（frontend/src/services/server/）" {
+  class ServerSubmissionService {
+    -inFlight: Map<number, Promise<Submission | ValidationError>>
+    -lastRequest: SubmitRequest [0..1]
+    +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
+    +listSubmissions(questionNumber: number): Promise<Submission[]>
+    +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +onJudgement(listener: (submission: Submission) => void): Unsubscribe
+  }
+  ServerSubmissionService ..|> SubmissionService
+  ServerSubmissionService ..> SubmitRequest
+  ServerSubmissionService ..> SubmitReply
+  class "RealtimeClient «004»" as RealtimeClient #EEEEEE {
+    +emitWithAck<T>(event: string, payload): Promise<T>
+    +onConnect(listener): Unsubscribe
+    +on(event: string, listener): Unsubscribe
+  }
+  class "ApiClient «002»" as ApiClient #EEEEEE {
+    +request(method: string, path: string, body?): Promise<unknown>
+  }
+  ServerSubmissionService --> RealtimeClient : 送出、監聽推播
+  ServerSubmissionService --> ApiClient : 列出、判定
+}
+
+package "伺服器（server/src/submission/）" {
+  class SubmissionGateway {
+    +register(io: Server): void
+    -onSubmit(socket: Socket, request: SubmitRequest, ack: (reply: SubmitReply) => void): void
+  }
+  class SubmissionRoutes {
+    +register(app: FastifyInstance): void
+    -list(questionNumber: number): Submission[]
+    -judge(questionNumber: number, request: JudgeRequest): Submission[]
+  }
+  class SubmissionEngine {
+    -processed: number
+    +submit(groupNumber: number [0..1], request: SubmitRequest): SubmitReply
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Submission[]
+    +onActivityChange(activity: ActivityState [0..1]): void
+    -validate(groupNumber: number [0..1], request: SubmitRequest): ValidationError [0..1]
+  }
+  class SubmissionStore {
+    -questions: Map<number, QuestionSubmissions>
+    +question(questionNumber: number): QuestionSubmissions [0..1]
+    +append(record: SubmissionRecord): void
+    +closeQuestion(questionNumber: number): void
+    +list(questionNumber: number): Submission[]
+    +winner(questionNumber: number): Submission [0..1]
+  }
+  class QuestionSubmissions {
+    questionNumber: number
+    records: SubmissionRecord[]
+    winnerGroup: number [0..1]
+    closed: boolean
+    +byGroup(groupNumber: number): SubmissionRecord [0..1]
+    +firstPending(): SubmissionRecord [0..1]
+  }
+  class SubmissionRecord {
+    questionNumber: number
+    groupNumber: number
+    answers: string[]
+    rank: number
+    elapsedMs: number
+    judgement: Judgement
+    requestId: string
+    acceptedAt: number
+  }
+  class SubmissionVisibility {
+    +forTeacher(record: SubmissionRecord): Submission
+    +forStudent(record: SubmissionRecord): Submission
+  }
+  class SubmissionNotifier {
+    -pending: Set<number>
+    -timer: Timeout [0..1]
+    +submissionsChanged(questionNumber: number): void
+    +judged(record: SubmissionRecord): void
+    -flush(): void
+  }
+
+  SubmissionGateway --> SubmissionEngine
+  SubmissionRoutes --> SubmissionEngine
+  SubmissionRoutes --> SubmissionStore
+  SubmissionEngine --> SubmissionStore
+  SubmissionEngine --> SubmissionVisibility : SubmitReply 用 forStudent
+  SubmissionEngine ..> SubmissionNotifier : 處理完後通知
+  SubmissionStore *-- "0..*" QuestionSubmissions
+  QuestionSubmissions *-- "0..*" SubmissionRecord
+  SubmissionRecord --> Judgement
+  SubmissionNotifier --> SubmissionVisibility
+  SubmissionNotifier --> SubmissionStore
+  SubmissionVisibility ..> Submission : creates
+  SubmissionStore ..> SubmissionVisibility : list / winner 用 forTeacher
+}
+
+package "其他子功能（伺服器）" #EEEEEE {
+  class "CommandQueue «004»" as CommandQueue {
+    +run<T>(command: () => T): T
+  }
+  class "SequenceClock «004»" as SequenceClock {
+    +stamp(): number
+  }
+  class "ActivityStore «004»" as ActivityStore {
+    +current(): ActivityState [0..1]
+    +subscribe(listener: (activity: ActivityState [0..1]) => void): Unsubscribe
+  }
+  class "ActivityState «004»" as ActivityState {
+    phase: ActivityPhase
+    currentQuestion: number [0..1]
+    questions: Question[]
+    openedAt: Map<number, number>
+  }
+  class "GroupMembership «004»" as GroupMembership {
+    +groupOf(socket: SocketRef): number [0..1]
+  }
+  class "ActivityManager «004»" as ActivityManager {
+    +endQuestion(questionNumber: number): ActivitySnapshot
+  }
+  class "app.requireTeacher «002»" as RequireTeacher
+  class "app.io、TEACHER_ROOM «002»" as AppIo
+  class "ResultService «006»" as ResultService
+}
+
+SubmissionGateway --> CommandQueue : run(submit)
+SubmissionRoutes --> CommandQueue : run(judge)
+SubmissionEngine --> SequenceClock : stamp()
+SubmissionEngine ..> ActivityStore : 讀階段、題目、openedAt；subscribe
+SubmissionEngine ..> ActivityManager : 接受後 endQuestion(n)
+SubmissionGateway ..> GroupMembership : groupOf(socket)
+SubmissionGateway ..> AppIo : 在 app.io 上註冊事件
+SubmissionNotifier ..> AppIo : 列表送 io.to(TEACHER_ROOM)
+SubmissionNotifier ..> GroupMembership : 判定送 groupOf = n 的連線
+SubmissionRoutes ..> RequireTeacher : preHandler
+ResultService ..> SubmissionStore : list / winner
+ActivityStore --> ActivityState
+
+note bottom of SubmissionRecord
+  rank：每題從 1 連續遞增，在 004 的 CommandQueue.run 內取得（REQ-SUB-08）
+  acceptedAt：004 的 SequenceClock.stamp()，單調不減（REQ-SUB-09）
+  elapsedMs = acceptedAt − ActivityState.openedAt[n]（同一個時鐘）
+  requestId：同一次送出重複抵達時回覆同一筆（REQ-SUB-06）
+end note
+
+note right of SubmissionVisibility
+  forStudent 不放 rank（R9、REQ-SUB-16）；
+  需請 001 把 Submission.rank 改為 [0..1]
+end note
+
+note bottom of CommandQueue
+  004 擁有；004 的開放、結束題目也走這條佇列（REQ-ACT-17）。
+  command 必須同步執行，不得 await；
+  在 run 內呼叫 endQuestion 會就地執行，
+  ActivityStore.subscribe 的 listener 也在 run 內同步被呼叫
+end note
+
+note right of SubmissionEngine
+  processed：每處理一筆送出加 1，
+  寫入 log 的 seq，供壓力測試核對處理順序
+end note
+@enduml
