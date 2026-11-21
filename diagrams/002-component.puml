@@ -1,0 +1,85 @@
+@startuml
+title 002 搶答活動 — 組件圖
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam defaultTextAlignment center
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #888888
+}
+
+actor "老師" as Teacher
+actor "學生（各組）" as Student
+
+package "老師端（瀏覽器）" {
+  [TeacherConsolePage] as TeacherPage
+}
+
+package "學生端（瀏覽器，每組可多個分頁）" {
+  [StudentJoinPage] as JoinPage
+  [StudentAnswerPage] as AnswerPage
+}
+
+package "系統端（唯一權威來源，原則 V）" {
+  [SessionGateway] as Gateway
+  [CommandQueue] as Queue
+  [ActivityService] as Service
+  [QuestionTimer] as Timer
+  [BuzzEngine] as Engine
+  () "RankingPolicy" as IPolicy
+  [FirstArrivalPolicy] as FirstArrival
+  [FairPolicy] as Fair
+  [Broadcaster] as Broadcaster
+  [VisibilityFilter] as Filter
+  [ActivityStore] as Store
+}
+
+package "其他子功能" #EEEEEE {
+  () "QuestionSetProvider\n（001）" as IQuestions
+  [003 ResultsService] as Results003
+}
+
+Teacher --> TeacherPage : 建立活動 / 開放下一題 / 結束這一題 / 結束活動
+Student --> JoinPage : 選擇組別
+Student --> AnswerPage : 作答目前這一題 / 送出
+
+TeacherPage <--> Gateway : 即時雙向通道\n（指令 + 狀態推送）
+JoinPage <--> Gateway
+AnswerPage <--> Gateway
+
+Gateway -down-> Queue : openNext / close / end / submit 指令
+Timer -left-> Queue : 倒數歸零：close(TIMEOUT)
+Queue -down-> Service : 依抵達順序逐一執行
+Service -right-> Timer : 開題時設定截止時間 / 手動結束時取消
+Service -down-> Engine : submit(activity, command)
+Service .down.> IPolicy : resolve（每題結束時）
+FirstArrival -up- IPolicy
+Fair -up- IPolicy
+Service -down-> Store : 讀寫活動狀態\n（送出紀錄只能新增）
+Service .right.> IQuestions : 讀取題目清單與題目敘述
+Service .right.> Broadcaster : notify（非同步，\n不在臨界區內）
+Service ..> Results003 : onActivityCreated / onQuestionClosed / onActivityEnded
+Broadcaster -down-> Filter : 依角色與組別\n產生畫面資料
+Filter -down-> Store : 讀取活動狀態
+Broadcaster .up.> Gateway : 各連線的送出緩衝
+
+note left of Queue
+  時序正確（REQ-BUZ-NFR-01～03）：
+  開題、結束（含倒數歸零）、結束活動、送出
+  全部排成一列，一筆做完才做下一筆。
+  臨界區只做「驗證 → 取順位序號 → 寫入送出紀錄」，
+  不做任何網路傳送，所以短且固定。
+end note
+
+note right of Timer
+  倒數由系統計時（原則 V），
+  各畫面只顯示系統推來的剩餘秒數；
+  歸零時的結束指令也走同一條佇列
+end note
+
+note bottom of Filter
+  題目結束前，學生只收到：
+  目前題目、剩餘秒數、本組在這一題的送出
+  （不含順位與其他組資訊，R9）
+end note
+@enduml
