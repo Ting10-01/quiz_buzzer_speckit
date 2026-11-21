@@ -1,0 +1,34 @@
+# Contract: 提供給 006 的 SubmissionStore
+
+**Owner**: `005-buzz-submission` | **Consumer**: `006-results-export`（伺服器端 `ResultService`） | **Location**: `server/src/submission/SubmissionStore.ts`
+
+`SubmissionStore` 是送出、順位、判定與搶答成功組別的唯一權威來源（原則 V），只存在伺服器記憶體。006 只讀，不寫。
+
+## 方法（006 使用）
+
+| 方法 | 回傳 | 說明 |
+| --- | --- | --- |
+| `list(questionNumber)` | `Submission[]` | 第 n 題所有送出，依 `rank` 排序，老師視角（有 `rank`、`elapsedMs`、`judgement`）。沒有送出或還沒開放時為 `[]` |
+| `winner(questionNumber)` | `Submission \| null` | 第 n 題 `judgement = ACCEPTED` 的那一筆；沒有時為 `null` |
+
+## 保證
+
+| 保證 | 依據 |
+| --- | --- |
+| 每題的 `rank` 從 1 開始，連續、不重複 | REQ-SUB-08 |
+| 每組每題最多一筆；每題最多一筆 `ACCEPTED` | REQ-SUB-03、REQ-SUB-12 |
+| 一題結束後（006 取得結果的時間點），列表中沒有 `PENDING`：只有 `ACCEPTED`、`REJECTED`、`UNJUDGED` | REQ-SUB-14 |
+| `elapsedMs` 隨 `rank` 單調不減；「比第一名慢的秒數」＝ 該筆 `elapsedMs` − `rank 1` 的 `elapsedMs` | REQ-SUB-09；001 data-model |
+| 內容與老師畫面顯示的列表完全相同（`GET /api/questions/:n/submissions` 直接回傳 `list(n)`） | REQ-SUB-19、AC-22 |
+
+## 結果的判讀（006 的呈現依此判斷）
+
+| 情況 | `list(n)` | `winner(n)` | 006 的呈現（001 FR-034） |
+| --- | --- | --- | --- |
+| 有組別被接受 | 至少 1 筆 | 有 | 搶答成功的組別與答案 |
+| 有送出但都沒被接受 | 至少 1 筆 | `null` | 「沒有組別搶答成功」 |
+| 沒有送出 | `[]` | `null` | 「沒有組別送出」 |
+
+## 公布時機
+
+`SubmissionStore` 本身不限制誰能讀；作答期間不讓學生看到他組資料（R9）由 005 的 API 與 006 的公布時機共同保證：006 只在一題結束後把該題結果給學生（feature-split R9 由 005、006 分工）。
