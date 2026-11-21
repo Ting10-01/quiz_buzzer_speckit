@@ -1,0 +1,218 @@
+@startuml 002-class
+title 002 類別圖：老師登入、老師檢查與 Google 授權
+
+skinparam defaultFontName "PingFang TC"
+hide empty members
+left to right direction
+
+package "Entities（001 提供，shared）" {
+  class TeacherAccount {
+    name: string
+    email: string
+  }
+  enum SignInFailure {
+    CANCELLED
+    NOT_TEACHER
+    SCOPE_DENIED
+  }
+  class SignInResult {
+    ok: boolean
+    account: TeacherAccount [0..1]
+    failure: SignInFailure [0..1]
+  }
+  class UnexpectedError {
+    message: string
+  }
+  SignInResult --> TeacherAccount
+  SignInResult --> SignInFailure
+}
+
+note bottom of SignInFailure
+  SCOPE_DENIED 為 002 新增，
+  需請 001 修改（spec「需請 001 修改」第 1 條）
+end note
+
+package "Frontend（frontend/src/services/）" {
+  interface AuthService <<001>> {
+    +signInWithGoogle(): Promise<SignInResult>
+    +getCurrentAccount(): Promise<TeacherAccount | null>
+  }
+  class HttpAuthService {
+    +signInWithGoogle(): Promise<SignInResult>
+    +getCurrentAccount(): Promise<TeacherAccount | null>
+    -signingIn: boolean
+  }
+  interface GoogleIdentityClient {
+    +requestCode(clientId: string, scopes: string[]): Promise<GoogleCodeResult>
+  }
+  class GisGoogleIdentityClient
+  enum GoogleCodeError {
+    CANCELLED
+    POPUP_BLOCKED
+    LOAD_FAILED
+  }
+  class GoogleCodeResult {
+    code: string [0..1]
+    error: GoogleCodeError [0..1]
+  }
+  class TeacherCredentialStore {
+    +get(): string | null
+    +set(token: string): void
+    +clear(): void
+  }
+  class ApiClient {
+    +request<T>(method: string, path: string, body?: unknown): Promise<T>
+  }
+  class ApiError {
+    status: number
+    code: string
+    message: string
+  }
+
+  HttpAuthService ..|> AuthService
+  GisGoogleIdentityClient ..|> GoogleIdentityClient
+  HttpAuthService --> GoogleIdentityClient
+  HttpAuthService --> ApiClient
+  HttpAuthService --> TeacherCredentialStore
+  ApiClient --> TeacherCredentialStore
+  ApiClient ..> ApiError : reject
+  GoogleIdentityClient ..> GoogleCodeResult
+  GoogleCodeResult --> GoogleCodeError
+}
+
+ApiError ..|> UnexpectedError
+HttpAuthService ..> SignInResult
+
+package "Server（server/src/）" {
+  class AppConfig {
+    port: number
+    google: GoogleConfig [0..1]
+    missingGoogleVars: string[]
+  }
+  class GoogleConfig {
+    clientId: string
+    clientSecret: string
+    apiKey: string
+    appId: string
+  }
+  class TeacherAuth {
+    +signIn(code: string): Promise<SignInOutcome>
+    +verify(token: string): boolean
+    +currentAccount(): TeacherAccount | null
+    +onRotate(listener: () => void): void
+    -binding: TeacherBinding [0..1]
+  }
+  class TeacherBinding {
+    googleSub: string
+    account: TeacherAccount
+    teacherToken: string
+  }
+  class SignInOutcome {
+    ok: boolean
+    teacherToken: string [0..1]
+    account: TeacherAccount [0..1]
+    failure: SignInFailure [0..1]
+  }
+  interface GoogleOAuthGateway {
+    +exchangeCode(code: string): Promise<GoogleSignIn>
+    +createClient(tokens: GoogleTokens): OAuth2Client
+  }
+  class GoogleAuthLibraryGateway
+  class GoogleSignIn {
+    sub: string
+    email: string
+    grantedScopes: string[]
+    tokens: GoogleTokens
+  }
+  class GoogleTokens {
+    accessToken: string
+    refreshToken: string
+    expiryDate: number
+  }
+  class GoogleClientProvider {
+    +replace(tokens: GoogleTokens): void
+    +authorizedClient(): OAuth2Client
+    -client: OAuth2Client [0..1]
+  }
+  class TeacherNotSignedInError {
+    code = "NOT_SIGNED_IN"
+  }
+  class PickerToken {
+    accessToken: string
+    apiKey: string
+    appId: string
+  }
+  class ErrorBody {
+    code: string
+    message: string
+  }
+  class "requireTeacher" as RequireTeacher <<preHandler>> {
+    +(request, reply): Promise<void>
+  }
+  class "authRoutes" as AuthRoutes <<Fastify plugin>> {
+    GET /api/auth/config
+    POST /api/auth/google
+    GET /api/auth/me
+    GET /api/auth/picker-token
+  }
+  class "attachSocketServer" as SocketServer <<function>> {
+    +(app, teacherAuth): io.Server
+    TEACHER_ROOM = "teacher"
+  }
+  class "buildApp" as BuildApp <<composition root>> {
+    +(config: AppConfig, deps): FastifyInstance
+  }
+  class "isGoogleAuthExpired" as IsExpired <<function>> {
+    +(error: unknown): boolean
+  }
+  class GoogleUnavailableError {
+    code = "GOOGLE_UNAVAILABLE"
+  }
+  GoogleAuthLibraryGateway ..> GoogleUnavailableError : throw（逾時 15 秒、網路錯誤）
+
+  AppConfig --> GoogleConfig
+  TeacherAuth --> TeacherBinding
+  TeacherAuth --> GoogleOAuthGateway
+  TeacherAuth --> GoogleClientProvider
+  TeacherAuth ..> SignInOutcome
+  GoogleAuthLibraryGateway ..|> GoogleOAuthGateway
+  GoogleAuthLibraryGateway --> GoogleConfig
+  GoogleOAuthGateway ..> GoogleSignIn
+  GoogleSignIn --> GoogleTokens
+  GoogleClientProvider --> GoogleOAuthGateway
+  GoogleClientProvider ..> TeacherNotSignedInError : throw
+  RequireTeacher --> TeacherAuth
+  RequireTeacher ..> ErrorBody : 401
+  AuthRoutes --> TeacherAuth
+  AuthRoutes --> GoogleClientProvider
+  AuthRoutes --> RequireTeacher
+  AuthRoutes ..> PickerToken
+  AuthRoutes ..> ErrorBody
+  AuthRoutes ..> IsExpired
+  SocketServer --> TeacherAuth
+  BuildApp --> AppConfig
+  BuildApp --> AuthRoutes
+  BuildApp --> RequireTeacher
+  BuildApp --> SocketServer
+  BuildApp --> TeacherAuth
+  BuildApp --> GoogleClientProvider : app.googleClients
+}
+
+TeacherBinding --> TeacherAccount
+SignInOutcome --> SignInFailure
+
+note bottom of TeacherAuth
+  伺服器啟動後第一個 signIn 成功的帳號成為老師（binding）；
+  其他 googleSub → NOT_TEACHER；同一 googleSub → 換發 teacherToken、
+  replace(tokens)、通知 onRotate（中斷舊的老師連線）。
+  缺少 drive.file → SCOPE_DENIED。exchangeCode 之後同步檢查並綁定，
+  兩人同時登入只有一人成為老師。全部只在記憶體。
+end note
+
+note bottom of GoogleClientProvider
+  003、006 以 authorizedClient() 呼叫 Sheets / Drive API；
+  OAuth2Client 帶長期授權，過期自動更新。
+  還沒有老師登入 → TeacherNotSignedInError。
+end note
+
+@enduml
