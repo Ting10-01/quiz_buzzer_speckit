@@ -1,0 +1,81 @@
+@startuml
+title 003 搶答結果與匯出 — 組件圖
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam defaultTextAlignment center
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #888888
+}
+
+actor "老師" as Teacher
+actor "學生" as Student
+cloud "Google Sheets\n（老師的學習單）" as GoogleSheets
+
+package "老師端（瀏覽器）" {
+  [TeacherResultsPage] as TeacherPage
+}
+
+package "學生端（瀏覽器）" {
+  [StudentResultsPage] as StudentPage
+}
+
+package "系統端（本機）" {
+  [ResultsService] as Service
+  [GuidedNotesWriter] as GnWriter
+  [CsvExporter] as CsvExporter
+  [ActivityRecordStore] as RecordStore
+  database "活動紀錄檔\n（本機檔案）" as RecordFile
+  () "SpreadsheetWriter" as IWriter
+  [GoogleSheetsWriter] as SheetsWriter
+}
+
+package "其他子功能" #EEEEEE {
+  () "QuestionSetProvider\n（001）" as IQuestions
+  () "SpreadsheetReader\n（001）" as IReader
+  [GoogleAuthService\n（001）] as Auth001
+  [002 ActivityService] as Activity002
+  [002 SessionGateway] as Gateway002
+}
+
+Teacher --> TeacherPage : 檢視結果 / 寫回 / 匯出 CSV
+Student --> StudentPage : 檢視結果
+
+Activity002 ..> Service : onActivityCreated / onQuestionClosed /\nonActivityEnded
+Gateway002 --> TeacherPage : 推送「已結束」
+Gateway002 --> StudentPage : 推送「已結束」
+TeacherPage --> Service : teacherResults()\nwriteBack()\nexportCsv()
+StudentPage --> Service : studentResults(groupId)
+
+Service --> RecordStore : 建立 / 每題新增 / 標記結束、已寫回、已匯出 /\n重開時載入最近一輪
+RecordStore --> RecordFile
+Service ..> IQuestions : 讀取學習單來源與填空格位置
+Service --> GnWriter : writeBack(questionSet, results)
+Service --> CsvExporter : export(questionSet, results)
+GnWriter ..> IReader : 重新讀取工作表，檢查版面
+GnWriter ..> IWriter : 複製備份工作表 / 一次寫入所有填空格
+SheetsWriter - IWriter
+SheetsWriter --> Auth001 : 沿用老師的 Google 授權
+SheetsWriter ..> GoogleSheets : 複製工作表、批次寫入（純文字）
+
+note bottom of GnWriter
+  1. 檢查每題題號仍在匯入時的位置，對不上就整個不寫（不建備份）
+  2. 複製學習單工作表為「原名-備份-日期時間」
+  3. 只寫入 001 解析出的填空格（原則 IV），一次批次完成：
+     有成功組別 → 標記 + 答案；無人搶答 → 只留標記
+  其他儲存格內容與格式不變
+end note
+
+note right of Service
+  學生看到的內容依階段而定（R9）：
+  題目進行中 → 不提供該題結果
+  題目已結束 → 成功組別與答案
+  活動已結束 → 所有組別的答案與順位
+end note
+
+note bottom of RecordFile
+  每題結束就寫入，系統當掉或關掉後
+  已結束的題目都找得回來（REQ-EXP-14）；
+  不含密碼、金鑰或 Google 授權資料
+end note
+@enduml

@@ -1,0 +1,220 @@
+@startuml
+title 003 搶答結果與匯出 — 類別圖
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Results" {
+  class ResultsService {
+    +onActivityCreated(activity: Activity): void
+    +onQuestionClosed(activity: Activity, result: QuestionResult): void
+    +onActivityEnded(activity: Activity): void
+    +teacherResults(): TeacherResultView
+    +studentResults(groupId: String): StudentResultView
+    +writeBack(): WriteBackResult
+    +exportCsv(): ExportFile
+    +restoreLatest(): ActivityRecord [0..1]
+  }
+
+  class TeacherResultView {
+    +questions: QuestionResult[]
+    +winsByGroup: Map<String, int>
+    +writtenBack: boolean
+    +csvExported: boolean
+    +restored: boolean
+  }
+
+  class StudentResultView {
+    +phase: Phase
+    +winners: WinnerRow[]
+    +rankings: RankingRow[]
+    +ownGroupId: String
+  }
+
+  class WinnerRow {
+    +questionNumber: int
+    +winnerGroupName: String [0..1]
+    +answers: Map<String, String>
+  }
+
+  class RankingRow {
+    +questionNumber: int
+    +groupName: String
+    +answers: Map<String, String>
+    +rank: int
+    +isWinner: boolean
+    +isOwnGroup: boolean
+  }
+}
+
+package "Record" {
+  class ActivityRecordStore {
+    +create(record: ActivityRecord): void
+    +appendQuestion(activityId: String, record: QuestionRecord): void
+    +markEnded(activityId: String): void
+    +markWrittenBack(activityId: String): void
+    +markCsvExported(activityId: String): void
+    +loadLatest(): ActivityRecord [0..1]
+  }
+
+  class ActivityRecord {
+    +activityId: String
+    +questionSet: QuestionSet
+    +groups: Group[]
+    +startedAt: Instant
+    +ended: boolean
+    +writtenBack: boolean
+    +csvExported: boolean
+    +questions: QuestionRecord[]
+  }
+
+  class QuestionRecord {
+    +questionNumber: int
+    +openedAt: Instant
+    +closedAt: Instant
+    +closeReason: CloseReason
+    +submissions: Submission[]
+    +result: QuestionResult
+  }
+}
+
+package "WriteBack" {
+  class GuidedNotesWriter {
+    +writeBack(questionSet: QuestionSet, results: QuestionResult[]): WriteBackResult
+    -verifyLayout(sheet: Sheet, questionSet: QuestionSet): void
+    -composeCellText(slot: AnswerSlot, answer: String [0..1]): String
+    -backupName(sheetName: String, now: Instant): String
+  }
+
+  interface SpreadsheetWriter {
+    +duplicateSheet(spreadsheetId: String, sheetId: int, newName: String): SheetInfo
+    +writeTexts(spreadsheetId: String, cells: CellText[]): void
+  }
+
+  class GoogleSheetsWriter
+
+  class CellText {
+    +cell: CellRef
+    +text: String
+  }
+
+  class WriteBackResult {
+    +writtenCount: int
+    +clearedCount: int
+    +backupSheetName: String
+    +spreadsheetUrl: String
+  }
+
+  class WriteBackError {
+    +code: WriteBackErrorCode
+    +message: String
+    +questionNumber: int [0..1]
+  }
+
+  enum WriteBackErrorCode {
+    ACTIVITY_NOT_ENDED
+    LAYOUT_CHANGED
+    NOT_LINKED
+    AUTH_EXPIRED
+    NO_EDIT_PERMISSION
+    SHEET_NOT_FOUND
+    BACKUP_FAILED
+    NETWORK_ERROR
+  }
+}
+
+package "Csv" {
+  class CsvExporter {
+    +export(questionSet: QuestionSet, results: QuestionResult[]): String
+    -toRows(results: QuestionResult[]): CsvRow[]
+    -escape(value: String): String
+  }
+
+  class CsvRow {
+    +questionNumber: int
+    +slotLabel: String
+    +groupName: String
+    +answer: String
+    +rank: int
+    +receivedAt: Instant
+    +isWinner: boolean
+  }
+
+  class ExportFile {
+    +fileName: String
+    +contentType: String
+    +bytes: Bytes
+  }
+}
+
+package "001（共用）" #EEEEEE {
+  class QuestionSet
+  class AnswerSlot
+  class CellRef
+  class SheetInfo
+  interface Sheet
+  interface SpreadsheetReader
+  class QuestionSetStore
+  class GoogleAuthService
+}
+
+package "002（共用）" #EEEEEE {
+  class Activity
+  class QuestionResult
+  class Submission
+  class Group
+  enum Phase
+  enum CloseReason
+}
+
+ResultsService --> ActivityRecordStore
+ResultsService --> QuestionSetStore
+ResultsService --> GuidedNotesWriter
+ResultsService --> CsvExporter
+ResultsService ..> TeacherResultView : creates
+ResultsService ..> StudentResultView : creates
+ResultsService ..> ExportFile : creates
+StudentResultView *-- "0..*" WinnerRow
+StudentResultView *-- "0..*" RankingRow
+ActivityRecordStore ..> ActivityRecord : loads
+ActivityRecord --> QuestionSet
+ActivityRecord *-- "0..*" QuestionRecord
+QuestionRecord o-- "0..*" Submission
+QuestionRecord --> QuestionResult
+QuestionRecord --> CloseReason
+GuidedNotesWriter --> SpreadsheetReader : 重新讀取工作表
+GuidedNotesWriter --> SpreadsheetWriter
+GuidedNotesWriter ..> WriteBackResult : creates
+GuidedNotesWriter ..> WriteBackError : throws
+GuidedNotesWriter ..> AnswerSlot
+GuidedNotesWriter ..> Sheet
+WriteBackError --> WriteBackErrorCode
+GoogleSheetsWriter ..|> SpreadsheetWriter
+GoogleSheetsWriter --> GoogleAuthService : authorizedClient()
+SpreadsheetWriter ..> CellText
+SpreadsheetWriter ..> SheetInfo : creates
+CellText --> CellRef
+CsvExporter ..> CsvRow : creates
+QuestionSet ..> AnswerSlot
+AnswerSlot --> CellRef
+
+note right of GuidedNotesWriter
+  verifyLayout：每題題號仍在匯入時的列與題號欄，
+  題組的合併範圍列數相同；任一題不符 → LAYOUT_CHANGED
+  composeCellText：
+    有答案 → 標記 + 答案（「（1）CPU」）
+    無答案 → 只留標記；沒有標記就是空白（REQ-EXP-07）
+  writeTexts 一次批次寫入，以純文字寫入（不當成公式）
+end note
+
+note right of StudentResultView
+  rankings 在活動結束前一律是空的；
+  活動結束後才填入所有組別的答案與順位
+end note
+
+note right of CsvExporter
+  UTF-8 加 BOM（Excel 正確顯示中文）
+  依題號、再依順位排序
+  以 = + - @ 開頭的答案加前置單引號
+end note
+@enduml
