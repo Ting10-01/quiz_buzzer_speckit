@@ -1,0 +1,239 @@
+@startuml 003-class
+title 003 類別圖：匯入學習單
+
+skinparam defaultFontName "PingFang TC"
+hide empty members
+scale max 4000 width
+
+package "Entities（001 shared 實體）" #F4F4F4 {
+  class Spreadsheet {
+    id: string
+    title: string
+    editable: boolean
+    worksheets: string[]
+    selectedWorksheet: string
+  }
+  enum QuestionType {
+    SINGLE
+    GROUP
+  }
+  class Question {
+    number: number
+    type: QuestionType
+    text: string [0..1]
+  }
+  class SubQuestion {
+    index: number
+    blankCell: string
+    marker: string <<需請 001 新增>>
+  }
+  class ImportSuccess {
+    spreadsheet: Spreadsheet
+    headerRow: number
+    headerColumns: string[]
+    questions: Question[]
+  }
+  class ImportError {
+    code: string
+    reason: string
+    foundHeaders: string[]
+    acceptedHeaders: string[]
+    fixSteps: string[]
+  }
+  enum ImportErrorCode <<003 定義的 code 值>> {
+    NO_HEADER
+    NO_QUESTIONS
+    INVALID_NUMBERING
+    TOO_MANY_QUESTIONS
+    NO_BLANK
+    NO_ACCESS
+    NO_WORKSHEET
+  }
+  class UnexpectedError {
+    message: string
+  }
+  ImportSuccess --> Spreadsheet
+  ImportSuccess "1" *-- "1..*" Question
+  Question "1" *-- "1..*" SubQuestion
+  Question --> QuestionType
+  ImportError ..> ImportErrorCode : code 的值
+}
+
+package "frontend/src/services（003）" {
+  interface GuidedNotesService <<001>> {
+    +pickSpreadsheet(): Promise<Spreadsheet | null>
+    +readWorksheet(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
+  }
+  class HttpGuidedNotesService {
+    -api: ApiClient
+    -picker: GooglePickerLauncher
+    +pickSpreadsheet(): Promise<Spreadsheet | null>
+    +readWorksheet(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
+  }
+  class GooglePickerLauncher {
+    -api: ApiClient
+    +pick(): Promise<string | null>
+  }
+  HttpGuidedNotesService ..|> GuidedNotesService
+  HttpGuidedNotesService --> GooglePickerLauncher
+  HttpGuidedNotesService ..> UnexpectedError : reject（ApiError）
+}
+
+package "server/src/guided-notes（003）" {
+  class GuidedNotesImporter {
+    +describe(spreadsheetId: string): Promise<Spreadsheet>
+    +read(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
+  }
+  interface SpreadsheetReader {
+    +load(spreadsheetId: string): Promise<LoadedSpreadsheet>
+  }
+  class LoadedSpreadsheet {
+    id: string
+    title: string
+    editable: boolean
+    sheets: SheetGrid[]
+  }
+  class SheetGrid {
+    sheetId: number
+    name: string
+    rowCount: number
+    colCount: number
+    +{static} fromApi(sheet: ApiSheet): SheetGrid
+    +text(row: number, col: number): string
+    +number(row: number, col: number): number [0..1]
+    +mergeAt(row: number, col: number): CellRange [0..1]
+    +toA1(row: number, col: number): string
+  }
+  class CellRange {
+    startRow: number
+    endRow: number
+    startCol: number
+    endCol: number
+  }
+  class SheetsReadError {
+    kind: "NO_ACCESS" | "UNAVAILABLE" | "AUTH_EXPIRED"
+  }
+  class GoogleSheetsReader {
+    -clients: GoogleClientProvider
+    +load(spreadsheetId: string): Promise<LoadedSpreadsheet>
+  }
+  class GuidedNotesParser {
+    +parse(grid: SheetGrid, spreadsheet: Spreadsheet): ImportSuccess | ImportError
+  }
+  class HeaderLocator {
+    +NUMBER_HEADERS = 題號、編號、題次
+    +ANSWER_HEADERS = 作答、答案、回答
+    +QUESTION_HEADERS = 題目、問題、題幹
+    +locate(grid: SheetGrid): HeaderMatch [0..1]
+    +currentHeaderTexts(grid: SheetGrid): string[]
+  }
+  class HeaderMatch {
+    row: number
+    numberCol: number
+    answerCol: number
+    questionCol: number [0..1]
+  }
+  class QuestionScanner {
+    +scan(grid: SheetGrid, header: HeaderMatch): ScannedQuestion[] | ImportError
+  }
+  class ScannedQuestion {
+    row: number
+    question: Question
+  }
+  class importErrors <<module>> {
+    +noHeader(worksheet, foundHeaders): ImportError
+    +noQuestions(worksheet): ImportError
+    +invalidNumbering(number, row, previous): ImportError
+    +tooManyQuestions(count): ImportError
+    +noBlank(number, row): ImportError
+    +noAccess(): ImportError
+    +noWorksheet(worksheet): ImportError
+  }
+  class ImportStore {
+    -latestResult: ImportSuccess [0..1]
+    +save(result: ImportSuccess): void
+    +latest(): ImportSuccess [0..1]
+  }
+  class guidedNotesRoutes <<Fastify plugin>> {
+    GET /api/guided-notes/spreadsheets/:spreadsheetId
+    POST /api/guided-notes/read
+  }
+
+  GoogleSheetsReader ..|> SpreadsheetReader
+  GoogleSheetsReader ..> LoadedSpreadsheet : creates
+  GoogleSheetsReader ..> SheetsReadError : throws
+  LoadedSpreadsheet "1" *-- "1..*" SheetGrid
+  SheetGrid ..> CellRange
+  GuidedNotesImporter --> SpreadsheetReader
+  GuidedNotesImporter --> GuidedNotesParser
+  GuidedNotesImporter --> HeaderLocator
+  GuidedNotesImporter --> ImportStore
+  GuidedNotesImporter ..> importErrors
+  GuidedNotesParser --> HeaderLocator
+  GuidedNotesParser --> QuestionScanner
+  GuidedNotesParser ..> importErrors
+  QuestionScanner ..> importErrors
+  HeaderLocator ..> HeaderMatch : creates
+  QuestionScanner ..> ScannedQuestion : creates
+  ScannedQuestion --> Question
+  ImportStore o-- "0..1" ImportSuccess
+  guidedNotesRoutes --> GuidedNotesImporter
+}
+
+package "002 提供（只引用）" #EEEEEE {
+  class GoogleClientProvider <<app.googleClients>> {
+    +authorizedClient(): OAuth2Client
+  }
+  class TeacherNotSignedInError {
+    code = "NOT_SIGNED_IN"
+  }
+  class googleAuthErrors <<module>> {
+    +isGoogleAuthExpired(error): boolean
+  }
+  class requireTeacher <<app.requireTeacher>>
+  class buildApp <<組合根>> {
+    +buildApp(config: AppConfig, deps): FastifyInstance
+  }
+  class ErrorBody {
+    code: string
+    message: string
+  }
+  class ApiClient <<frontend>> {
+    +request<T>(method: string, path: string, body?: unknown): Promise<T>
+  }
+  class ApiError <<frontend>> {
+    status: number
+    code: string
+    message: string
+  }
+  GoogleClientProvider ..> TeacherNotSignedInError : throws
+  ApiClient ..> ApiError : reject
+}
+HttpGuidedNotesService --> ApiClient
+GooglePickerLauncher --> ApiClient
+ApiError ..|> UnexpectedError
+buildApp ..> guidedNotesRoutes : app.register
+buildApp ..> ImportStore : 建立（app.importStore）
+buildApp ..> GoogleSheetsReader : 建立（app.spreadsheetReader）
+GoogleSheetsReader ..> googleAuthErrors
+guidedNotesRoutes ..> ErrorBody : 錯誤回應
+GoogleSheetsReader --> GoogleClientProvider
+guidedNotesRoutes ..> requireTeacher
+
+note right of ImportStore
+  004 建立活動時、006 寫回時呼叫 latest()（唯讀）。
+  只有 read() 成功時 save()；失敗不變（D2）。
+end note
+
+note right of SubQuestion
+  blankCell：A1，合併範圍取左上角
+  marker：填空格開頭的「（n）」「(n)」，原樣保留；
+  沒有時為空字串。006 寫回時放在答案前面
+end note
+
+note right of SheetsReadError
+  NO_ACCESS：Google 回 403／404
+  UNAVAILABLE：逾時 15 秒、網路錯誤、5xx
+  AUTH_EXPIRED：002 的 isGoogleAuthExpired(error) 為 true
+end note
+@enduml

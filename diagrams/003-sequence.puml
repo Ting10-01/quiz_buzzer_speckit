@@ -1,0 +1,113 @@
+@startuml 003-sequence
+title 003 時序圖：匯入學習單
+
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+
+actor "老師" as T
+boundary "001 頁面\n(PickPage / ImportPage)" as Page
+participant "HttpGuidedNotesService\n(經 002 ApiClient)" as Svc
+participant "GooglePickerLauncher" as L
+participant "Google Picker" as GP
+participant "002\n/api/auth/picker-token" as PT
+participant "guidedNotesRoutes\n(preHandler: app.requireTeacher)" as R
+participant "GuidedNotesImporter" as I
+participant "GoogleSheetsReader" as GR
+participant "Google\nSheets / Drive API" as G
+participant "GuidedNotesParser\n(HeaderLocator、QuestionScanner)" as P
+database "ImportStore" as S
+
+== 1. 挑選試算表（pickSpreadsheet） ==
+T -> Page : 點「從 Google 雲端硬碟挑選」
+Page -> Svc : pickSpreadsheet()
+Svc -> L : pick()
+L -> PT : ApiClient.request(GET)（帶老師憑證）
+PT --> L : { accessToken, apiKey, appId }
+L -> GP : 開啟（只顯示 Google 試算表）
+alt 老師關閉選擇器（D3）
+  GP --> L : cancel
+  L --> Svc : null
+  Svc --> Page : null
+  Page --> T : 留在原頁，原本的結果不變
+else 挑選一份
+  GP --> L : spreadsheetId
+  L --> Svc : spreadsheetId
+  Svc -> R : GET /api/guided-notes/spreadsheets/:id
+  R -> I : describe(id)
+  I -> GR : load(id)
+  GR -> G : spreadsheets.get(includeGridData)\nfiles.get(capabilities.canEdit)
+  G --> GR : 工作表、儲存格、合併範圍、能否編輯
+  GR --> I : LoadedSpreadsheet
+  I -> P : HeaderLocator.locate(每個工作表)
+  I --> R : Spreadsheet（selectedWorksheet = 第一個有表頭的工作表）
+  R --> Svc : 200 Spreadsheet
+  Svc --> Page : Spreadsheet
+end
+
+== 2. 讀取並解析工作表（readWorksheet） ==
+Page -> Svc : readWorksheet(id, selectedWorksheet)
+Svc -> R : POST /api/guided-notes/read
+R -> I : read(id, worksheet)
+I -> GR : load(id)
+GR -> G : spreadsheets.get / files.get
+G --> GR : 資料
+GR --> I : LoadedSpreadsheet
+alt 沒有這個工作表
+  I --> R : ImportError(NO_WORKSHEET)
+else 找到工作表
+  I -> P : parse(grid, spreadsheet)
+  P -> P : locate()：第一個同時有題號欄與作答欄表頭的列
+  opt 找不到表頭
+    P --> I : ImportError(NO_HEADER, foundHeaders, acceptedHeaders, fixSteps)
+  end
+  P -> P : scan()：逐列讀題號；題號跨列合併 → 題組；\n每列作答欄 → 填空格（合併取左上角）與標記；\n題目欄 → 敘述
+  P -> P : 檢查題號不重複、遞增、1–200 題；每題有填空格
+  P --> I : ImportSuccess 或 ImportError
+end
+alt ImportSuccess
+  I -> S : save(result)
+  I --> R : ImportSuccess
+  R --> Svc : 200 ImportSuccess
+  Svc --> Page : ImportSuccess
+  Page --> T : 確認辨識結果頁（T-Import）
+else ImportError
+  note over I, S : ImportStore 不變（D2）
+  I --> R : ImportError
+  R --> Svc : 200 ImportError
+  Svc --> Page : ImportError
+  Page --> T : 錯誤頁（T-ImportError）：原因、表頭、修正方式
+end
+
+== 3. 切換工作表、重新讀取 ==
+T -> Page : 切換工作表 / 點「重新讀取」
+Page -> Svc : readWorksheet(id, worksheet)
+note right of Svc : 同第 2 段
+
+== 4. 非預期錯誤 ==
+alt 連不上 Google（逾時 15 秒）
+  GR --> I : SheetsReadError(UNAVAILABLE)
+  I --> R : 錯誤
+  R --> Svc : 502 { code: GOOGLE_UNAVAILABLE, message }
+else Google 授權失效（isGoogleAuthExpired）
+  GR --> I : SheetsReadError(AUTH_EXPIRED)
+  R --> Svc : 401 { code: GOOGLE_AUTH_EXPIRED, message }
+else 老師憑證失效
+  R --> Svc : 401 { code: UNAUTHORIZED }（requireTeacher 拒絕，不讀試算表）
+else 挑選後讀不到基本資料
+  GR --> I : SheetsReadError(NO_ACCESS)
+  R --> Svc : 403 { code: NO_ACCESS }（read 時改回 200 ImportError NO_ACCESS）
+end
+Svc --> Page : ApiClient reject ApiError（符合 UnexpectedError，message 取 ErrorBody）
+Page --> T : 留在原頁，共通錯誤訊息區顯示（ImportStore 不變）
+
+== 5. 下游讀取 ==
+participant "004 / 006" as D
+D -> S : app.importStore.latest()
+S --> D : ImportSuccess 或 null
+opt 006 寫回前的版面檢查（不更新 ImportStore）
+  D -> GR : app.spreadsheetReader.load(id)
+  GR --> D : LoadedSpreadsheet
+  D -> P : new GuidedNotesParser().parse(grid, spreadsheet)
+  P --> D : ImportSuccess 或 ImportError（比對 blankCell）
+end
+@enduml
