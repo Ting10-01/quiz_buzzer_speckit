@@ -45,7 +45,7 @@ description: "001 畫面與流程原型的實作任務"
 
 **Purpose**: 建立 npm workspaces、前端工具鏈與樣式基礎。完成後 `npm run typecheck`、`npm run lint`、`npm test` 可在空專案上執行。
 
-- [ ] T001 建立 repo 根目錄 `package.json`（`"private": true`、`"workspaces": ["shared", "frontend"]`，scripts：`dev`、`typecheck`、`lint`、`test`、`test:e2e` 轉呼叫 `frontend` workspace，`typecheck` 同時檢查 `shared`）與 `.nvmrc`（內容 `24`）
+- [X] T001 建立 repo 根目錄 `package.json`（`"private": true`、`"workspaces": ["shared", "frontend"]`，scripts：`dev`、`typecheck`、`lint`、`test`、`test:e2e` 轉呼叫 `frontend` workspace，`typecheck` 同時檢查 `shared`）與 `.nvmrc`（內容 `24`）
 - [ ] T002 [P] 建立 `shared/package.json`（名稱 `@quiz-buzzer/shared`，`exports` 指向 `src/`）與 `shared/tsconfig.json`（TypeScript 5，`strict: true`）
 - [ ] T003 建立 `frontend/package.json` 與 `frontend/tsconfig.json`（`strict: true`，相依 `@quiz-buzzer/shared`）；dependencies：`react`、`react-dom`、`@fontsource/inter`、`@fontsource/noto-sans-tc`；devDependencies：`vite`、`@vitejs/plugin-react`、`typescript`、`vitest`、`jsdom`、`@testing-library/react`、`@testing-library/user-event`、`@testing-library/jest-dom`、`@playwright/test`、`eslint`、`typescript-eslint`、`eslint-plugin-react-hooks`。不加入路由或狀態管理套件（research RD-11、原則 XI）
 - [ ] T004 建立 `frontend/vite.config.ts`：React plugin；Vitest 設定 `environment: 'jsdom'`、`include: ['tests/unit/**/*.test.ts', 'tests/component/**/*.test.tsx']`、`setupFiles: ['tests/setup.ts']`

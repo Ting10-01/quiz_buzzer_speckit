@@ -1,0 +1,15 @@
+{
+  "name": "quiz-buzzer",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w frontend",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w frontend",
+    "lint": "npm run lint -w frontend",
+    "test": "npm run test -w frontend",
+    "test:e2e": "npm run test:e2e -w frontend"
+  }
+}
