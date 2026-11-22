@@ -37,3 +37,7 @@
   background: var(--warn-bg);
   color: var(--warn-ink);
 }
+
+.back {
+  align-self: flex-start;
+}

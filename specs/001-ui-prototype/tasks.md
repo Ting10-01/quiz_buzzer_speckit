@@ -206,7 +206,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T126 在 `frontend/src/services/mock/MockSubmissionService.ts` 依 M4–M6 修改：`judge` 只接受最早一筆 `PENDING`，回傳 `JudgeOutcome`，`ACCEPTED` 時把 `MockSession.teacherActivity` 設為 `QUESTION_ENDED`（最後一題為 `FINISHED`）（見 C-3）；實作 `getGroupSubmission`、`onGroupSubmitted`、`simulateTeammateSubmission`（`implements TeammateMockControl`）；`simulateJudgement(ACCEPTED)` 呼叫 `MockSession.advanceViewerPhase()`；每組每題只記錄一筆送出（依賴 T121、T123、T124）
 - [X] T127 在 `frontend/src/services/createServiceRegistry.ts` 把 MockSubmissionService 綁定到 `teammateControl`（依賴 T122、T126）
 - [X] T128 在 `frontend/src/components/MockControlBar.tsx` 新增「模擬：同組組員送出」控制，只在 `S-Answer` 且 `teammateControl` 存在時顯示（contracts/mock-controls.md；依賴 T122）
-- [ ] T129 [P] 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 新增「返回首頁」按鈕 → `Main`，不呼叫介面（FR-007）
+- [X] T129 [P] 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 新增「返回首頁」按鈕 → `Main`，不呼叫介面（FR-007）
 - [ ] T130 [P] 在 `frontend/src/pages/student/JoinPage.tsx` 新增「返回首頁」按鈕 → `Main`，有活動與沒有活動兩種狀態都顯示，不呼叫介面（FR-007、H4）
 - [ ] T131 在 `frontend/src/components/ConfirmDialog.tsx` 匯出 `closeTopDialog(): boolean`：開啟中的 `ConfirmDialog` 以堆疊記錄，呼叫時對最上層執行其 `onClose`（等同取消類按鈕）並回傳 true，沒有開啟的視窗時回傳 false（FR-014）
 - [ ] T132 在 `frontend/src/app/AppRouter.tsx` 實作 FR-014（research RD-11）：每次切換頁面以 `history.pushState` 加入一筆不改網址的紀錄；監聽 `popstate`，先呼叫 `closeTopDialog()`，為 true 時補回一筆紀錄並停止；否則依「返回類按鈕對照」切換（`T-Login`、`S-Join` → `Main`，`T-Pick` → `Main`，`T-Import` → `T-Pick`，`T-Setup` 建立模式 → `T-Import`，修改模式 → `T-Lobby`）；其他頁面補回一筆紀錄並停留。對照集中在 AppRouter 一處，後續 Story 接上新頁面時只在此表加入（依賴 T131）
