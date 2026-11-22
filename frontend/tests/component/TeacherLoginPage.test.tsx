@@ -7,18 +7,16 @@ import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeReg
 
 function setup(signInWithGoogle: AuthService['signInWithGoogle']) {
   const navigate = vi.fn();
-  renderWithRegistry(
-    <TeacherLoginPage navigate={navigate} />,
-    createFakeRegistry({ auth: { signInWithGoogle } }),
-  );
-  return { navigate, login: () => userEvent.click(screen.getByRole('button', { name: '用 Google 登入' })) };
+  const registry = createFakeRegistry({ auth: { signInWithGoogle } });
+  renderWithRegistry(<TeacherLoginPage navigate={navigate} />, registry);
+  return { navigate, registry, login: () => userEvent.click(screen.getByRole('button', { name: '用 Google 登入' })) };
 }
 
 describe('TeacherLoginPage (T-Login)', () => {
   it('offers only "用 Google 登入" as a sign-in option (FR-012)', () => {
     setup(vi.fn());
     const buttons = screen.getAllByRole('button').map((b) => b.textContent);
-    expect(buttons).toEqual(['搶答板', '用 Google 登入']);
+    expect(buttons.filter((label) => label?.includes('登入'))).toEqual(['用 Google 登入']);
   });
 
   it('goes to T-Pick when sign-in succeeds (US1 AC-3)', async () => {
@@ -56,5 +54,14 @@ describe('TeacherLoginPage (T-Login)', () => {
     await userEvent.click(screen.getByRole('button', { name: '搶答板' }));
     expect(navigate).toHaveBeenCalledWith({ id: 'Main' });
     expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('"返回首頁" goes home without a service call (FR-007, US1 AC-6)', async () => {
+    const signIn = vi.fn();
+    const { navigate, registry } = setup(signIn);
+    await userEvent.click(screen.getByRole('button', { name: '返回首頁' }));
+    expect(navigate).toHaveBeenCalledWith({ id: 'Main' });
+    expect(signIn).not.toHaveBeenCalled();
+    expect(registry.auth.getCurrentAccount).not.toHaveBeenCalled();
   });
 });

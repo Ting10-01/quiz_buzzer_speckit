@@ -1,4 +1,5 @@
 import { act, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Activity } from '@quiz-buzzer/shared/entities';
 import { JoinPage } from '../../src/pages/student/JoinPage';
@@ -17,8 +18,9 @@ function setup(current: Activity | null) {
       }),
     },
   });
-  const view = renderWithRegistry(<JoinPage navigate={vi.fn()} />, registry);
-  return { view, unsubscribe, notify: (a: Activity) => act(() => notify(a)) };
+  const navigate = vi.fn();
+  const view = renderWithRegistry(<JoinPage navigate={navigate} />, registry);
+  return { view, registry, navigate, unsubscribe, notify: (a: Activity) => act(() => notify(a)) };
 }
 
 describe('JoinPage (S-Join) display', () => {
@@ -47,5 +49,21 @@ describe('JoinPage (S-Join) display', () => {
     expect(screen.queryByText('目前沒有活動，請等老師建立活動')).not.toBeInTheDocument();
     view.unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  describe('返回首頁 (FR-007, US1 AC-6)', () => {
+    it.each([
+      ['with an activity', makeActivity()],
+      ['without an activity (edge)', null],
+    ])('goes home without a further service call %s', async (_, current) => {
+      const { registry, navigate } = setup(current);
+      await screen.findByText(current ? '第 1 組' : '目前沒有活動，請等老師建立活動');
+      vi.mocked(registry.activity.getCurrentActivity).mockClear();
+      await userEvent.click(screen.getByRole('button', { name: '返回首頁' }));
+      expect(navigate).toHaveBeenCalledWith({ id: 'Main' });
+      expect(registry.activity.getCurrentActivity).not.toHaveBeenCalled();
+      expect(registry.activity.joinGroup).not.toHaveBeenCalled();
+      expect(registry.activity.leaveGroup).not.toHaveBeenCalled();
+    });
   });
 });
