@@ -51,17 +51,24 @@
 - Q: 表頭同義詞要不要保留？能不能手動指定欄位？ → A: 保留同義詞（題號／編號／題次、作答／答案／回答、題目／問題／題幹）；不提供手動指定欄位（REQ-IMP-04）。
 - Q: 怎麼判斷題組？ → A: 題號儲存格跨列合併就是題組，合併範圍內每一列的作答欄儲存格是一個小題的填空格（REQ-IMP-08）。
 - Q: 題數有上限嗎？題號有什麼規則？ → A: 最多 200 題；題號不重複、由上到下遞增、可以跳號（REQ-IMP-06）。
-- Q: 填空格裡的「（1）」這類小題標記怎麼處理？ → A: 讀出來記在小題上，006 寫回時保留在答案前面（REQ-IMP-09）。001 的 `SubQuestion` 沒有放標記的欄位，列入「需請 001 修改」。
+- Q: 填空格裡的「（1）」這類小題標記怎麼處理？ → A: 讀出來，006 寫回時保留在答案前面（REQ-IMP-09）。標記的存放方式見 Session 2026-11-22。
 - Q: 填空格已經有舊答案時要不要提醒？ → A: 不做舊答案提醒；填空格中標記以外的文字不影響匯入（REQ-IMP-09）。
 - Q: 老師只有檢視權限時怎麼辦？ → A: 照常匯入，`Spreadsheet.editable = false`；不另外顯示「無法寫回」的警告，T-Import 依 `editable` 顯示「僅檢視」（REQ-IMP-11）。
 - Q: 001 的確認辨識結果頁按「確認匯入，下一步」沒有介面呼叫，伺服器怎麼知道老師確認了哪一份？ → A: 伺服器以最近一次成功的 `readWorksheet` 結果為準，存在 `ImportStore`；004、006 以 `ImportStore.latest()` 取得（REQ-IMP-15）。
 - Q: Google 授權由誰處理？ → A: 由 002 提供（`GoogleClientProvider.authorizedClient()`、`GET /api/auth/picker-token`、`requireTeacher`）；003 只引用，不另做授權或解除連結（REQ-IMP-02）。
-- Q: 除了找不到表頭，其他錯誤怎麼回傳？ → A: 學習單內容或權限的問題（沒有題目、題號重複或不遞增、超過 200 題、某題沒有填空格、沒有讀取權限、找不到工作表）都用 `ImportError` 的 `code`／`reason`／`fixSteps` 表達；連不上 Google 或伺服器、老師登入失效用 `UnexpectedError`（REQ-IMP-12、REQ-IMP-13）。001 的找不到表頭頁目前只為表頭錯誤設計，列入「需請 001 修改」。
+- Q: 除了找不到表頭，其他錯誤怎麼回傳？ → A: 學習單內容或權限的問題（沒有題目、題號重複或不遞增、超過 200 題、某題沒有填空格、沒有讀取權限、找不到工作表）都用 `ImportError` 的 `code`／`reason`／`fixSteps` 表達；連不上 Google 或伺服器、老師登入失效用 `UnexpectedError`（REQ-IMP-12、REQ-IMP-13）。顯示在哪一頁見 Session 2026-11-22。
 - Q: 匯入結果存在哪裡？ → A: 只存在伺服器記憶體，伺服器重新啟動後就沒有（REQ-IMP-15）。
-- Q: 題組的題目敘述放在哪裡？001 的 `Question` 只有一個 `text`。 → A: 題組的 `text` 依小題順序，把每個小題那一列的題目欄文字用換行連起來，每行前面加上該小題的標記（沒有標記時用「（n）」）；不另外請 001 加欄位（REQ-IMP-07）。
+- Q: 題組的題目敘述放在哪裡？001 的 `Question` 只有一個 `text`。 → A: 題組的 `text` 依小題順序，把每個小題那一列的題目欄文字用換行連起來，每行前面加上該小題的標記（沒有標記時用「（n）」）（REQ-IMP-07）。
 - Q: 一份試算表有多個工作表時，預設讀哪一個？ → A: 第一個找得到表頭列的工作表；都找不到時用第一個工作表（REQ-IMP-03）。
 - Q: 找不到表頭時，「學習單目前的表頭文字」從哪裡來？ → A: 工作表由上往下第一個有 2 個以上非空白儲存格的列，依欄由左到右列出這些文字；沒有這樣的列時為空清單（REQ-IMP-05）。
-- Q: 活動進行中老師能不能重新匯入？ → A: 003 不另外檢查。活動存在時老師登入後直接回到控制台（004 的 D21 決定），到不了挑選學習單頁，所以不會在活動中改變 `ImportStore`。
+- Q: 活動進行中老師能不能重新匯入？ → A: 改為 Session 2026-11-22 的決定。
+
+### Session 2026-11-22（配合 001 最終版，PR #10）
+
+- Q: 001 的 `SubQuestion` 只有 `index`、`blankCell`，小題標記放在哪裡？ → A: 不放進 001 的實體。伺服器的 `ImportStore` 另外記住每個填空格的標記（以填空格位置對應標記），只存在伺服器、不出現在前端；006 從 `ImportStore.latestMarkers()` 取用，寫入「標記＋答案」。寫回預覽頁顯示的是不含標記的答案（由 006 定義）（REQ-IMP-09、REQ-IMP-15）。
+- Q: 001 只有「找不到表頭」頁，其他匯入錯誤顯示在哪裡？ → A: 都用 `ImportError` 顯示在 001 現有的找不到表頭頁（T-ImportError）：`reason` 寫實際原因，`foundHeaders`、`acceptedHeaders` 為空清單，`fixSteps` 寫修正方式。頁面標題寫「找不到表頭」與實際原因不符，是已知限制（REQ-IMP-12、Assumptions）。
+- Q: `headerColumns`、`blankCell` 的格式誰定？ → A: 001 只定義型別（`string[]`、`string`），格式由 003 定義：`headerColumns` 依「題號欄、題目欄（有才列）、作答欄」順序的欄字母，`blankCell` 為 A1 表示法（REQ-IMP-10、REQ-IMP-16）。不請 001 修改。
+- Q: 活動進行中老師能不能重新匯入？ → A: 003 不檢查活動階段，`readWorksheet` 成功就取代 `ImportStore`。001 修改 D21 的頁面切換之前，老師在活動中重新登入會進入挑選學習單頁，可能重新匯入；這時 004 的活動仍使用建立時的題目，006 寫回前發現 `ImportStore` 與活動使用的試算表或工作表不同時拒絕寫回（006 的 `IMPORT_CHANGED`）。
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -90,7 +97,7 @@
 
 ### User Story 2 - 匯入含題組的學習單 (Priority: P1)
 
-學習單中有些題目是題組：題號儲存格跨多列合併，每一列各有一個填空格，填空格內預先寫著「（1）」「（2）」。系統辨識出題組與小題，記下每個小題的填空格與標記。
+學習單中有些題目是題組：題號儲存格跨多列合併，每一列各有一個填空格，填空格內預先寫著「（1）」「（2）」。系統辨識出題組與小題，記下每個小題的填空格；伺服器另外記下每個填空格的標記。
 
 **Why this priority**: 作業提供題組範本，助教可能用題組學習單測試；E1 的整組送出（005）以此為前提。
 
@@ -99,7 +106,7 @@
 **Acceptance Scenarios**:
 
 1. **AC-11** **Given** 題組範本（題號 1 的 B5:B6、題號 2 的 B8:B9 跨兩列合併，題號 3、4 為單題），**When** 匯入，**Then** 顯示 4 題、2 個題組、6 個填空格；第 1 題為題組・2 小題（G5、G6），第 2 題為題組・2 小題（G8、G9），第 3 題 G11、第 4 題 G13。
-2. **AC-12** **Given** 小題的填空格內有「（1）」「（2）」，**When** 匯入，**Then** 每個小題記下該標記，006 寫回時可保留在答案前面。
+2. **AC-12** **Given** 小題的填空格內有「（1）」「（2）」，**When** 匯入，**Then** `ImportStore.latestMarkers()` 中 G5 對應「（1）」、G6 對應「（2）」，006 寫回時可保留在答案前面；前端收到的 `SubQuestion` 只有 `index`、`blankCell`。
 3. **AC-13** **Given** 某個題號儲存格跨 3 列合併，**When** 匯入，**Then** 該題組有 3 個小題（小題數不固定）。
 4. **AC-14** **Given** 某個單題的填空格內有人工加上的「（1）」，**When** 匯入，**Then** 仍依題號儲存格沒有跨列合併判定為單題。
 5. **AC-15** **Given** 題組範本，**When** 匯入，**Then** 第 1 題的題目敘述為兩行：「（1）」接 C5 的文字、「（2）」接 C6 的文字。
@@ -117,7 +124,7 @@
 **Acceptance Scenarios**:
 
 1. **AC-16** **Given** 老師開啟了檔案選擇器，**When** 沒有挑選就關閉，**Then** `pickSpreadsheet()` 回傳 `null`，頁面留在原處，原本的辨識結果與 `ImportStore.latest()` 不變（D3）。
-2. **AC-17** **Given** 工作表的表頭寫「No.」「內容」「學生填寫」，**When** 匯入，**Then** 回傳 `ImportError`：`code` 為 `NO_HEADER`，`foundHeaders` 為「No.」「內容」「學生填寫」，`acceptedHeaders` 列出題號欄、作答欄、題目欄各接受的寫法，`fixSteps` 說明怎麼改表頭後按「重新讀取」；找不到表頭頁顯示這些內容。
+2. **AC-17** **Given** 工作表的表頭寫「No.」「內容」「學生填寫」，**When** 匯入，**Then** 回傳 `ImportError`：`code` 為 `NO_HEADER`，`foundHeaders` 為「No.」「內容」「學生填寫」，`acceptedHeaders` 列出題號欄、作答欄、題目欄各接受的寫法，`fixSteps` 說明怎麼改表頭後按「重新讀取」；找不到表頭頁（T-ImportError）顯示這些內容。
 3. **AC-18** **Given** `ImportStore` 已有一份成功的結果，**When** 新的讀取回傳任何 `ImportError`，**Then** `ImportStore.latest()` 仍是原本那一份（D2）。
 4. **AC-19** **Given** 題號重複，或沒有由上到下遞增（例如題號 3 出現在題號 2 的上方），**When** 匯入，**Then** 回傳 `INVALID_NUMBERING`，`reason` 指出有問題的題號與所在列。
 5. **AC-20** **Given** 表頭以下沒有任何題號，**When** 匯入，**Then** 回傳 `NO_QUESTIONS`。
@@ -163,13 +170,13 @@
 - **REQ-IMP-06**（R2.1）：表頭列以下，題號欄中每一個正整數儲存格代表一題。數字 1、1.0 與文字「1」（含全形數字）都是題號 1；0、負數、小數與其他文字不是題號，該列略過。題號 MUST 不重複、由上到下嚴格遞增，可以跳號；題數 MUST 介於 1 到 200。辨識出的題數 MUST 等於學習單上的題號數量，`questions` 依題號由小到大排列。
 - **REQ-IMP-07**（R2.2）：系統 MUST NOT 要求題目敘述。有題目欄時：單題的 `text` 為該列題目欄的文字；題組的 `text` 依小題順序，把每個小題那一列的題目欄文字用換行連接，每行前面加上該小題的標記（沒有標記時用「（n）」，n 為小題順序）。題目欄儲存格是合併儲存格時讀左上角。沒有題目欄、或文字都是空白時，該題沒有 `text`，只以題號表示。
 - **REQ-IMP-08**（E1）：題號儲存格位於跨多列的合併範圍時，該題 MUST 判定為題組（`type` 為 `GROUP`），合併範圍內每一列在作答欄的儲存格各為一個小題的填空格；沒有跨列合併的題號為單題（`SINGLE`），只有一個小題。是否為題組只依題號儲存格的合併範圍判定，不依填空格內的標記判定。
-- **REQ-IMP-09**（E1、R5.1 的前提）：填空格文字開頭若有小題標記（全形「（n）」、半形「(n)」或全半形混用），系統 MUST 原樣記為該小題的標記，供 006 寫回時保留在答案前面；沒有標記時標記為空字串。填空格中標記以外的文字 MUST NOT 影響匯入，系統也不提醒舊答案。
+- **REQ-IMP-09**（E1、R5.1 的前提）：填空格文字開頭若有小題標記（全形「（n）」、半形「(n)」或全半形混用），伺服器 MUST 原樣記為該填空格的標記，存在 `ImportStore`（REQ-IMP-15），供 006 寫回時保留在答案前面；沒有標記時標記為空字串。標記不放進 001 的 `SubQuestion`，前端收不到。填空格中標記以外的文字 MUST NOT 影響匯入，系統也不提醒舊答案。
 - **REQ-IMP-10**（R5.1 的前提、原則 IV）：每個小題 MUST 記錄填空格位置（A1 表示法，例如「G5」）與小題順序（`index`，從 1 起算）。作答欄儲存格是合併儲存格時，填空格是合併範圍的左上角；該儲存格屬於從上一列開始的合併範圍時，這一列不是獨立的填空格，不算小題。這些位置是解析的結果，不是預設值。
 - **REQ-IMP-11**（R5 的前提）：`Spreadsheet.editable` MUST 反映目前老師的 Google 帳號能否編輯這份試算表。只有檢視權限時照常匯入，`editable` 為 false，不另外回傳警告。
 
 #### 錯誤與狀態
 
-- **REQ-IMP-12**（原則 VII）：下列情況 `readWorksheet` MUST 回傳 `ImportError`，`reason` 指出原因（可以指出位置時附上工作表、列與題號），`fixSteps` 列出老師能自己做的修正步驟，`foundHeaders`、`acceptedHeaders` 為空清單：
+- **REQ-IMP-12**（原則 VII）：下列情況 `readWorksheet` MUST 回傳 `ImportError`，`reason` 指出原因（可以指出位置時附上工作表、列與題號），`fixSteps` 列出老師能自己做的修正步驟，`foundHeaders`、`acceptedHeaders` 為空清單；這些錯誤與 `NO_HEADER` 一樣顯示在 001 的找不到表頭頁（T-ImportError）：
 
   | `code` | 情況 |
   | --- | --- |
@@ -182,7 +189,7 @@
 
 - **REQ-IMP-13**（原則 VII）：連不上伺服器、伺服器 15 秒內連不上 Google、老師憑證或 Google 授權失效，以及其他非預期的失敗，`pickSpreadsheet`、`readWorksheet` MUST 以 `UnexpectedError` reject，`message` 說明原因與下一步（例如「連不上 Google，請稍後再試」「Google 授權已失效，請回首頁重新登入」「老師登入已失效，請回首頁重新登入」；與 002 的訊息一致）。`pickSpreadsheet` 在挑選後讀不到試算表的基本資料時（`pickSpreadsheet` 不能回傳 `ImportError`），也以 `UnexpectedError` reject，`message` 說明重新挑選。
 - **REQ-IMP-14**（001 D2、D3）：`readWorksheet` 回傳 `ImportError` 或 reject、`pickSpreadsheet` 回傳 `null` 或 reject 時，`ImportStore` 的內容 MUST 保持不變。
-- **REQ-IMP-15**（R2、001 確認匯入沒有介面呼叫）：每次 `readWorksheet` 成功時，伺服器 MUST 以這次的 `ImportSuccess` 取代 `ImportStore` 的內容；`ImportStore.latest()` MUST 回傳最近一次成功的結果，從未成功時回傳 `null`。結果只存在伺服器記憶體，伺服器重新啟動後為 `null`。004 與 006 只能讀取，不得修改。
+- **REQ-IMP-15**（R2、R5.1 的前提、001 確認匯入沒有介面呼叫）：每次 `readWorksheet` 成功時，伺服器 MUST 以這次的 `ImportSuccess` 與這次讀到的填空格標記（以 `blankCell` 對應標記，每個填空格都有一筆）一起取代 `ImportStore` 的內容；`ImportStore.latest()` MUST 回傳最近一次成功的 `ImportSuccess`、`ImportStore.latestMarkers()` 回傳同一次的標記，從未成功時兩者都回傳 `null`。結果只存在伺服器記憶體，伺服器重新啟動後為 `null`。004 與 006 只能讀取，不得修改。
 - **REQ-IMP-16**（R2）：`ImportSuccess` MUST 包含：`spreadsheet`（`selectedWorksheet` 為這次讀取的工作表）、`headerRow`（表頭所在列，從 1 起算）、`headerColumns`（依「題號欄、題目欄（有才列）、作答欄」順序的欄字母，例如 `["B", "C", "G"]`）與 `questions`，足以讓 T-Import 顯示 001 FR-021 列出的內容。
 - **REQ-IMP-17**（R2）：匯入 MUST 只讀取試算表，不修改任何儲存格；寫回是 006 的工作。
 
@@ -192,18 +199,14 @@
 
 - **Spreadsheet**（學習單）：`id`（Google 試算表 ID）、`title`、`editable`（REQ-IMP-11）、`worksheets`（REQ-IMP-03）、`selectedWorksheet`。
 - **Question**（題目）：`number`（題號）、`type`（`SINGLE`／`GROUP`，REQ-IMP-08）、`text`（可以沒有，REQ-IMP-07）、`subQuestions`。
-- **SubQuestion**（小題）：`index`（從 1 起算）、`blankCell`（A1 表示法，REQ-IMP-10）、`marker`（小題標記，REQ-IMP-09；需 001 新增，見下節）。
+- **SubQuestion**（小題）：`index`（從 1 起算）、`blankCell`（A1 表示法，REQ-IMP-10）。
 - **ImportSuccess**（辨識結果）：見 REQ-IMP-16。
 - **ImportError**（辨識錯誤）：`code`（REQ-IMP-05、REQ-IMP-12 的代碼之一）、`reason`、`foundHeaders`、`acceptedHeaders`、`fixSteps`。
-- **ImportStore**（伺服器）：最近一次成功的 `ImportSuccess`，提供 `latest()` 給 004、006（REQ-IMP-15）。
+- **ImportStore**（伺服器）：最近一次成功的 `ImportSuccess` 與每個填空格的小題標記，提供 `latest()` 給 004、006，`latestMarkers()` 給 006（REQ-IMP-09、REQ-IMP-15）。
 
 ## 需請 001 修改
 
-| # | 要改什麼 | 為什麼 |
-| --- | --- | --- |
-| 1 | `data-model.md`、`diagrams/001-class.puml`、`shared/src/entities.ts` 的 `SubQuestion` 新增欄位 `marker: string`（填空格原有的小題標記，例如「（1）」；沒有時為空字串）；`MockFixtures` 的題組範本小題帶上「（1）」「（2）」 | 寫回時要保留小題標記（REQ-IMP-09、006），`ImportStore.latest()` 回傳的 `ImportSuccess` 必須帶著它；目前 `SubQuestion` 只有 `index`、`blankCell` |
-| 2 | T-ImportError 改為所有 `ImportError` 共用的「無法匯入」頁：頁面標題與說明改用 `reason`，不寫死「找不到表頭」；`foundHeaders`、`acceptedHeaders` 為空清單時不顯示這兩區；spec FR-022、頁面清單的名稱「老師：找不到表頭」一併修改 | 除了 `NO_HEADER`，`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`、`NO_BLANK`、`NO_ACCESS`、`NO_WORKSHEET` 也用 `ImportError` 回傳（REQ-IMP-12），目前的頁面只為表頭錯誤設計 |
-| 3 | 請確認 `MockFixtures` 的 `headerColumns` 依「題號欄、題目欄（有才列）、作答欄」順序、`blankCell` 用 A1 表示法（例如「G5」）；不同時請改成一致 | 讓模擬實作與真正的實作回傳同樣格式，T-Import 的顯示不必因換實作而改（REQ-IMP-16） |
+無。小題標記改由伺服器記住（REQ-IMP-09），其他匯入錯誤顯示在現有的找不到表頭頁（REQ-IMP-12），`headerColumns`、`blankCell` 的格式由 003 定義（REQ-IMP-16、REQ-IMP-10）。
 
 ## Success Criteria *(mandatory)*
 
@@ -223,4 +226,5 @@
 - 一次只處理一份學習單、一位老師；每次讀取成功都會取代前一份結果。
 - 執行系統的電腦可以連上 Google；學生分頁不連 Google。
 - 表頭同義詞、最多 200 題是組內自訂規則，需與 OpenSpec 組保持一致。
-- 老師在活動存在期間到不了挑選學習單頁（004 的 D21 決定），所以 003 不檢查活動階段。
+- 003 不檢查活動階段。001 修改 D21 的頁面切換之前，老師在活動中重新登入會進入挑選學習單頁並可能重新匯入；活動仍用建立時的題目，寫回目標不一致時由 006 拒絕（Session 2026-11-22）。
+- 001 的 T-ImportError 頁標題是「找不到表頭」。`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`、`NO_BLANK`、`NO_ACCESS`、`NO_WORKSHEET` 也顯示在這一頁，標題與實際原因不符；老師以頁面上的錯誤原因（`reason`）與修正方式（`fixSteps`）為準。這是已知限制，不請 001 修改。
