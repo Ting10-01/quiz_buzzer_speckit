@@ -4,9 +4,11 @@ title 005 類別圖：搶答與判定
 skinparam defaultFontName "PingFang TC"
 hide empty members
 set separator none
+left to right direction
+scale max 4000 width
 skinparam classAttributeIconSize 0
 
-package "001 實體與介面（shared/src/entities.ts、frontend/src/services/interfaces.ts）" #EEEEEE {
+package "001 實體與介面（最終版；shared/src/entities.ts、frontend/src/services/interfaces.ts）" #EEEEEE {
   enum Judgement {
     PENDING
     ACCEPTED
@@ -17,7 +19,7 @@ package "001 實體與介面（shared/src/entities.ts、frontend/src/services/in
     questionNumber: number
     groupNumber: number
     answers: string[]
-    rank: number [0..1]
+    rank: number
     elapsedMs: number
     judgement: Judgement
   }
@@ -25,14 +27,26 @@ package "001 實體與介面（shared/src/entities.ts、frontend/src/services/in
     field: string
     message: string
   }
+  class Activity {
+    phase: ActivityPhase
+    currentQuestion: number [0..1]
+  }
+  class JudgeOutcome {
+    submissions: Submission[]
+    activity: Activity
+  }
   interface SubmissionService {
     +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
     +listSubmissions(questionNumber: number): Promise<Submission[]>
     +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<JudgeOutcome>
+    +getGroupSubmission(questionNumber: number): Promise<Submission | null>
+    +onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe
     +onJudgement(listener: (submission: Submission) => void): Unsubscribe
   }
   Submission --> Judgement
+  JudgeOutcome o-- "0..*" Submission
+  JudgeOutcome --> Activity
 }
 
 package "共用事件型別（shared/src/submissionEvents.ts）" {
@@ -46,9 +60,18 @@ package "共用事件型別（shared/src/submissionEvents.ts）" {
     submission: Submission [0..1]
     error: ValidationError [0..1]
   }
+  class OwnSubmissionRequest {
+    questionNumber: number
+  }
+  class OwnSubmissionReply {
+    submission: Submission [0..1]
+  }
   class JudgeRequest {
     groupNumber: number
     judgement: Judgement
+  }
+  class GroupSubmitted {
+    submission: Submission
   }
   class SubmissionsChanged {
     questionNumber: number
@@ -61,16 +84,21 @@ package "共用事件型別（shared/src/submissionEvents.ts）" {
   SubmitReply --> ValidationError
   SubmissionsChanged o-- "0..*" Submission
   SubmissionJudged --> Submission
+  GroupSubmitted --> Submission
+  OwnSubmissionReply --> Submission
 }
 
 package "前端（frontend/src/services/server/）" {
   class ServerSubmissionService {
     -inFlight: Map<number, Promise<Submission | ValidationError>>
     -lastRequest: SubmitRequest [0..1]
+    -lastQuestion: number [0..1]
     +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
     +listSubmissions(questionNumber: number): Promise<Submission[]>
     +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<JudgeOutcome>
+    +getGroupSubmission(questionNumber: number): Promise<Submission | null>
+    +onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe
     +onJudgement(listener: (submission: Submission) => void): Unsubscribe
   }
   ServerSubmissionService ..|> SubmissionService
@@ -92,16 +120,18 @@ package "伺服器（server/src/submission/）" {
   class SubmissionGateway {
     +register(io: Server): void
     -onSubmit(socket: Socket, request: SubmitRequest, ack: (reply: SubmitReply) => void): void
+    -onOwn(socket: Socket, request: OwnSubmissionRequest, ack: (reply: OwnSubmissionReply) => void): void
   }
   class SubmissionRoutes {
     +register(app: FastifyInstance): void
     -list(questionNumber: number): Submission[]
-    -judge(questionNumber: number, request: JudgeRequest): Submission[]
+    -judge(questionNumber: number, request: JudgeRequest): JudgeOutcome
   }
   class SubmissionEngine {
     -processed: number
     +submit(groupNumber: number [0..1], request: SubmitRequest): SubmitReply
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Submission[]
+    +ownSubmission(groupNumber: number [0..1], questionNumber: number): Submission [0..1]
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): JudgeOutcome
     +onActivityChange(activity: ActivityState [0..1]): void
     -validate(groupNumber: number [0..1], request: SubmitRequest): ValidationError [0..1]
   }
@@ -139,6 +169,7 @@ package "伺服器（server/src/submission/）" {
     -pending: Set<number>
     -timer: Timeout [0..1]
     +submissionsChanged(questionNumber: number): void
+    +groupSubmitted(record: SubmissionRecord): void
     +judged(record: SubmissionRecord): void
     -flush(): void
   }
@@ -180,6 +211,7 @@ package "其他子功能（伺服器）" #EEEEEE {
   }
   class "ActivityManager «004»" as ActivityManager {
     +endQuestion(questionNumber: number): ActivitySnapshot
+    +snapshot(audience: Audience): ActivitySnapshot
   }
   class "app.requireTeacher «002»" as RequireTeacher
   class "app.io、TEACHER_ROOM «002»" as AppIo
@@ -190,11 +222,11 @@ SubmissionGateway --> CommandQueue : run(submit)
 SubmissionRoutes --> CommandQueue : run(judge)
 SubmissionEngine --> SequenceClock : stamp()
 SubmissionEngine ..> ActivityStore : 讀階段、題目、openedAt；subscribe
-SubmissionEngine ..> ActivityManager : 接受後 endQuestion(n)
+SubmissionEngine ..> ActivityManager : 接受後 endQuestion(n)；\nJudgeOutcome.activity = snapshot(TEACHER)
 SubmissionGateway ..> GroupMembership : groupOf(socket)
 SubmissionGateway ..> AppIo : 在 app.io 上註冊事件
 SubmissionNotifier ..> AppIo : 列表送 io.to(TEACHER_ROOM)
-SubmissionNotifier ..> GroupMembership : 判定送 groupOf = n 的連線
+SubmissionNotifier ..> GroupMembership : 組員送出、判定送 groupOf = n 的連線
 SubmissionRoutes ..> RequireTeacher : preHandler
 ResultService ..> SubmissionStore : list / winner
 ActivityStore --> ActivityState
@@ -207,8 +239,8 @@ note bottom of SubmissionRecord
 end note
 
 note right of SubmissionVisibility
-  forStudent 不放 rank（R9、REQ-SUB-16）；
-  需請 001 把 Submission.rank 改為 [0..1]
+  forStudent 的 rank 一律為 0（R9、REQ-SUB-16）；
+  001 把 Submission.rank 改成可選後改為不放（T035）
 end note
 
 note bottom of CommandQueue

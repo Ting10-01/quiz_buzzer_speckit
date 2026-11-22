@@ -1,28 +1,32 @@
 # Data Model: 搶答與判定
 
-**Feature**: `005-buzz-submission` | **Date**: 2026-11-21 | **Blueprint**: [`diagrams/005-class.puml`](../../diagrams/005-class.puml)
+**Feature**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂） | **Blueprint**: [`diagrams/005-class.puml`](../../diagrams/005-class.puml)
 
-類別名稱、欄位、方法、關聯與類別圖一一對應。001 的實體（`Submission`、`Judgement`、`ValidationError`）與介面（`SubmissionService`）定義在 001 的 [data-model.md](../001-ui-prototype/data-model.md)，005 不改欄位；唯一例外是 `Submission.rank` 改為 `[0..1]`，需由 001 修改（spec「需請 001 修改」第 5 項）。
+類別名稱、欄位、方法、關聯與類別圖一一對應。001 的實體（`Submission`、`Judgement`、`ValidationError`、`JudgeOutcome`、`Activity`）與介面（`SubmissionService`）定義在 001 最終版的 [data-model.md](../001-ui-prototype/data-model.md)，005 不改欄位。`Submission.rank` 是必填，在 001 改成可選之前，學生視角一律填 0（spec「需請 001 修改」）。
 
 ## 1. 001 的實體（只列 005 使用的部分）
 
 | 實體 | 欄位 | 005 的規則 |
 | --- | --- | --- |
 | `Judgement`（enum） | `PENDING`、`ACCEPTED`、`REJECTED`、`UNJUDGED` | 四種都使用（REQ-SUB-14） |
-| `Submission` | `questionNumber`、`groupNumber`、`answers: string[]`、`rank: number [0..1]`、`elapsedMs: number`、`judgement` | 老師端一定有 `rank`；學生端沒有 `rank`（REQ-SUB-16）。`answers` 順序對應 `Question.subQuestions` |
-| `ValidationError` | `field: string`、`message: string` | `field` 為 `answers[i]`（i 從 0 開始）或 `submit` |
+| `Submission` | `questionNumber`、`groupNumber`、`answers: string[]`、`rank: number`、`elapsedMs: number`、`judgement` | 老師視角 `rank` 為真正的順位；學生視角 `rank` 一律 0（REQ-SUB-16）。`answers` 順序對應 `Question.subQuestions` |
+| `JudgeOutcome` | `submissions: Submission[]`、`activity: Activity` | `judge` 的回傳：判定後本題的完整列表（老師視角）與目前的活動（REQ-SUB-11、REQ-SUB-12） |
+| `ValidationError` | `field: string`、`message: string` | 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`（i 從 0 開始），不屬於某一格為 `answers`。001 頁面一律顯示在第一個答案欄旁 |
 
 ## 2. 共用事件型別（`shared/src/submissionEvents.ts`）
 
 | 型別 | 欄位 | 說明 |
 | --- | --- | --- |
 | `SubmitRequest` | `questionNumber: number`、`answers: string[]`、`requestId: string` | 學生 → 伺服器。沒有組別欄位（REQ-SUB-02）；`requestId` 為 UUID |
-| `SubmitReply` | `ok: boolean`、`submission?: Submission`、`error?: ValidationError` | `ok = true` 時有 `submission`（學生視角，無 `rank`）；否則有 `error` |
+| `SubmitReply` | `ok: boolean`、`submission?: Submission`、`error?: ValidationError` | `ok = true` 時有 `submission`（學生視角）；否則有 `error` |
+| `OwnSubmissionRequest` | `questionNumber: number` | 學生 → 伺服器（`getGroupSubmission`） |
+| `OwnSubmissionReply` | `submission: Submission \| null` | 本組第 n 題的送出（學生視角），沒有時為 `null`（REQ-SUB-21） |
 | `JudgeRequest` | `groupNumber: number`、`judgement: Judgement` | 老師 → 伺服器；`judgement` 只接受 `ACCEPTED`、`REJECTED` |
 | `SubmissionsChanged` | `questionNumber: number`、`submissions: Submission[]` | 伺服器 → 老師；完整列表，依 `rank` 排序 |
-| `SubmissionJudged` | `submission: Submission` | 伺服器 → 該組；學生視角 |
+| `GroupSubmitted` | `submission: Submission` | 伺服器 → 該組；學生視角（REQ-SUB-20） |
+| `SubmissionJudged` | `submission: Submission` | 伺服器 → 該組；學生視角（REQ-SUB-15） |
 
-事件名稱常數：`SUBMIT = "submission:submit"`、`SUBMISSIONS_CHANGED = "submissions:changed"`、`JUDGED = "submission:judged"`。
+事件名稱常數：`SUBMIT = "submission:submit"`、`OWN = "submission:own"`、`SUBMISSIONS_CHANGED = "submissions:changed"`、`GROUP_SUBMITTED = "submission:groupSubmitted"`、`JUDGED = "submission:judged"`。
 
 ## 3. 前端
 
@@ -32,13 +36,16 @@
 | --- | --- |
 | `inFlight: Map<number, Promise<Submission \| ValidationError>>` | 題號 → 進行中的送出；連點時回傳同一個 Promise（REQ-SUB-06） |
 | `lastRequest: SubmitRequest [0..1]` | 上一次因逾時或斷線失敗的送出；題號與答案相同時沿用其 `requestId` |
-| `submitAnswer(q, answers)` | 004 `RealtimeClient.emitWithAck(SUBMIT, request)`（5 秒逾時，逾時以 `UnexpectedError`「連不上伺服器」reject）；`ok` 回 `submission`，否則回 `error` |
+| `lastQuestion: number [0..1]` | 最近一次 `submitAnswer`／`getGroupSubmission` 的題號；重新連線時用來補發學生的通知 |
+| `submitAnswer(q, answers)` | 004 `RealtimeClient.emitWithAck(SUBMIT, request)`；`ok` 回 `submission`，否則回 `error` |
 | `listSubmissions(q)` | 002 `ApiClient.request("GET", "/api/questions/:q/submissions")` |
 | `onSubmissionsChange(q, listener)` | `RealtimeClient.on(SUBMISSIONS_CHANGED, …)`，只轉交題號為 q 的列表；`RealtimeClient.onConnect` 時重新 `listSubmissions(q)` 並通知 |
-| `judge(q, group, judgement)` | `ApiClient.request("POST", "/api/questions/:q/judgements", { groupNumber, judgement })`，回傳列表 |
-| `onJudgement(listener)` | `RealtimeClient.on(JUDGED, …)` |
+| `judge(q, group, judgement)` | `ApiClient.request("POST", "/api/questions/:q/judgements", { groupNumber, judgement })`，回傳 `JudgeOutcome` |
+| `getGroupSubmission(q)` | `RealtimeClient.emitWithAck(OWN, { questionNumber: q })`，回傳 `submission`（或 `null`） |
+| `onGroupSubmitted(listener)` | `RealtimeClient.on(GROUP_SUBMITTED, …)`；`onConnect` 時以 `getGroupSubmission(lastQuestion)` 補發 |
+| `onJudgement(listener)` | `RealtimeClient.on(JUDGED, …)`；`onConnect` 時以 `getGroupSubmission(lastQuestion)` 補發 `REJECTED` |
 
-HTTP 失敗由 `ApiClient` 轉成 `ApiError`（符合 `UnexpectedError`）reject（001 contracts 共通規則）。`RealtimeClient.on` 是 plan 交界假設 A-3。
+`emitWithAck` 逾時由 `RealtimeClient` 以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」reject；HTTP 失敗由 `ApiClient` 轉成 `ApiError`（符合 `UnexpectedError`）reject（001 contracts 共通規則）。
 
 ## 4. 伺服器（`server/src/submission/`）
 
@@ -81,8 +88,9 @@ HTTP 失敗由 `ApiClient` 轉成 `ApiError`（符合 `UnexpectedError`）reject
 | 成員 | 說明 |
 | --- | --- |
 | `processed: number` | 每處理一筆送出（不論結果）加 1，寫進 log 的 `seq`；只在 `CommandQueue.run` 內遞增，順序與佇列相同（research RD-01） |
-| `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `submit`「請先加入組別」）→ 請求格式（`submit`「送出的資料格式不正確」）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`submit`「這一題目前不能作答」）→ 本組已有紀錄（`requestId` 相同回第一次的結果；否則 `submit`「本組已送出此題」）→ 格數等於小題數（`submit`「送出的資料格式不正確」）→ 每格非空白（`answers[i]`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers[i]`「每一格最多 200 字」）→ 建立紀錄 |
-| `judge(q, group, judgement): Submission[]` | 在 004 的 `CommandQueue.run` 內執行；`ACCEPTED` 時就地呼叫 004 `ActivityManager.endQuestion(n)`；規則見 research RD-07；回傳 `SubmissionStore.list(q)` |
+| `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `answers`「請先加入組別」）→ 請求格式（`answers`「送出的資料格式不正確」）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`answers`「這一題目前不能作答」）→ 本組已有紀錄（`requestId` 相同回第一次的結果；否則 `answers`「本組已送出此題」）→ 格數等於小題數（`answers`「送出的資料格式不正確」）→ 每格非空白（`answers.<i>`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers.<i>`「每一格最多 200 字」）→ 建立紀錄。建立後通知 `SubmissionNotifier.groupSubmitted`、`submissionsChanged` |
+| `ownSubmission(group, q): Submission [0..1]` | 本組第 q 題的紀錄，以 `forStudent` 產生；`group` 為空或沒有紀錄時為空（REQ-SUB-21） |
+| `judge(q, group, judgement): JudgeOutcome` | 在 004 的 `CommandQueue.run` 內執行；`ACCEPTED` 時就地呼叫 004 `ActivityManager.endQuestion(n)`；規則見 research RD-07；回傳 `{ submissions: SubmissionStore.list(q), activity: ActivityManager.snapshot(Audience.TEACHER).activity }` |
 | `onActivityChange(activity)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫）：先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表 |
 | `validate(group, request)` | 上述 `submit` 的檢查，回傳第一個錯誤或空 |
 
@@ -90,9 +98,9 @@ HTTP 失敗由 `ApiClient` 轉成 `ApiError`（符合 `UnexpectedError`）reject
 
 | 類別 | 成員 | 說明 |
 | --- | --- | --- |
-| `SubmissionVisibility` | `forTeacher(record)`、`forStudent(record)` | `forStudent` 不放 `rank`（REQ-SUB-16） |
-| `SubmissionNotifier` | `pending: Set<number>`、`timer`；`submissionsChanged(q)`、`judged(record)`、`flush()` | 老師列表 200 ms 合併後送 `app.io.to(TEACHER_ROOM)`；判定立刻送給 `GroupMembership.groupOf(socket) === n` 的連線（research RD-05） |
-| `SubmissionGateway` | `register(io)`、`onSubmit(socket, request, ack)` | 在 002 的 `app.io` 上註冊；取得組別後 `commandQueue.run(() => engine.submit(group, request))`，ack 回覆 |
+| `SubmissionVisibility` | `forTeacher(record)`、`forStudent(record)` | `forStudent` 的 `rank` 一律為 0（REQ-SUB-16）；001 改成可選後改為不放 |
+| `SubmissionNotifier` | `pending: Set<number>`、`timer`；`submissionsChanged(q)`、`groupSubmitted(record)`、`judged(record)`、`flush()` | 老師列表 200 ms 合併後送 `app.io.to(TEACHER_ROOM)`；組員送出與判定立刻送給 `GroupMembership.groupOf(socket) === n` 的連線（research RD-05） |
+| `SubmissionGateway` | `register(io)`、`onSubmit(socket, request, ack)`、`onOwn(socket, request, ack)` | 在 002 的 `app.io` 上註冊；取得組別後 `commandQueue.run(() => engine.submit(group, request))`、`engine.ownSubmission(group, q)`，ack 回覆 |
 | `SubmissionRoutes` | `register(app)`、`list(q)`、`judge(q, request)` | 以 `app.register` 註冊在 002 的 `buildApp`；兩個路由都掛 `{ preHandler: app.requireTeacher }`，錯誤回應 `{ code, message }`；見 [contracts/submission-api.md](./contracts/submission-api.md) |
 
 ## 5. 狀態轉換
@@ -101,7 +109,7 @@ HTTP 失敗由 `ApiClient` 轉成 `ApiError`（符合 `UnexpectedError`）reject
 
 ```text
 （建立）→ PENDING --老師接受（必須是 firstPending）--> ACCEPTED   → 本題結束（004 ActivityManager.endQuestion）
-         PENDING --老師不接受（必須是 firstPending）--> REJECTED   → 該組本題不能再送出
+         PENDING --老師不接受（必須是 firstPending）--> REJECTED   → 該組本題不能再送出；學生停在等待判定頁（不接受）
          PENDING --本題結束（老師結束或其他組被接受）--> UNJUDGED
 ```
 
@@ -124,6 +132,7 @@ ACCEPTED、REJECTED、UNJUDGED 都不再改變。
 | 每格去除前後空白後非空、≤ 200 字 | REQ-SUB-05 |
 | 只能判定 `firstPending()`，且本題開放中、沒有 `ACCEPTED` | REQ-SUB-11 |
 | 列出送出與判定需老師憑證 | REQ-SUB-17 |
+| 學生只能取得本組的送出 | REQ-SUB-16、REQ-SUB-21 |
 
 ## 7. 使用 004、002 的伺服器模組（不屬於 005，只列 005 用到的部分）
 
@@ -133,5 +142,6 @@ ACCEPTED、REJECTED、UNJUDGED 都不再改變。
 | `SequenceClock`（004） | `stamp(): number` | 同上 |
 | `ActivityStore`（004） | `current()`（`phase`、`currentQuestion`、`questions`、`openedAt`）、`subscribe(listener)` | 同上 |
 | `GroupMembership`（004） | `groupOf(socket): number \| null` | 同上 |
-| `ActivityManager`（004） | `endQuestion(n)` | 同上 |
-| `app.io`、`TEACHER_ROOM`、`app.requireTeacher`、`buildApp`、`ErrorBody`（002） | — | 002 contracts/server-extension.md、socket-handshake.md |
+| `ActivityManager`（004） | `endQuestion(n)`、`snapshot(audience)`（`Audience.TEACHER`） | 004 data-model `ActivityManager` |
+| `RealtimeClient`（004，前端） | `on`、`emitWithAck`、`onConnect` | 004 contracts/server-modules.md |
+| `app.io`、`TEACHER_ROOM`、`app.requireTeacher`、`buildApp`、`ErrorBody`（002）；`ApiClient`（002，前端） | — | 002 contracts/server-extension.md、socket-handshake.md |

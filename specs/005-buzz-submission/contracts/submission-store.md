@@ -8,7 +8,7 @@
 
 | 方法 | 回傳 | 說明 |
 | --- | --- | --- |
-| `list(questionNumber)` | `Submission[]` | 第 n 題所有送出，依 `rank` 排序，老師視角（有 `rank`、`elapsedMs`、`judgement`）。沒有送出或還沒開放時為 `[]` |
+| `list(questionNumber)` | `Submission[]` | 第 n 題所有送出，依 `rank` 排序，老師視角（真正的 `rank`、`elapsedMs`、`judgement`）。006 要給學生看時，依 006 的公布範圍自行決定是否保留 `rank`。沒有送出或還沒開放時為 `[]` |
 | `winner(questionNumber)` | `Submission \| null` | 第 n 題 `judgement = ACCEPTED` 的那一筆；沒有時為 `null` |
 
 ## 保證
@@ -18,7 +18,7 @@
 | 每題的 `rank` 從 1 開始，連續、不重複 | REQ-SUB-08 |
 | 每組每題最多一筆；每題最多一筆 `ACCEPTED` | REQ-SUB-03、REQ-SUB-12 |
 | 一題結束後（006 取得結果的時間點），列表中沒有 `PENDING`：只有 `ACCEPTED`、`REJECTED`、`UNJUDGED` | REQ-SUB-14 |
-| `elapsedMs` 隨 `rank` 單調不減；「比第一名慢的秒數」＝ 該筆 `elapsedMs` − `rank 1` 的 `elapsedMs` | REQ-SUB-09；001 data-model |
+| `elapsedMs` 隨 `rank` 單調不減，006 由它計算 `QuestionResult.behindFirstMs`（「第一名」的定義屬於 006，001 D23） | REQ-SUB-09；001 data-model |
 | 內容與老師畫面顯示的列表完全相同（`GET /api/questions/:n/submissions` 直接回傳 `list(n)`） | REQ-SUB-19、AC-22 |
 
 ## 結果的判讀（006 的呈現依此判斷）
