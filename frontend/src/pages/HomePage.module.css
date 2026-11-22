@@ -1,0 +1,120 @@
+.page {
+  min-height: 100vh;
+}
+
+.main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 88px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lead {
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 22px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.phase {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.none {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 28px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.role:hover {
+  background: var(--raised);
+}
+
+.role:active {
+  transform: scale(0.99);
+}
+
+.role:focus-visible {
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: 3px;
+}
+
+.roleName {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.roleHint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role {
+    transition: none;
+  }
+}

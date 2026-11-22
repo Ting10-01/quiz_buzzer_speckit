@@ -135,7 +135,7 @@ description: "001 畫面與流程原型的實作任務"
 ### Implementation for User Story 1
 
 - [X] T049 [P] [US1] 在 `frontend/src/components/GroupGrid.tsx`（與 `.module.css`）實作組別格：props `groups: Group[]`、`selected?: number`、`onSelect?: (n) => void`；顯示「第 n 組」與已加入人數；沒有 `onSelect` 時只顯示
-- [ ] T050 [P] [US1] 在 `frontend/src/pages/HomePage.tsx`（與 `.module.css`）實作 Main：「我是老師」「我是學生」兩個選項；載入時 `getCurrentActivity()`，並訂閱 `onPhaseChange` 更新活動資訊（階段、題數、組數）；不顯示活動名稱與設計稿中的規則說明文字、限時（SC-004）
+- [X] T050 [P] [US1] 在 `frontend/src/pages/HomePage.tsx`（與 `.module.css`）實作 Main：「我是老師」「我是學生」兩個選項；載入時 `getCurrentActivity()`，並訂閱 `onPhaseChange` 更新活動資訊（階段、題數、組數）；不顯示活動名稱與設計稿中的規則說明文字、限時（SC-004）
 - [ ] T051 [P] [US1] 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx`（與 `.module.css`）實作 T-Login：老師版 `AppHeader`、只有「用 Google 登入」、登入失敗訊息區（依 `SignInFailure` 顯示「已取消登入」或「此帳號不是老師帳號」）、`ErrorArea`
 - [ ] T052 [P] [US1] 在 `frontend/src/pages/teacher/PickPage.tsx`（與 `.module.css`）實作 T-Pick 版面：載入時 `getCurrentAccount()` 顯示帳號；「從 Google 雲端硬碟挑選」按鈕（行為於 T062 完成）、「取消」→ `Main`；`ErrorArea`；不出現「連結 Google 帳號」「解除連結」（SC-004）
 - [ ] T053 [P] [US1] 在 `frontend/src/pages/student/JoinPage.tsx`（與 `.module.css`）實作 S-Join 顯示：學生版 `AppHeader`（尚無組別）、載入時 `getCurrentActivity()`、訂閱 `onPhaseChange`；沒有活動時顯示「目前沒有活動，請等老師建立活動」；有活動時以 `GroupGrid` 列出組別；`ErrorArea`
