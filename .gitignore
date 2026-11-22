@@ -16,3 +16,14 @@ credentials/
 .DS_Store
 Thumbs.db
 *.log
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tmp
+*.swp
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
