@@ -88,13 +88,13 @@ describe('MockActivityService viewer side (M7)', () => {
     await expect(setup().activity.getCurrentActivity()).resolves.toBeNull();
   });
 
-  it('advances through the M7 sequence and notifies onPhaseChange', async () => {
+  it('advances through the M7 sequence, skipping QUESTION_ENDED on the last question', async () => {
     const { activity } = setup();
     const listener = vi.fn();
     activity.onPhaseChange(listener);
     const expected: [string, number | undefined][] = [['PREPARING', undefined]];
-    for (let q = 1; q <= 4; q += 1) expected.push(['OPEN', q], ['QUESTION_ENDED', q]);
-    expected.push(['FINISHED', undefined]);
+    for (let q = 1; q <= 3; q += 1) expected.push(['OPEN', q], ['QUESTION_ENDED', q]);
+    expected.push(['OPEN', 4], ['FINISHED', undefined]);
     for (const [phase, currentQuestion] of expected) {
       const next = await activity.advancePhase();
       expect(next.phase).toBe(phase);
@@ -104,6 +104,17 @@ describe('MockActivityService viewer side (M7)', () => {
     }
     expect(listener).toHaveBeenCalledTimes(expected.length);
     await expect(activity.getCurrentActivity()).resolves.toMatchObject({ phase: 'FINISHED' });
+  });
+
+  it('notifies onPhaseChange when MockSession advances the viewer phase (M6)', async () => {
+    const { session, activity } = setup();
+    await activity.advancePhase(); // PREPARING
+    const listener = vi.fn();
+    activity.onPhaseChange(listener);
+    session.advanceViewerPhase();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0]).toMatchObject({ phase: 'OPEN', currentQuestion: 1 });
+    await expect(activity.getCurrentActivity()).resolves.toMatchObject({ phase: 'OPEN' });
   });
 
   it('stays FINISHED when advanced again (edge)', async () => {
