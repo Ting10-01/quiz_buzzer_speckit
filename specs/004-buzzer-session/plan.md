@@ -6,7 +6,7 @@
 
 ## Summary
 
-004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，只改 `createServiceRegistry()` 的綁定，頁面不改（需要 001 修改的地方列在 spec「需請 001 修改」C1–C5）。
+004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，只改 `createServiceRegistry()` 的綁定，頁面不改。004 配合 001 最終版（PR #10）：`joinGroup` 的預期失敗以 `UnexpectedError` reject；仍需 001 修改的只有 D21（spec「需請 001 修改」C1），修改前是暫時限制。
 
 **以三張圖為藍圖**：本計畫的組件、類別、方法與呼叫順序一律依 [`diagrams/004-component.puml`](../../diagrams/004-component.puml)、[`diagrams/004-class.puml`](../../diagrams/004-class.puml)、[`diagrams/004-sequence.puml`](../../diagrams/004-sequence.puml)。下方「藍圖對照」把圖中每個組件與類別對應到一個檔案；[data-model.md](./data-model.md) 與類別圖一一對應；時序圖的 6 段各對應 User Story 與測試（見「時序圖與測試」）。
 
@@ -42,7 +42,7 @@
 | IV. 外部資料於執行期解析 | 題數、小題數取自 003 的匯入結果，不寫死 | 通過 |
 | V. 單一權威狀態來源 | 階段、題號、組數、人數只在 `ActivityStore` 與 `GroupMembership`；前端只採用推送或回應中的快照，以版本號丟掉舊的（RA-03）；`getCurrentActivity` 也來自同一個推送（RA-09） | 通過 |
 | VI. 最小揭露與機敏資料 | 學生版快照不含試算表 ID（RA-08）；組別由伺服器依連線判斷（RA-06）；學生身分在 `sessionStorage`，同瀏覽器其他分頁拿不到；`studentToken` 不進 log（RA-12）；004 不使用任何金鑰 | 通過 |
-| VII. 輸入驗證與錯誤訊息 | 組數、題號、組別編號都在伺服器驗證；`ValidationError` 指出欄位與原因；規則不允許時狀態不變（data-model） | 通過 |
+| VII. 輸入驗證與錯誤訊息 | 組數、題號、組別編號都在伺服器驗證；組數錯誤以 `ValidationError` 指出欄位與原因；加入組別被拒絕以 `UnexpectedError` 說明原因（001 的 `joinGroup` 沒有預期失敗的回傳值）；規則不允許時狀態不變（data-model） | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 有正常與邊界測試（tasks）；Google、匯入、老師驗證以替身取代；quickstart 列出 14 個人工情境；壓力測試 | 通過 |
 | IX. 程式碼規範 | 不新增頁面或元件；`RealtimeClient` 只寫一次，005、006 共用；英文命名 | 通過 |
 | X. 人工把關 | 本 plan 需人工審查後才能進入 tasks | 待審查 |
@@ -79,7 +79,7 @@
 | 3. 開放第 n 題 | US3 | `ActivityManager.test.ts`、`sync.test.ts` |
 | 4. 結束第 n 題（老師或 005） | US3 | `ActivityManager.test.ts`（含就地執行與重複要求） |
 | 5. 學生重新整理後回到原組別 | US2 | `ActivityGateway.test.ts`、e2e `activity-sync.spec.ts` |
-| 6. 老師重新整理後重新登入 | US4 | e2e `activity-sync.spec.ts`（需 001 C1 完成） |
+| 6. 老師重新整理後重新登入 | US4 | `teacherRefresh.test.ts`；e2e `activity-sync.spec.ts`（暫時限制的部分現在測；回到控制台的部分需 001 C1） |
 
 ## 替換模擬實作
 

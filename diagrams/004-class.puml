@@ -6,7 +6,7 @@ skinparam classAttributeIconSize 0
 hide empty members
 left to right direction
 
-package "001 Entities 與介面（不修改；C2 例外）" #EEEEEE {
+package "001 Entities 與介面（001 最終版，不修改）" #EEEEEE {
   enum ActivityPhase {
     NO_ACTIVITY
     PREPARING
@@ -43,7 +43,7 @@ package "001 Entities 與介面（不修改；C2 例外）" #EEEEEE {
     +updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>
     +openQuestion(questionNumber: number): Promise<Activity>
     +endQuestion(questionNumber: number): Promise<Activity>
-    +joinGroup(groupNumber: number): Promise<Activity | ValidationError>
+    +joinGroup(groupNumber: number): Promise<Activity>
     +leaveGroup(): Promise<void>
     +getCurrentActivity(): Promise<Activity | null>
     +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
@@ -63,7 +63,7 @@ package "shared（004 新增）" {
   class GroupAck {
     snapshot: ActivitySnapshot
     studentToken: string [0..1]
-    error: ValidationError [0..1]
+    error: {code, message} [0..1]
   }
   class activityRules <<constants>> {
     +GROUP_COUNT_MIN = 2
@@ -72,7 +72,6 @@ package "shared（004 新增）" {
   }
   ActivitySnapshot o-- "0..1" Activity
   GroupAck *-- ActivitySnapshot
-  GroupAck o-- "0..1" ValidationError
 }
 
 package "frontend/src/services（004 新增）" {
@@ -116,7 +115,7 @@ package "frontend/src/services（004 新增）" {
   HttpActivityService ..> ApiError : 原樣 reject
   HttpActivityService ..> ActivitySnapshot
   HttpActivityService ..> GroupAck
-  HttpActivityService ..> UnexpectedError : reject
+  HttpActivityService ..> UnexpectedError : reject（含 joinGroup 被拒絕）
 }
 
 package "server/src/activity（004 新增）" {

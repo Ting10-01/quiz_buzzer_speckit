@@ -19,15 +19,7 @@ description: "Task list for 004 活動與階段同步"
 
 ## 依賴 001 的修改
 
-spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下列任務在對應修改完成前，測試以 `test.skip` 標記並註明原因，完成後解除：
-
-| 001 修改 | 影響的任務 |
-| --- | --- |
-| C1（老師登入後依階段進入控制台） | T050 |
-| C2（`joinGroup` 回傳 `ValidationError`） | T031、T034、T044 |
-| C3（組數初始值與「−」「+」不可用） | T028 |
-| C4（說明文字） | T044 |
-| C5（`FINISHED` 與加入時的頁面切換） | T044 |
+只剩 spec「需請 001 修改」C1（D21：老師登入後依階段回到控制台）。001 完成 C1 前，T050 中「回到控制台」的 e2e 以 `test.skip` 標記並註明原因；「暫時限制」的部分（老師重新登入後進入 T-Pick、活動不變、再建立活動被拒絕）現在就測。其餘頁面行為照 001 最終版（PR #10）：組數範圍與預設值、說明文字是 001 spec 交給 004 定義的規則，001 實作時照用；結束最後一題直接 `FINISHED`、加入後依階段切換，001 已完成。
 
 ---
 
@@ -37,7 +29,7 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 
 - [ ] T001 [P] 在 `server/package.json` 加入 `socket.io` 相依、`socket.io-client` 開發相依；在 `frontend/package.json` 加入 `socket.io-client` 相依
 - [ ] T002 [P] 建立 `shared/src/activityRules.ts`：`GROUP_COUNT_MIN = 2`、`GROUP_COUNT_MAX = 20`、`GROUP_COUNT_DEFAULT = 6`（data-model §1）
-- [ ] T003 [P] 建立 `shared/src/activitySync.ts`：`ActivitySnapshot { version: number; activity: Activity | null }`、`GroupAck { snapshot: ActivitySnapshot; studentToken?: string; error?: ValidationError }`；`isValidationError` 沿用 `shared/src/guards.ts`
+- [ ] T003 [P] 建立 `shared/src/activitySync.ts`：`ActivitySnapshot { version: number; activity: Activity | null }`、`GroupAck { snapshot: ActivitySnapshot; studentToken?: string; error?: { code: string; message: string } }`；`isValidationError` 沿用 001 的 `shared/src/guards.ts`
 - [ ] T004 建立 `server/tests/helpers/activityTestServer.ts`：以 002 的 `buildApp(config, deps)` 在隨機埠啟動伺服器（含 002 的 `app.io` 與 004 的 activity 模組）；`deps` 以替身取代 002 的老師驗證（憑證 `teacher-test` 為有效老師、可模擬換發）與 003 的 `ImportStore`（預設 4 題，可設為 `null`）；提供 `connectTeacher(token?)`、`connectStudent(studentToken?)`（只用 WebSocket）、`waitForSnapshot(socket, predicate, timeoutMs)`、`emitWithAck(socket, event, payload)`，依 T001、T003
 
 ---
@@ -79,7 +71,7 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T023 [P] [US1] `server/tests/unit/activity/ActivityManager.settings.test.ts`：建立後為 `PREPARING`、題目來自 `ImportStore`、第 1–n 組各 0 人（AC-03）；組數 1、21、3.5 回 `ValidationError`「組數必須是 2 到 20 之間的整數」且狀態不變（AC-04）；已有活動回 `ACTIVITY_EXISTS`（AC-06）；沒有匯入回 `NO_IMPORT`（REQ-ACT-01）；準備中修改成功；小於有學生的最大組別回「第 n 組已有學生加入，組數不能少於 n」（AC-05）；第 1 題開放後回 `SETTINGS_LOCKED`（AC-08）；沒有活動時修改回 `NO_ACTIVITY`
+- [ ] T023 [P] [US1] `server/tests/unit/activity/ActivityManager.settings.test.ts`：建立後為 `PREPARING`、題目來自 `ImportStore`、第 1–n 組各 0 人（AC-03）；組數 1、21、3.5 回 `ValidationError`「組數必須是 2 到 20 之間的整數」且狀態不變（AC-04）；已有活動回 `ACTIVITY_EXISTS`，訊息為「已經有進行中的活動，不能再建立；要重新開始請重新啟動伺服器」（AC-06、AC-32）；沒有匯入回 `NO_IMPORT`（REQ-ACT-01）；準備中修改成功；小於有學生的最大組別回「第 n 組已有學生加入，組數不能少於 n」（AC-05）；第 1 題開放後回 `SETTINGS_LOCKED`（AC-08）；沒有活動時修改回 `NO_ACTIVITY`
 - [ ] T024 [P] [US1] `server/tests/integration/activity/activityRoutes.settings.test.ts`（Fastify `inject`）：`POST /api/activity`、`PUT /api/activity/settings` 成功回 `200 ActivitySnapshot`；組數不合法（含 3.5、字串）回 `200 ValidationError { field: "groupCount", message }` 且活動不變；規則不允許回 `409 { code, message }`；沒有老師憑證回 `401 UNAUTHORIZED` 且活動不變（AC-07、SC-006）；並把這兩條路由加進 002 `server/tests/integration/requireTeacher.test.ts` 的「老師專用路由清單」；建立後學生連線 1 秒內收到 `PREPARING` 的快照（AC-03、AC-15）
 - [ ] T025 [P] [US1] `frontend/tests/unit/HttpActivityService.teacher.test.ts`（002 `ApiClient` 的替身）：`createActivity`、`updateSettings` 成功時回傳 `Activity` 並套用版本；`200` 的 body 為 `ValidationError`（以 `isValidationError` 判斷）時原樣回傳、不套用版本；`ApiError`（409、401、`NETWORK`）原樣 reject（RA-10）
 
@@ -87,7 +79,7 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 
 - [ ] T026 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `createActivity`、`updateSettings`，都在 `CommandQueue.run` 內；組數驗證用 `activityRules`（data-model「ValidationError 的內容」），依 T015、T002
 - [ ] T027 [US1] 實作 `server/src/activity/activityRoutes.ts` 的 `POST /api/activity`、`PUT /api/activity/settings`：`{ preHandler: app.requireTeacher }`；JSON schema 只要求 body 是物件，`groupCount` 由 `ActivityManager` 驗證；`ValidationError` → `200` 回傳 `ValidationError`；`ActivityRuleError` → `409 { code, message }`（002 的 `ErrorBody`，contracts/activity-http.md），依 T026
-- [ ] T028 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `createActivity`、`updateSettings`（經 002 的 `ApiClient`），依 T022；並在 `frontend/tests/e2e/activity-sync.spec.ts` 加入「活動設定頁」情境：組數預設 6、組數 2 時「−」不可用、20 時「+」不可用（AC-01、AC-02，需 001 C3）
+- [ ] T028 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `createActivity`、`updateSettings`（經 002 的 `ApiClient`），依 T022；並在 `frontend/tests/e2e/activity-sync.spec.ts` 加入「活動設定頁」情境：組數預設 6、組數 2 時「−」不可用、20 時「+」不可用（AC-01、AC-02；001 實作 T-Setup 時引用 `activityRules`，001 spec US2 AC-7 已交給 004）
 
 **Checkpoint**: 老師可以建立、修改活動，學生連線同步收到
 
@@ -101,15 +93,15 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T029 [P] [US2] `server/tests/unit/activity/ActivityManager.groups.test.ts`：依 data-model「組別規則」逐列測試——沒有活動、組別超出範圍、同組重新加入不重複計算、準備中換組、鎖定後換組回「第 1 題開放後不能換組，你在第 m 組」、鎖定後未加入的連線可加入（OPEN、QUESTION_ENDED、FINISHED）；`leaveGroup` 準備中成功、鎖定後回 `error`；每次成功的加入或離開都 commit 新版本（REQ-ACT-10、11、13）
+- [ ] T029 [P] [US2] `server/tests/unit/activity/ActivityManager.groups.test.ts`：依 data-model「組別規則」逐列測試——沒有活動（`NO_ACTIVITY`）、組別超出範圍（`NO_SUCH_GROUP`）、同組重新加入不重複計算、準備中換組、鎖定後換組回 `GROUP_LOCKED`「第 1 題開放後不能換組，你在第 m 組」、鎖定後未加入的連線可加入（OPEN、QUESTION_ENDED、FINISHED）；`leaveGroup` 準備中成功、鎖定後回 `error`；每次成功的加入或離開都 commit 新版本（REQ-ACT-10、11、13）
 - [ ] T030 [P] [US2] `server/tests/integration/activity/ActivityGateway.groups.test.ts`：`group:join` 的 ack 帶 `studentToken`，老師連線 1 秒內收到人數加 1（AC-09）；兩條連線加入同組為 2 人（AC-10）；準備中換組（AC-11）；開放第 1 題後換組被拒絕、仍在原組（AC-12）；開放後新連線可加入（AC-13）；斷線後以同一 `studentToken` 重新連線並加入原組，人數不變且 `groupOf` 仍為原組（AC-14）；伺服器不認得的 token 被忽略；payload 不是整數時回 `error`；學生連線收到的所有快照 `spreadsheet.id` 為空字串、老師連線的不是（AC-16、SC-003）
-- [ ] T031 [P] [US2] `frontend/tests/unit/HttpActivityService.groups.test.ts`：`joinGroup` 成功時存 `studentToken` 並回傳 `Activity`；ack 有 `error` 時回傳 `ValidationError`（需 001 C2 的型別）；`leaveGroup` 有 `error` 時 reject `UnexpectedError(error.message)`；ack 逾時 reject「連不上伺服器，請確認伺服器已啟動」
+- [ ] T031 [P] [US2] `frontend/tests/unit/HttpActivityService.groups.test.ts`：`joinGroup` 成功時存 `studentToken` 並回傳 `Activity`；ack 有 `error` 時先套用 `snapshot` 再 reject `UnexpectedError(error.message)`（`NO_ACTIVITY`、`NO_SUCH_GROUP`、`GROUP_LOCKED`）；`leaveGroup` 有 `error` 時 reject `UnexpectedError(error.message)`；ack 逾時 reject「連不上伺服器，請確認伺服器已啟動」
 
 ### Implementation for User Story 2
 
 - [ ] T032 [US2] 在 `server/src/activity/ActivityManager.ts` 實作 `joinGroup(socket, n)`、`leaveGroup(socket)`，在 `CommandQueue.run` 內；回傳 `GroupAck`（`PUBLIC` 快照），依 T026
 - [ ] T033 [US2] 在 `server/src/activity/ActivityGateway.ts` 處理 `group:join`、`group:leave`：驗證 payload、呼叫 `ActivityManager`、以 ack 回覆（contracts/socket-events.md），依 T032
-- [ ] T034 [US2] 在 `frontend/src/services/HttpActivityService.ts` 實作 `joinGroup`、`leaveGroup`（經 `RealtimeClient.emitWithAck`），`joinGroup` 的回傳型別依 001 C2 改為 `Promise<Activity | ValidationError>`，依 T022
+- [ ] T034 [US2] 在 `frontend/src/services/HttpActivityService.ts` 實作 `joinGroup`、`leaveGroup`（經 `RealtimeClient.emitWithAck`），`joinGroup` 照 001 回傳 `Promise<Activity>`，被拒絕時以 `UnexpectedError(error.message)` reject，依 T022
 
 **Checkpoint**: 學生可以加入、換組、重新整理後回到原組；伺服器提供 `groupOf(socket)`
 
@@ -133,9 +125,9 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 - [ ] T039 [US3] 在 `server/src/activity/ActivityManager.ts` 實作 `openQuestion(n)`、`endQuestion(n)`：依 data-model「狀態轉換」，`openedAt`、`endedAt` 用 `SequenceClock.stamp()`，重複要求不 commit，依 T026
 - [ ] T040 [US3] 在 `server/src/activity/activityRoutes.ts` 加入 `POST /api/activity/questions/:n/open`、`/end`（contracts/activity-http.md），依 T039
 - [ ] T041 [US3] 在 `frontend/src/services/HttpActivityService.ts` 實作 `openQuestion`、`endQuestion`，依 T028
-- [ ] T042 [US3] 修改 `frontend/src/services/createServiceRegistry.ts`：`activity` 綁定 `HttpActivityService`；移除 `phaseControl` 與 `activityValidationControl`；`submission` 或 `result` 仍是模擬實作時，把 `onActivityChange` 的活動寫進 `MockSession.teacherActivity`、`joinGroup` 成功的組別寫進 `MockSession.joinedGroup`、`leaveGroup` 成功時清除（RA-14）；更新 `frontend/tests/unit/ServiceRegistry.test.ts`（`isMockMode()` 仍為 true、`phaseControl` 不存在）
+- [ ] T042 [US3] 修改 `frontend/src/services/createServiceRegistry.ts`：`activity` 綁定 `HttpActivityService`；移除 `phaseControl` 與 `activityValidationControl`；`submission` 或 `result` 仍是模擬實作時，把 `onActivityChange` 的活動寫進 `MockSession.teacherActivity`、`joinGroup` 成功的組別寫進 `MockSession.joinedGroup`、`leaveGroup` 成功時清除；並包一層模擬的 `judge`：`JudgeOutcome.activity` 不是 `OPEN` 時呼叫 `HttpActivityService.endQuestion(q)`，以其回傳的活動取代 `JudgeOutcome.activity`（RA-14）；更新 `frontend/tests/unit/ServiceRegistry.test.ts`（`isMockMode()` 仍為 true、`phaseControl` 不存在）
 - [ ] T043 [US3] 在 `server/src/activity/ActivityManager.ts` 與 `ActivityGateway.ts` 加入 pino 事件 `activity.created`、`question.opened`、`question.ended`、`group.joined`、`group.left`（RA-12），不記錄 `studentToken`；在 002 的 `server/src/logger.ts` `loggerOptions.redact.paths` 加上 `*.studentToken`；不記錄 handshake 物件；`server/tests/integration/activity/logging.test.ts` 檢查 log 輸出中沒有任何 `studentToken`
-- [ ] T044 [US3] `frontend/tests/e2e/activity-sync.spec.ts`：1 個老師與 3 個學生分頁走完「建立 → 加入 → 開放並結束 4 題 → 已結束」，學生頁面隨階段自動切換（S-Join 沒有活動 → 有活動、S-Wait → S-Answer → S-QuestionDone → S-Answer → … → S-Results），不需重新整理（AC-15、AC-17～20、SC-001、SC-004）；學生分頁的 WebSocket 訊息中 `spreadsheet.id` 為空、沒有 `transport=polling` 的請求（AC-16、REQ-ACT-20、SC-003）；學生重新整理後選別組看到「第 1 題開放後不能換組，你在第 3 組」、選回原組回到作答頁（AC-12、AC-14）；T-Setup 與 S-Wait 顯示 spec「說明文字」的內容（C4）；需 001 C2、C4、C5
+- [ ] T044 [US3] `frontend/tests/e2e/activity-sync.spec.ts`：1 個老師與 3 個學生分頁走完「建立 → 加入 → 開放並結束 4 題 → 已結束」，學生頁面隨階段自動切換（S-Join 沒有活動 → 有活動、S-Wait → S-Answer → S-QuestionDone → S-Answer → … → 最後一題直接 S-Results），不需重新整理（AC-15、AC-17～20、SC-001、SC-004）；在 `QUESTION_ENDED`、`FINISHED` 時加入的分頁分別進入 S-QuestionDone、S-Results（001 RD-14）；學生分頁的 WebSocket 訊息中 `spreadsheet.id` 為空、沒有 `transport=polling` 的請求（AC-16、REQ-ACT-20、SC-003）；學生重新整理後選別組，共通錯誤訊息區顯示「第 1 題開放後不能換組，你在第 3 組」、停留在 S-Join；選回原組回到作答頁（AC-12、AC-14）；T-Setup 與 S-Wait 顯示 spec「說明文字」的內容
 
 **Checkpoint**: 完整活動流程可以展示；MVP 完成
 
@@ -157,18 +149,18 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 
 ## Phase 7: User Story 4 - 老師重新整理後回到控制台 (Priority: P2)
 
-**Goal**: 老師分頁重新整理或關閉時活動繼續；重新登入後回到控制台目前的階段
+**Goal**: 老師分頁重新整理或關閉時活動繼續；001 C1 完成前，老師重新登入後進入 T-Pick（暫時限制），完成後回到控制台目前的階段
 
 **Independent Test**: 第 2 題搶答中老師連線斷開，學生連線不受影響；以新的老師憑證連線後收到老師版快照
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）
+- [ ] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證（任何人登入都取代前一位老師）：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）
 - [ ] T049 [P] [US4] `frontend/tests/unit/HttpActivityService.reconnect.test.ts`：`TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同時，`getCurrentActivity` 與四個老師指令先 `reconnect()`，並回傳重新連線後的快照；`disconnect` 原因為 `io server disconnect` 時自動重連；`connect_error` `UNAUTHORIZED` 且憑證沒換時，記下 `rejectedTeacherToken` 並以一般連線重連（research RA-07）
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] 在 `frontend/src/services/HttpActivityService.ts` 與 `RealtimeClient.ts` 實作「憑證改變就重新連線」；在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：`OPEN(2)` 時老師重新整理並登入（002 的測試替身），直接回到 T-Live（第 2 題）；`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → T-Results；沒有活動 → T-Pick（AC-26、AC-27、SC-005）；需 001 C1
+- [ ] T050 [US4] 在 `frontend/src/services/HttpActivityService.ts` 與 `RealtimeClient.ts` 實作「憑證改變就重新連線」；在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：（現在測）`OPEN(2)` 時老師重新整理並登入（002 的測試替身），進入 T-Pick，學生分頁的階段不變；再走到 T-Setup 按「建立活動」，共通錯誤訊息區顯示暫時限制的說明（AC-25、AC-32、SC-005）；沒有活動時登入進入 T-Pick（AC-27）；（需 001 C1，先 `test.skip`）登入後直接回到 T-Live（第 2 題），`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → T-Results（AC-26）
 
 **Checkpoint**: 老師誤重新整理不會毀掉活動
 
@@ -185,7 +177,7 @@ spec「需請 001 修改」C1–C5 必須由 001 先修改 spec 並實作。下�
 ## Dependencies & Execution Order
 
 - Phase 1 → Phase 2 → US1 → US2 → US3 → US5；US4 在 US3 之後。
-- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2；US5 依賴 US2、US3；US4 依賴 US3 與 001 C1。
+- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1。
 - 同一檔案的任務依序執行：`ActivityManager.ts`（T015 → T026 → T032 → T039 → T043）、`HttpActivityService.ts`（T022 → T028 → T034 → T041 → T050）、`activityRoutes.ts`（T027 → T040）、`ActivityGateway.ts`（T017 → T033 → T043）。
 
 ### Parallel Opportunities
@@ -204,7 +196,7 @@ T025 frontend/tests/unit/HttpActivityService.teacher.test.ts
 
 1. **MVP**：Phase 1、2 → US1 → US2 → US3。完成後即可展示完整的活動流程（SC-004）。
 2. 加上 US5，以壓力測試確認時序與量級。
-3. 001 C1 完成後做 US4。
+3. US4 的伺服器與服務層現在就做；001 C1 完成後解除回到控制台的 e2e skip。
 4. Polish：人工驗證、圖表一致性驗證、回報測試結果。
 
 ## 需求追溯
@@ -231,7 +223,7 @@ T025 frontend/tests/unit/HttpActivityService.teacher.test.ts
 | REQ-ACT-18 | AC-30 | T008、T039 | T007、T035 |
 | REQ-ACT-19 | AC-16 | T014、T016、T017 | T013、T030、T044 |
 | REQ-ACT-20 | AC-31 | T018、T020 | T019、T044 |
-| REQ-ACT-21 | AC-25～27 | T050 | T048、T049、T050 |
+| REQ-ACT-21 | AC-25～27、AC-32 | T050 | T048、T049、T050 |
 | REQ-ACT-NFR-01 | AC-28 | T016、T047 | T045、T046 |
 | REQ-ACT-NFR-02 | AC-29 | T032、T047 | T045、T046 |
 | SC-001、SC-004 | — | — | T044、T051 |

@@ -57,9 +57,9 @@
   - Socket.IO 伺服器由 002 建立（`app.io`，002 `contracts/socket-handshake.md`）。handshake 時 002 驗證 `auth.teacherToken`：有效 → 加入 `TEACHER_ROOM`（`'teacher'`）、`socket.data.isTeacher = true`；沒有帶 → 一般連線；錯誤或已作廢 → 拒絕連線（`connect_error`，`err.message === 'UNAUTHORIZED'`）。
   - 004 在 `connection` 時把 `socket.data.isTeacher` 為 false 的連線加入 `students` 房間；老師連線已由 002 放進 `TEACHER_ROOM`，004 不再處理。
   - 前端 `RealtimeClient` 的 `auth` 每次連線時以 002 的 `TeacherCredentialStore.get()` 讀老師憑證，並記下這次用的憑證（`connectedTeacherToken`）。
-  - 老師重新登入時 002 以 `io.in(TEACHER_ROOM).disconnectSockets(true)` 中斷所有舊老師連線。這是伺服器主動中斷，Socket.IO 用戶端不會自動重連，所以 `RealtimeClient` 收到 `disconnect` 原因為 `io server disconnect` 時呼叫 `reconnect()`，以當下的憑證重新 handshake。
+  - 任何人以 Google 登入時，002 讓新登入者取代前一位老師（舊憑證作廢），並以 `io.in(TEACHER_ROOM).disconnectSockets(true)` 中斷所有舊老師連線。這是伺服器主動中斷，Socket.IO 用戶端不會自動重連，所以 `RealtimeClient` 收到 `disconnect` 原因為 `io server disconnect` 時呼叫 `reconnect()`，以當下的憑證重新 handshake。
   - 收到 `connect_error` `UNAUTHORIZED`：若 `TeacherCredentialStore.get()` 已換成別的憑證，以新憑證重連；否則記下被拒的憑證（`rejectedTeacherToken`），之後的 handshake 不再帶它，以一般連線重連。這個分頁之後只收學生版快照；它的老師指令會被 002 的 `ApiClient` 回「老師登入已失效，請回首頁重新登入」。
-  - `getCurrentActivity` 與四個老師指令執行前，若 `TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同，先 `reconnect()`。
+  - `getCurrentActivity` 與四個老師指令執行前，若 `TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同，先 `reconnect()`。依 001 最終版，老師登入後的第一個活動指令是 T-Setup 的 `createActivity`（T-Lobby 不呼叫 `getCurrentActivity`），所以重新連線發生在建立活動之前，T-Lobby 之後的 `onActivityChange` 一定是老師版的快照。
 - **Rationale**: 老師與學生的連線收到的內容只差在 `spreadsheet.id`（RA-08）；老師的指令仍走 REST，連線只用來收推送。
 - **Alternatives considered**: 所有人都在同一個房間收同一份（學生會拿到試算表 ID）。
 
@@ -72,7 +72,7 @@
 ## RA-09 `getCurrentActivity` 與兩種通知（001 介面）
 
 - **Decision**:
-  - `getCurrentActivity()`：連線後伺服器立即送一份目前狀態（REQ-ACT-15）；手上已有快照時直接回傳，否則等下一份 `activity:snapshot`。5 秒內沒收到以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject。不另設 `GET` 端點。
+  - `getCurrentActivity()`：連線後伺服器立即送一份目前狀態（REQ-ACT-15）；手上已有快照時直接回傳，否則等下一份 `activity:snapshot`。5 秒內沒收到以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject。不另設 `GET` 端點。依 001 最終版，只有 Main 與 S-Join 載入時呼叫；T-Lobby 用 `createActivity`、`updateSettings` 的回傳值，之後靠 `onActivityChange`。
   - `onActivityChange(listener)`：每採用一份新版本就通知（`activity` 不是 `null` 時）。
   - `onPhaseChange(listener)`：只在 `phase`、`currentQuestion` 或 `groupCount` 與上一次通知的不同時（含從沒有活動變成有活動）通知。
 - **Rationale**: 狀態只有一個來源（Socket.IO 推送），初次載入也走同一條，不會出現 GET 與推送不一致。`onPhaseChange` 不因人數改變而通知，避免作答頁因為別組有人加入就被重畫；`groupCount` 改變只發生在準備中，讓選組頁能更新組別清單。
@@ -89,11 +89,11 @@
   | 規則不允許（已有活動、沒有匯入、不是下一題…） | `409 { code, message }`（`ErrorBody`） | `ApiClient` 的 `ApiError` 直接 reject（符合 `UnexpectedError`） |
   | 沒有老師身分 | `401 UNAUTHORIZED`（002 的 `app.requireTeacher`） | `ApiClient` 以「老師登入已失效，請回首頁重新登入」reject（002 處理） |
   | 網路錯誤 | — | `ApiClient` 以 `ApiError`（`code: "NETWORK"`）「連不上伺服器，請確認伺服器已啟動」 reject |
-  | `group:join` 不允許 | ack `{ snapshot, error: ValidationError }`（`field: "groupNumber"`） | 回傳 `ValidationError`（需請 001 修改 C2） |
-  | `group:leave` 在第 1 題開放後 | ack `{ snapshot, error }` | 以 `UnexpectedError(error.message)` reject |
+  | `group:join` 不允許 | ack `{ snapshot, error: { code, message } }` | 以 `UnexpectedError(error.message)` reject（001 的 `joinGroup` 回傳 `Promise<Activity>`，沒有預期失敗的回傳值） |
+  | `group:leave` 在第 1 題開放後 | ack `{ snapshot, error: { code, message } }` | 以 `UnexpectedError(error.message)` reject |
   | ack 5 秒沒回 | — | 以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject（與 002 的訊息相同） |
 
-- **Rationale**: 001 規定預期中的失敗用回傳值、其他用 `UnexpectedError`；002 規定錯誤回應一律是 `ErrorBody { code, message }`、前端一律經 `ApiClient`，預期中的錯誤由各服務辨識後轉成回傳值。`ApiClient` 遇到非 2xx 只保留 `{ status, code, message }`，`ValidationError` 的 `field` 會遺失，所以預期中的失敗一律以 `200` 回傳、前端用型別判斷函式區分；非 2xx 只用於非預期錯誤與 401。`409` 的情況頁面流程不會發生（按鈕只在正確的階段出現），只有連點、兩個老師分頁或伺服器重啟時才會出現，顯示在共通錯誤訊息區即可。`group:leave` 被拒絕只會發生在「按下重新選擇的同時老師開放第 1 題」，頁面隨後會被階段推到作答頁，所以不另外要求 001 修改。
+- **Rationale**: 001 規定預期中的失敗用回傳值、其他用 `UnexpectedError`；002 規定錯誤回應一律是 `ErrorBody { code, message }`、前端一律經 `ApiClient`，預期中的錯誤由各服務辨識後轉成回傳值。`ApiClient` 遇到非 2xx 只保留 `{ status, code, message }`，`ValidationError` 的 `field` 會遺失，所以預期中的失敗一律以 `200` 回傳、前端用型別判斷函式區分；非 2xx 只用於非預期錯誤與 401。`409` 的情況頁面流程不會發生（按鈕只在正確的階段出現），只有連點、兩個老師分頁、伺服器重啟，或 D21 暫時限制下老師重新登入後又按「建立活動」（`ACTIVITY_EXISTS`）時才會出現，顯示在共通錯誤訊息區即可。`group:join`、`group:leave` 被拒絕在正常流程中很少發生（選組頁只列出存在的組別；換組被拒只發生在重新整理後選錯組，或按下重新選擇的同時老師開放第 1 題），以 `UnexpectedError` 顯示在共通錯誤訊息區即可，配合 001 的介面，不請 001 修改（使用者 2026-11-22 決定）。
 - **Alternatives considered**: 把 409 也做成 `ValidationError`（沒有對應的欄位可以顯示）。
 
 ## RA-11 只用 WebSocket（001 D22）
@@ -114,7 +114,8 @@
 ## RA-14 換掉模擬實作時，其他模擬實作怎麼辦
 
 - **Decision**: `createServiceRegistry()` 把 `activity` 改綁 `HttpActivityService`，移除 `phaseControl` 與 `activityValidationControl`。005、006 還沒完成前，`MockSubmissionService` 與 `MockResultService` 仍讀 `MockSession.teacherActivity` 與 `joinedGroup`；組合根在 `submission` 或 `result` 仍是模擬實作時，把 `HttpActivityService` 的活動（`onActivityChange`）與本分頁加入的組別（`joinGroup`、`leaveGroup` 的結果）寫進 `MockSession`。這段橋接只在組合根，005、006 換掉模擬實作後刪除。
-- **Rationale**: 001 plan「替換模擬實作的方式」只允許改組合根；不橋接的話，004 一換上去，學生的「整組送出」就因為 `joinedGroup` 是空的而無法展示。
+  另外，模擬的 `judge(ACCEPTED)` 只改 `MockSession.teacherActivity`（001 M4），伺服器上的題目不會結束；組合根包一層 `judge`：回傳的 `JudgeOutcome.activity` 不是 `OPEN` 時，呼叫 `HttpActivityService.endQuestion(q)`，並以它回傳的活動取代 `JudgeOutcome.activity`，讓老師端的切換與伺服器一致。學生分頁的「模擬：接受」只推進模擬的階段，不影響伺服器；接上 004 後學生頁面改由真正的階段推動，要等老師結束題目才切換。
+- **Rationale**: 001 plan「替換模擬實作的方式」只允許改組合根；不橋接的話，004 一換上去，學生的「整組送出」就因為 `joinedGroup` 是空的而無法展示，老師接受後也會因為伺服器上的題目還開著而無法開放下一題。
 - **Alternatives considered**: 讓 `HttpActivityService` 直接寫 `MockSession`（真正的實作依賴模擬實作，違反原則 III）。
 
 ## RA-15 壓力測試（NFR-01、NFR-02、SC-002）
