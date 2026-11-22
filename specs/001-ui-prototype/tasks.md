@@ -111,8 +111,8 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T039 [P] 在 `frontend/src/components/ErrorArea.tsx`（與 `.module.css`）實作共通錯誤訊息區：prop `message?: string`，`role="alert"`
 - [X] T040 [P] 在 `frontend/src/components/ConfirmDialog.tsx`（與 `.module.css`）實作確認視窗：`open`、`title`、`children`、`actions: { label, onClick, variant? }[]`、`onClose`
 - [X] T041 在 `frontend/src/components/MockControlBar.tsx`（與 `.module.css`）實作模擬控制列：prop `page`（頁面 id）與 `awaitingJudgement: boolean`；從 `useServiceRegistry()` 讀取模擬控制，依 contracts/mock-controls.md 的表格只顯示目前頁面可用且存在的控制；訂閱 `choicePrompt.onRequest`，以 `ConfirmDialog` 顯示模擬帳號選擇與模擬檔案選擇器（依賴 T040）
-- [ ] T042 在 `frontend/src/components/MockModeBadge.tsx`（與 `.module.css`）實作「模擬模式」標示：`isMockMode()` 為 false 時回傳 `null`；為 true 時固定位置顯示標示，旁邊渲染 `MockControlBar`（依賴 T041）
-- [ ] T043 執行 `npm test`、`npm run typecheck`、`npm run lint`，確認 T036、T037 通過
+- [X] T042 在 `frontend/src/components/MockModeBadge.tsx`（與 `.module.css`）實作「模擬模式」標示：`isMockMode()` 為 false 時回傳 `null`；為 true 時固定位置顯示標示，旁邊渲染 `MockControlBar`（依賴 T041）
+- [X] T043 執行 `npm test`、`npm run typecheck`、`npm run lint`，確認 T036、T037 通過
 
 **Checkpoint**: 模擬實作與共用元件完成，各 Story 可開始。
 
