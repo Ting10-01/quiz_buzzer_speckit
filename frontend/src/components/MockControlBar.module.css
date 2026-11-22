@@ -22,3 +22,9 @@
   outline: 2px solid var(--accent-stroke);
   outline-offset: 2px;
 }
+
+.hint {
+  align-self: center;
+  color: var(--warn-ink);
+  font-size: 13px;
+}

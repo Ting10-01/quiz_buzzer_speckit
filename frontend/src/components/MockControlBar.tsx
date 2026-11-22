@@ -32,6 +32,12 @@ const UNEXPECTED_ERROR_PAGES: readonly PageId[] = [
   'S-Answer',
 ];
 
+/** How long the armed hint stays visible (FR-061: "數秒後"). */
+const HINT_DURATION_MS = 3000;
+
+const VALIDATION_HINT = '已設定：下一次送出會回傳驗證錯誤';
+const UNEXPECTED_HINT = '已設定：下一次介面呼叫會回傳非預期錯誤';
+
 interface Control {
   label: string;
   run: () => void;
@@ -51,6 +57,19 @@ export function MockControlBar({ page, awaitingJudgement }: MockControlBarProps)
   const registry = useServiceRegistry();
   const { phaseControl, judgementControl, unexpectedErrorControl, choicePrompt } = registry;
   const [request, setRequest] = useState<ChoiceRequest | null>(null);
+  // The hint only confirms the click; it does not track whether the error was consumed.
+  // It belongs to the page it was set on, so changing pages hides it immediately.
+  const [hint, setHint] = useState<{ text: string; page: PageId }>();
+  const showHint = (text: string) => setHint({ text, page });
+
+  useEffect(() => {
+    if (!hint) return;
+    const timer = setTimeout(() => setHint(undefined), HINT_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [hint]);
+  // Drop a hint from another page so returning to its page does not bring it back.
+  if (hint && hint.page !== page) setHint(undefined);
+  const visibleHint = hint?.page === page ? hint.text : undefined;
 
   useEffect(() => choicePrompt?.onRequest(setRequest), [choicePrompt]);
 
@@ -89,10 +108,22 @@ export function MockControlBar({ page, awaitingJudgement }: MockControlBarProps)
         ? registry.submissionValidationControl
         : undefined;
   if (validationControl) {
-    controls.push({ label: '模擬：驗證失敗', run: () => validationControl.failNextValidation() });
+    controls.push({
+      label: '模擬：驗證失敗',
+      run: () => {
+        validationControl.failNextValidation();
+        showHint(VALIDATION_HINT);
+      },
+    });
   }
   if (unexpectedErrorControl && UNEXPECTED_ERROR_PAGES.includes(page)) {
-    controls.push({ label: '模擬：非預期錯誤', run: () => unexpectedErrorControl.failNextCall() });
+    controls.push({
+      label: '模擬：非預期錯誤',
+      run: () => {
+        unexpectedErrorControl.failNextCall();
+        showHint(UNEXPECTED_HINT);
+      },
+    });
   }
 
   return (
@@ -109,6 +140,11 @@ export function MockControlBar({ page, awaitingJudgement }: MockControlBarProps)
               {control.label}
             </button>
           ))}
+          {visibleHint && (
+            <span className={styles.hint} role="status">
+              {visibleHint}
+            </span>
+          )}
         </div>
       )}
       <ConfirmDialog

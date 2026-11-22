@@ -167,8 +167,8 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T108 在 `shared/src/entities.ts` 的 `SignInFailure` 移除 `NOT_TEACHER`，只保留 `CANCELLED`（data-model 第 1 節、類別圖）
 - [X] T109 在 `frontend/src/services/mock/MockFixtures.ts` 移除 `ACCOUNT_CHOICE.NON_TEACHER`，並在 `MockAuthService.ts` 只提供「模擬老師帳號」「取消」兩個選項（M1；依賴 T108）
 - [X] T110 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息只對應 `CANCELLED`（「已取消登入」）（FR-013；依賴 T108）
-- [ ] T111 在 `frontend/src/components/MockControlBar.tsx`（與 `.module.css`）加入已設定提示：點驗證失敗或非預期錯誤控制後顯示對應文字，數秒後或 `page` 改變時清除；提示只確認點擊，不追蹤錯誤是否已被消耗（contracts/mock-controls.md）
-- [ ] T112 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T104–T107 通過，且其他測試沒有退步
+- [X] T111 在 `frontend/src/components/MockControlBar.tsx`（與 `.module.css`）加入已設定提示：點驗證失敗或非預期錯誤控制後顯示對應文字，數秒後或 `page` 改變時清除；提示只確認點擊，不追蹤錯誤是否已被消耗（contracts/mock-controls.md）
+- [X] T112 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T104–T107 通過，且其他測試沒有退步
 
 **Checkpoint**: 實作與修訂後的 spec 一致，接著完成 T055 的人工驗證。
 
