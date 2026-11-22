@@ -100,7 +100,7 @@ description: "001 畫面與流程原型的實作任務"
 ### 測試替身與 App 骨架
 
 - [X] T033 [P] 建立 `frontend/tests/helpers/createFakeRegistry.ts`：回傳所有方法為 `vi.fn()` 的 `ServiceRegistry`，可覆寫個別方法與模擬控制、可設定 `isMockMode`；另提供 `renderWithRegistry(ui, registry)` 包上 `ServiceRegistryProvider`
-- [ ] T034 在 `frontend/src/app/AppRouter.tsx` 建立頁面切換骨架：以 React state 保存 `PageState`（discriminated union，一次列出 spec 頁面清單的 16 個頁面 id 與各自需要的參數，例如 `T-Import` 帶 `ImportSuccess`、`T-ImportError` 帶 `Spreadsheet` 與 `ImportError`、`T-Setup` 帶 `mode: 'create' | 'edit'`），不使用 URL 路由，重新整理一律回到 `Main`（RD-11）；提供 `navigate(page)` 給頁面；學生頁面（`S-*`）外層套上 390 px 寬、水平置中的欄位；畫面固定位置渲染 `MockModeBadge` 並傳入目前頁面 id。尚未實作的頁面在各 Story 加入 switch
+- [X] T034 在 `frontend/src/app/AppRouter.tsx` 建立頁面切換骨架：以 React state 保存 `PageState`（discriminated union，一次列出 spec 頁面清單的 16 個頁面 id 與各自需要的參數，例如 `T-Import` 帶 `ImportSuccess`、`T-ImportError` 帶 `Spreadsheet` 與 `ImportError`、`T-Setup` 帶 `mode: 'create' | 'edit'`），不使用 URL 路由，重新整理一律回到 `Main`（RD-11）；提供 `navigate(page)` 給頁面；學生頁面（`S-*`）外層套上 390 px 寬、水平置中的欄位；畫面固定位置渲染 `MockModeBadge` 並傳入目前頁面 id。尚未實作的頁面在各 Story 加入 switch
 - [ ] T035 在 `frontend/src/main.tsx` 建立 registry（`createServiceRegistry()`）、包上 `ServiceRegistryProvider`、渲染 `AppRouter`，並載入 `tokens.css`、`global.css` 與 `@fontsource/inter`、`@fontsource/noto-sans-tc`（只載入頁面用到的字重）
 
 ### 共用元件（先寫測試）
@@ -139,7 +139,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T051 [P] [US1] 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx`（與 `.module.css`）實作 T-Login：老師版 `AppHeader`、只有「用 Google 登入」、登入失敗訊息區（依 `SignInFailure` 顯示「已取消登入」或「此帳號不是老師帳號」）、`ErrorArea`
 - [X] T052 [P] [US1] 在 `frontend/src/pages/teacher/PickPage.tsx`（與 `.module.css`）實作 T-Pick 版面：載入時 `getCurrentAccount()` 顯示帳號；「從 Google 雲端硬碟挑選」按鈕（行為於 T062 完成）、「取消」→ `Main`；`ErrorArea`；不出現「連結 Google 帳號」「解除連結」（SC-004）
 - [X] T053 [P] [US1] 在 `frontend/src/pages/student/JoinPage.tsx`（與 `.module.css`）實作 S-Join 顯示：學生版 `AppHeader`（尚無組別）、載入時 `getCurrentActivity()`、訂閱 `onPhaseChange`；沒有活動時顯示「目前沒有活動，請等老師建立活動」；有活動時以 `GroupGrid` 列出組別；`ErrorArea`
-- [ ] T054 [US1] 在 `frontend/src/app/AppRouter.tsx` 接上 `Main`、`T-Login`、`T-Pick`、`S-Join`，老師頁首「搶答板」導向 `Main`
+- [X] T054 [US1] 在 `frontend/src/app/AppRouter.tsx` 接上 `Main`、`T-Login`、`T-Pick`、`S-Join`，老師頁首「搶答板」導向 `Main`
 - [ ] T055 [US1] 在 Phase 3.5、3.6 完成後執行 `npm test`、`npm run test:e2e`，確認 T044–T048、T104–T106、T117–T119 通過；依 quickstart Q1、Q2、Q11、Q14（T-Login、S-Join 部分）人工驗證，結果寫入 `specs/001-ui-prototype/manual-verification.md`
 
 **Checkpoint**: US1 可獨立展示（MVP）。
