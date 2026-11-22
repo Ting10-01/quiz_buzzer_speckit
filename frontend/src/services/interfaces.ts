@@ -5,6 +5,7 @@ import type {
   ActivitySettings,
   ImportError,
   ImportSuccess,
+  JudgeOutcome,
   Judgement,
   QuestionResult,
   SignInResult,
@@ -48,7 +49,11 @@ export interface SubmissionService {
     questionNumber: number,
     listener: (submissions: Submission[]) => void,
   ): Unsubscribe;
-  judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>;
+  judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<JudgeOutcome>;
+  /** This tab's group submission for the question, or null (research RD-14). No group argument (principle VI). */
+  getGroupSubmission(questionNumber: number): Promise<Submission | null>;
+  /** Notifies when a groupmate submits for this tab's group (FR-056a). */
+  onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe;
   onJudgement(listener: (submission: Submission) => void): Unsubscribe;
 }
 
@@ -66,6 +71,10 @@ export interface PhaseMockControl {
 
 export interface JudgementMockControl {
   simulateJudgement(judgement: Judgement): Promise<Submission>;
+}
+
+export interface TeammateMockControl {
+  simulateTeammateSubmission(): Promise<Submission>;
 }
 
 export interface ValidationMockControl {

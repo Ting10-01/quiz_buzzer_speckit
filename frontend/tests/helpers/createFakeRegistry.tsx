@@ -57,6 +57,8 @@ export function createFakeRegistry(overrides: FakeRegistryOverrides = {}): Servi
       listSubmissions: vi.fn(),
       onSubmissionsChange: subscription(),
       judge: vi.fn(),
+      getGroupSubmission: vi.fn(),
+      onGroupSubmitted: subscription(),
       onJudgement: subscription(),
       ...submission,
     },
