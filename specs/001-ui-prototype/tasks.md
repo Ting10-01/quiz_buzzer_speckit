@@ -52,7 +52,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T005 [P] 建立 `frontend/tests/setup.ts`，載入 `@testing-library/jest-dom/vitest`
 - [X] T006 [P] 建立 `frontend/playwright.config.ts`：`testDir: 'tests/e2e'`、只用 Chromium、`webServer` 執行 `npm run dev` 並等待 Vite 網址
 - [X] T007 [P] 建立 `frontend/eslint.config.js`：typescript-eslint 建議規則、react-hooks 規則；對 `src/**` 設定 `no-restricted-imports` 禁止引用 `**/services/mock/**`，只有 `src/services/createServiceRegistry.ts` 例外（原則 III）
-- [ ] T008 [P] 建立 `frontend/index.html`（`lang="zh-Hant"`，掛載點 `#root`；不得引用 Google Fonts 或其他外部字型網址，字型由 T035 從本機套件載入，research「字型」、原則 VIII）
+- [X] T008 [P] 建立 `frontend/index.html`（`lang="zh-Hant"`，掛載點 `#root`；不得引用 Google Fonts 或其他外部字型網址，字型由 T035 從本機套件載入，research「字型」、原則 VIII）
 - [ ] T009 [P] 建立 `frontend/src/styles/tokens.css`：把 `docs/design/dark/*.html` 中 `:root` 的深色主題 CSS 變數原樣搬入；不得加入 `data-theme`、`prefers-color-scheme` 或淺色變數（research RD-09）。建立 `frontend/src/styles/global.css`：body 背景與字型（`Inter, "Noto Sans TC", system-ui`）
 - [ ] T010 [P] 建立 `specs/001-ui-prototype/manual-verification.md` 樣板：表格欄位為「日期、驗證者、情境（quickstart Q1–Q12）、耗時、結果、問題」；「耗時」供 SC-005（10 秒內）與 SC-006（5 分鐘內）判定
 - [ ] T011 執行 `npm install`，確認 `npm run typecheck`、`npm run lint` 沒有錯誤
