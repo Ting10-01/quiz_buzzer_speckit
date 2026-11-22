@@ -1,12 +1,12 @@
 # Implementation Plan: 搶答與判定
 
-**Branch**: `005-buzz-submission` | **Date**: 2026-11-21 | **Spec**: [spec.md](./spec.md)
+**Branch**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂） | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/005-buzz-submission/spec.md`
 
 ## Summary
 
-005 以真正的實作取代 001 的 `MockSubmissionService`。學生在一題開放後經 Socket.IO 整組送出，伺服器依連線判斷組別（004 `GroupMembership`），所有送出與老師的判定都放進 004 的 `CommandQueue.run`（與 004 的開放、結束一題共用同一個順序）同步逐一處理，取得連續的順位；經過時間用 004 的 `SequenceClock.stamp()` 減去 004 記錄的開放時間。老師經 HTTP（002 `app.requireTeacher`）依順序判定：只有最前面的待判定答案可判定；接受時在同一個 `run` 內呼叫 004 的 `ActivityManager.endQuestion(n)` 自動結束本題，其餘待判定答案改為未判定；不接受時該組不能重送。學生只收到本組的送出與判定，且不含順位（R9）。送出結果存在 `SubmissionStore`，提供給 006。
+005 以真正的實作取代 001 的 `MockSubmissionService`，實作 001 最終版 `SubmissionService` 的七個方法，配合 001 的頁面現況、不改頁面。學生在一題開放後經 Socket.IO 整組送出，伺服器依連線判斷組別（004 `GroupMembership`），所有送出與老師的判定都放進 004 的 `CommandQueue.run`（與 004 的開放、結束一題共用同一個順序）同步逐一處理，取得連續的順位；經過時間用 004 的 `SequenceClock.stamp()` 減去 004 記錄的開放時間。老師經 HTTP（002 `app.requireTeacher`）依順序判定：只有最前面的待判定答案可判定；接受時在同一個 `run` 內呼叫 004 的 `ActivityManager.endQuestion(n)` 自動結束本題，其餘待判定答案改為未判定，`judge` 回傳 `JudgeOutcome { submissions, activity }` 讓老師頁面依階段切換；不接受時該組不能重送，學生停在等待判定頁。同組組員送出時，伺服器通知同組其他分頁（`onGroupSubmitted`）；學生加入時可取得本組這一題的送出（`getGroupSubmission`）。學生只收到本組的送出與判定，`rank` 一律為 0（R9；001 改成可選前的做法）。送出結果存在 `SubmissionStore`，提供給 006。
 
 **以三張圖為藍圖**：組件、類別、方法與呼叫順序一律依 [`diagrams/005-component.puml`](../../diagrams/005-component.puml)、[`diagrams/005-class.puml`](../../diagrams/005-class.puml)、[`diagrams/005-sequence.puml`](../../diagrams/005-sequence.puml)。下方「藍圖對照」把圖中每個組件與類別對應到程式檔案；[data-model.md](./data-model.md) 的類別、欄位、方法與類別圖一一對應。
 
@@ -26,7 +26,7 @@
 
 **Performance Goals**: 200 個學生連線、1 秒內 1,000 筆送出：回覆 p95 ≤ 1 秒、最長 ≤ 2 秒；老師畫面落後 ≤ 1 秒（REQ-SUB-NFR-01、02）
 
-**Constraints**: 順序只由伺服器決定，臨界區不得 `await`（REQ-SUB-07）；學生端不得收到他組資料與順位（REQ-SUB-16）；不改 001 的頁面（需要改的地方列在 spec「需請 001 修改」）；不使用資料庫
+**Constraints**: 順序只由伺服器決定，臨界區不得 `await`（REQ-SUB-07）；學生端不得收到他組資料與順位（REQ-SUB-16）；不改 001 的頁面，配合 001 最終版的現況（唯一請 001 改的 `Submission.rank` 可選不阻擋實作）；不使用資料庫
 
 **Scale/Scope**: 2–20 組、每組最多 10 個分頁；伺服器 8 個類別（004 的 `CommandQueue`、`SequenceClock` 不算在內）、前端 1 個服務實作、1 個共用事件型別檔
 
@@ -37,11 +37,11 @@
 | 原則 | 檢查 | 結果 |
 | --- | --- | --- |
 | I. PlantUML 設計優先 | 三張圖與 PNG 都在 `diagrams/`；「藍圖對照」把每個組件、類別對應到程式路徑；data-model 與類別圖一致 | 通過 |
-| II. 規格先行與可追溯性 | 每條 REQ-SUB、NFR 都有 AC 或 SC；tasks 階段建立追溯表。D13、D16 改變 001 規則的部分已寫在 spec「需請 001 修改」，001 修改 spec 後才改頁面 | 通過 |
+| II. 規格先行與可追溯性 | 每條 REQ-SUB、NFR 都有 AC 或 SC；tasks 階段建立追溯表。D10–D18 依 001 最終版與 feature-split 3.2、第 4 節逐條處理（spec「001 交給 005 的事項」） | 通過 |
 | III. 分層架構與依賴抽象 | 頁面只依賴 001 的 `SubmissionService` 介面；005 只新增 `ServerSubmissionService` 並改組合根綁定。伺服器：`SubmissionGateway`、`SubmissionRoutes` 是邊界，規則在 `SubmissionEngine`，資料在 `SubmissionStore`；Socket.IO 只出現在 Gateway 與 Notifier | 通過 |
 | IV. 外部資料於執行期解析 | 小題數取自 `ActivityStore` 中 003 解析出的題目，不寫死 | 通過 |
 | V. 單一權威狀態來源 | 階段與題號只讀 004 的 `ActivityStore`；送出、順位、判定只在 `SubmissionStore`；前端只呈現伺服器回傳或推送的完整列表 | 通過 |
-| VI. 最小資訊揭露與機敏資料 | 學生只收本組資料且不含順位（`SubmissionVisibility.forStudent`）；送出列表與判定需 `app.requireTeacher`，老師推播只送 `TEACHER_ROOM`；log 不記答案與憑證；005 不碰金鑰 | 通過（依賴 001 把 `Submission.rank` 改為可選，見 research RD-06） |
+| VI. 最小資訊揭露與機敏資料 | 學生只收本組資料，`rank` 一律為 0（`SubmissionVisibility.forStudent`）；送出列表與判定需 `app.requireTeacher`，老師推播只送 `TEACHER_ROOM`；log 不記答案與憑證；005 不碰金鑰 | 通過（research RD-06） |
 | VII. 輸入驗證與錯誤訊息 | 送出的題號、格數、空白、長度、組別都在伺服器驗證，錯誤指出是哪一格；判定請求格式錯誤回 400，不合規則不改變狀態 | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 有正常與邊界案例；Google、時鐘以替身取代；壓力測試；人工驗證紀錄 | 通過 |
 | IX. 程式碼規範 | 不新增頁面元件；呈現（頁面）與資料（服務）分離；英文命名 | 通過 |
@@ -53,8 +53,8 @@
 | 圖中的組件／類別 | 程式位置 | 來源圖 |
 | --- | --- | --- |
 | `ServerSubmissionService` | `frontend/src/services/server/ServerSubmissionService.ts` | component、class、sequence |
-| `createServiceRegistry()`（改 `submission` 綁定） | `frontend/src/services/createServiceRegistry.ts`（001 的檔案，只改綁定） | component |
-| `SubmitRequest`、`SubmitReply`、`JudgeRequest`、`SubmissionsChanged`、`SubmissionJudged`、事件名稱常數 | `shared/src/submissionEvents.ts` | class |
+| `createServiceRegistry()`（改 `submission` 綁定，移除 `judgementControl`、`submissionValidationControl`、`teammateControl`） | `frontend/src/services/createServiceRegistry.ts`（001 的檔案，只改綁定） | component |
+| `SubmitRequest`、`SubmitReply`、`OwnSubmissionRequest`、`OwnSubmissionReply`、`JudgeRequest`、`SubmissionsChanged`、`GroupSubmitted`、`SubmissionJudged`、事件名稱常數 | `shared/src/submissionEvents.ts` | class |
 | `SubmissionGateway` | `server/src/submission/SubmissionGateway.ts` | component、class、sequence |
 | `SubmissionRoutes` | `server/src/submission/SubmissionRoutes.ts` | component、class、sequence |
 | `SubmissionEngine` | `server/src/submission/SubmissionEngine.ts` | component、class、sequence |
@@ -66,18 +66,18 @@
 
 ## 交界假設
 
-已對照 004 `contracts/server-modules.md`、`socket-events.md` 與 002 `contracts/server-extension.md`、`socket-handshake.md`。下列是 005 依賴、但對方契約沒有明寫或需要對方配合的部分。
+已對照 001 最終版、004 `contracts/server-modules.md`（含前端 `RealtimeClient.on`、`emitWithAck`、`onConnect`）、`socket-events.md` 與 002 `contracts/server-extension.md`、`socket-handshake.md`。下列是 005 依賴、但對方契約沒有明寫或需要對方配合的部分。
 
 | # | 假設 | 對象 |
 | --- | --- | --- |
 | A-1 | `ActivityStore.subscribe(listener)` 的 listener 在 `commit` 當下、仍在 `CommandQueue.run` 內同步被呼叫（004 契約已寫明）。005 在 listener 中看到第 n 題不再開放時，把待判定改為未判定 | 004 |
 | A-2 | 004 擁有唯一的 `CommandQueue.run<T>(command: () => T): T` 與 `SequenceClock.stamp()`；004 的開放、結束一題也走這條佇列（REQ-ACT-17），所以 005 的送出、判定與它們構成單一順序。`ActivityState.openedAt` 由同一個 `SequenceClock` 記錄 | 004 |
-| A-3 | 004 的前端 `RealtimeClient` 除了 `emitWithAck`、`onConnect`，還提供一般的事件訂閱（例如 `on(event, listener): Unsubscribe`），讓 005 監聽 `submissions:changed`、`submission:judged`。004 契約寫「005 在同一個 `RealtimeClient` 上新增自己的事件」，但 data-model 只列出 `onSnapshot`、`onConnect` | 004 |
+| A-3 | 004 的 `ActivityManager.snapshot(Audience.TEACHER)` 可在 `CommandQueue.run` 內呼叫，回傳當下的老師視角 `Activity`；005 用它組 `JudgeOutcome.activity`（004 data-model 已列出 `snapshot(audience)`，但寫的用途是「連線時第一次推送」） | 004 |
 | A-4 | `ActivityManager.endQuestion(n)` 在第 n 題不是目前開放的題目時丟 `ActivityRuleError(QUESTION_NOT_OPEN)`，已結束時不改變不報錯；005 只在確認第 n 題開放中之後呼叫。最後一題時 004 一併把活動改為 `FINISHED`（D9） | 004 |
 | A-5 | 005 的老師路由加進 002 的老師路由清單測試（002 T043），確認沒有老師憑證時被 `app.requireTeacher` 拒絕 | 002 |
 | A-6 | 002 提供測試用的老師憑證取得方式（不連 Google），供 005 的整合、端對端與壓力測試使用；學生加入組別與開題直接走 004 的 `group:join` 與 HTTP | 002、004 |
 | A-7 | 006 以 `SubmissionStore.list(n)`、`winner(n)` 取得每題結果；`list` 回傳老師視角（含 `rank`）的 `Submission[]` | 006 |
-| A-8 | 001 完成 spec「需請 001 修改」第 5 項（`Submission.rank` 可選）後，005 才開始實作；其他項目不阻擋 005 的伺服器實作，但影響端對端測試的畫面行為 | 001 |
+| A-8 | 001 把 `Submission.rank` 改成可選之前，學生視角 `rank` 填 0；改完後由 005 的後續任務 T035 改成不放 `rank`。這一項不阻擋 005 的實作 | 001 |
 
 ## Project Structure
 
