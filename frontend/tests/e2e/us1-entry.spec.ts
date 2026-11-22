@@ -18,19 +18,19 @@ test.describe('US1 entry (quickstart Q1, Q2)', () => {
     await expectMockBadge(page);
   });
 
-  test('Q2: the three mock account choices', async ({ page }) => {
+  test('Q2: the two mock account choices', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /我是老師/ }).click();
     const login = page.getByRole('button', { name: '用 Google 登入' });
 
     await login.click();
-    await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '取消' }).click();
+    const chooser = page.getByRole('dialog', { name: '模擬帳號選擇' });
+    await expect(chooser.getByRole('button')).toHaveText(['模擬老師帳號', '取消']);
+    await chooser.getByRole('button', { name: '取消' }).click();
     await expect(page.getByText('已取消登入')).toBeVisible();
     await expectMockBadge(page);
 
-    await login.click();
-    await page.getByRole('dialog').getByRole('button', { name: '模擬非老師帳號' }).click();
-    await expect(page.getByText('此帳號不是老師帳號')).toBeVisible();
+    await expect(chooser).toBeHidden();
 
     await login.click();
     await page.getByRole('dialog').getByRole('button', { name: '模擬老師帳號' }).click();
