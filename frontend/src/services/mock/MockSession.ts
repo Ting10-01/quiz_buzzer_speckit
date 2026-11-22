@@ -25,6 +25,7 @@ export class MockSession implements MockChoicePrompt, UnexpectedErrorMockControl
   pendingValidationFailure = { activity: false, submission: false };
   pendingUnexpectedError = false;
 
+  private viewerPhaseAdvancer?: () => void;
   private readonly requestListeners = new Set<(request: ChoiceRequest) => void>();
   private resolvePending?: (choiceId: string | null) => void;
 
@@ -47,6 +48,19 @@ export class MockSession implements MockChoicePrompt, UnexpectedErrorMockControl
     const resolve = this.resolvePending;
     this.resolvePending = undefined;
     resolve?.(choiceId);
+  }
+
+  /** Registered by MockActivityService so M6 advances through the same code as advancePhase(). */
+  setViewerPhaseAdvancer(advance: () => void): void {
+    this.viewerPhaseAdvancer = advance;
+  }
+
+  /** Advances the phase seen by the home page and student pages once (M6). Mock services only. */
+  advanceViewerPhase(): void {
+    if (!this.viewerPhaseAdvancer) {
+      throw new Error('advanceViewerPhase() called before MockActivityService was created.');
+    }
+    this.viewerPhaseAdvancer();
   }
 
   failNextCall(): void {
