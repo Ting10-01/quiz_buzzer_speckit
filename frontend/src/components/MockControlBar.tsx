@@ -55,7 +55,8 @@ function ignore() {
 
 export function MockControlBar({ page, awaitingJudgement }: MockControlBarProps) {
   const registry = useServiceRegistry();
-  const { phaseControl, judgementControl, unexpectedErrorControl, choicePrompt } = registry;
+  const { phaseControl, judgementControl, teammateControl, unexpectedErrorControl, choicePrompt } =
+    registry;
   const [request, setRequest] = useState<ChoiceRequest | null>(null);
   // The hint only confirms the click; it does not track whether the error was consumed.
   // It belongs to the page it was set on, so changing pages hides it immediately.
@@ -100,6 +101,12 @@ export function MockControlBar({ page, awaitingJudgement }: MockControlBarProps)
         run: () => void judgementControl.simulateJudgement(Judgement.REJECTED).catch(ignore),
       },
     );
+  }
+  if (teammateControl && page === 'S-Answer') {
+    controls.push({
+      label: '模擬：同組組員送出',
+      run: () => void teammateControl.simulateTeammateSubmission().catch(ignore),
+    });
   }
   const validationControl =
     page === 'T-Setup'
