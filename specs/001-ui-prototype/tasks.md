@@ -130,7 +130,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T045 [P] [US1] `frontend/tests/component/TeacherLoginPage.test.tsx`：頁面只有「用 Google 登入」一個登入選項（FR-012）；`ok: true` → `T-Pick`；`CANCELLED` 顯示「已取消登入」、`NOT_TEACHER` 顯示「此帳號不是老師帳號」並停留（邊界，US1 AC-4、AC-5）；reject `UnexpectedError` 時 `ErrorArea` 顯示訊息且不切換，下一次成功時清除（FR-009）
 - [X] T046 [P] [US1] `frontend/tests/component/PickPage.test.tsx`（顯示部分）：載入時呼叫 `getCurrentAccount()` 並顯示名稱與電子郵件（FR-020、US1 AC-3）；「取消」→ `Main` 且不呼叫介面
 - [X] T047 [P] [US1] `frontend/tests/component/JoinPage.test.tsx`（顯示部分）：`null` 時顯示「目前沒有活動，請等老師建立活動」且不列出組別（FR-050，邊界）；有活動時依 `groupCount` 列出各組與已加入人數；`onPhaseChange` 通知 `PREPARING` 後從沒有活動切換為列出組別（S3）
-- [ ] T048 [P] [US1] `frontend/tests/e2e/us1-entry.spec.ts`：以 Playwright 走 quickstart Q1、Q2（含模擬帳號選擇的三個選項），每頁都看得到「模擬模式」
+- [X] T048 [P] [US1] `frontend/tests/e2e/us1-entry.spec.ts`：以 Playwright 走 quickstart Q1、Q2（含模擬帳號選擇的三個選項），每頁都看得到「模擬模式」
 
 ### Implementation for User Story 1
 
