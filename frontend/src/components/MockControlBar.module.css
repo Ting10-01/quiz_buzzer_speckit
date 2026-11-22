@@ -1,0 +1,24 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.control {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px dashed var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: 2px;
+}
