@@ -11,6 +11,7 @@ package "001 實體與介面（006 不修改）" #EEEEEE {
     questionNumber: number
     winner: Submission [0..1]
     submissionCount: number
+    behindFirstMs: number[]
     submissions: Submission[]
   }
   class Submission {
@@ -24,7 +25,6 @@ package "001 實體與介面（006 不修改）" #EEEEEE {
   class SubQuestion {
     index: number
     blankCell: string
-    marker: string
   }
   class WriteBackResult {
     ok: boolean
@@ -79,7 +79,7 @@ package "Server（server/src/results）" {
     -now: () => Date
     +writeBack(): Promise<WriteBackResult>
     -firstLayoutMismatch(stored: ImportSuccess, current: ImportSuccess | ImportError): number | null
-    -planCells(stored: ImportSuccess, results: QuestionResult[]): CellText[]
+    -planCells(stored: ImportSuccess, markers: BlankMarkers, results: QuestionResult[]): CellText[]
     -mapGoogleError(error: unknown, step: WriteBackStep): WriteBackFailure
   }
   class WriteBackFailure {
@@ -136,7 +136,7 @@ package "Server（server/src/results）" {
   WriteBackService ..> WriteBackStep
   WriteBackService ..> CellText
   WriteBackService ..> cellTextRules
-  WriteBackService ..> SubQuestion : blankCell、marker
+  WriteBackService ..> SubQuestion : blankCell
   SpreadsheetWriter ..> CellText
   resultSocketHandlers --> ResultQuery
   resultsRoutes --> WriteBackService
@@ -172,7 +172,12 @@ package "其他子功能（介面依各自 contracts）" #EEEEEE {
   }
   class ImportStore <<003>> {
     +latest(): Readonly<ImportSuccess> | null
+    +latestMarkers(): BlankMarkers | null
   }
+  class BlankMarkers <<003, server only>> {
+    Readonly<Record<blankCell, marker>>
+  }
+  ImportStore ..> BlankMarkers
   interface SpreadsheetReader <<003, app.spreadsheetReader>> {
     +load(spreadsheetId: string): Promise<LoadedSpreadsheet>
   }
@@ -201,16 +206,20 @@ GoogleSheetsWriter --> GoogleClientProvider
 resultSocketHandlers --> GroupMembership
 
 note bottom of ResultQuery
-  isEnded：state.endedAt.has(questionNumber)
-  visible()：
+  isEnded：phase = FINISHED 或 endedAt.has(questionNumber)
+  behindFirstMs[i] = submissions[i].elapsedMs − 順位 1 的 elapsedMs
+  （001 D23：第一名為最早送出的組別）
+  visible()（feature-split 第 4 節）：
   finished → 原樣（所有送出，依順位）
-  否則 → winner、submissionCount 原樣；
-  submissions 只留 groupNumber = viewerGroup 的那一筆
+  否則 → submissionCount 原樣；winner 的 rank 填 0；
+  submissions 只留 groupNumber = viewerGroup 的那一筆（rank 填 0），
+  behindFirstMs 同長度、值為 0
   （老師與沒有加入組別的連線為空）
 end note
 
 note bottom of CellText
   cell 為 003 匯入時的 blankCell（A1，不含工作表名稱）；
+  marker = ImportStore.latestMarkers()[cell]（只在伺服器）；
   text = composeCellText(marker, answer)：
   marker 為空 → answer；否則 marker + answer
 end note

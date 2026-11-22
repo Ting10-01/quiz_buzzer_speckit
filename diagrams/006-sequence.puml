@@ -31,14 +31,14 @@ SH -> GM : groupOf(socket)
 GM --> SH : 第 5 組（老師或未加入為 null）
 SH -> RQ : questionResult(n, 5)
 RQ -> AS : current()
-alt 沒有活動 / 沒有這一題 / endedAt 沒有第 n 題
+alt 沒有活動 / 沒有這一題 / 第 n 題還沒結束（未 FINISHED 且 endedAt 沒有）
   RQ --> SH : ResultQueryError
   SH --> CL : ack { ok: false, code, message }
   CL --> SRS : ack
   SRS --> SP : reject UnexpectedError（「這一題還沒結束，結果尚未公布」等）
 else 第 n 題已結束
   RQ -> SS : list(n)、winner(n)
-  RQ -> RQ : visible(full, phase === FINISHED, 5)\n活動未結束 → 只留第 5 組的送出
+  RQ -> RQ : behindFirstMs（以順位 1 為第一名）\nvisible(full, phase === FINISHED, 5)\n活動未結束 → 只留第 5 組的送出，rank 與差距填 0
   RQ --> SH : QuestionResult
   SH --> CL : ack { ok: true, result }
   CL --> SRS : ack
@@ -47,7 +47,7 @@ else 第 n 題已結束
 end
 
 == 整輪結束後的全部結果（R4、R8；REQ-RES-04） ==
-note over SP : 004 推送 FINISHED，頁面切換到 S-Results
+note over SP : 004 推送 FINISHED（最後一題結束或被接受），頁面切換到 S-Results；\nS-QuestionDone 的題目進度也呼叫 getAllResults
 SP -> SRS : getAllResults()
 SRS -> CL : emitWithAck('result:all', {})
 CL -> SH : result:all
@@ -76,12 +76,12 @@ else 老師
   RT -> WB : writeBack()
   WB -> WB : inProgress？（是 → IN_PROGRESS）
   WB -> AS : current()：phase、spreadsheet
-  WB -> IS : latest()
-  IS --> WB : ImportSuccess（blankCell、marker）
+  WB -> IS : latest()、latestMarkers()
+  IS --> WB : ImportSuccess（blankCell）、BlankMarkers（blankCell → 標記）
   WB -> WB : 未結束 → NOT_FINISHED；學習單不同 → IMPORT_CHANGED
   WB -> RQ : allResults(null)
   RQ --> WB : QuestionResult[]（每題成功組別與答案）
-  WB -> WB : planCells()：有成功組別的題目，\n每個小題 composeCellText(marker, answer)
+  WB -> WB : planCells()：有成功組別的題目，\n每個小題 composeCellText(markers[blankCell], answer)
   alt 沒有任何格子要寫
     WB --> RT : { ok: true, cellCount: 0 }
   else 有格子要寫

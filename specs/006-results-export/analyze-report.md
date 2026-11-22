@@ -76,3 +76,41 @@
 
 - 沒有 CRITICAL、HIGH、MEDIUM，依 CLAUDE.md 第 2 節，經人工審查後可進入 `/speckit-implement`。
 - 實作前請 TingYi 處理 spec「需請 001 修改」C1～C4（以及 003 要求的 `SubQuestion.marker`）。
+
+---
+
+## 第 4 次分析（配合 001 最終版，2026-11-22）
+
+**對照**: 001 最終版（`specs/001-ui-prototype/`、`diagrams/001-*`，PR #10）、`docs/feature-split.md` 最新版、003 contracts/import-store.md（`latestMarkers()`）、004 data-model（`ActivityState`）、005 contracts/submission-store.md。上面第 1～3 輪的 L1、L2 與「需請 001 修改 C1～C4」已被本輪取代。
+
+### 發現並已修正
+
+| ID | Category | Severity | Location(s) | Summary | 修正 |
+|----|----------|----------|-------------|---------|------|
+| A1 | Coverage | HIGH | spec、data-model、contracts、類別圖 | 001 新增 `QuestionResult.behindFirstMs` 與 D23（第一名的定義交給 006），006 沒有需求、AC 與計算方式 | 新增 REQ-RES-21、AC-30；D23 定為最早送出的組別（research RD-12）；`ResultQuery` 計算，contracts 與類別圖加入欄位 |
+| A2 | Inconsistency | HIGH | spec REQ-RES-03、AC-02；contracts；research RD-02 | 整輪結束前回傳本組送出時帶真正的順位；feature-split 第 4 節只在整輪結束後公開順位 | 整輪結束前每筆 `Submission`（含 `winner`）`rank` 填 0、`behindFirstMs` 值為 0（與 005 相同做法，等 001 把 `rank` 改成可選） |
+| A3 | Inconsistency | HIGH | data-model、類別圖、時序圖、tasks | 小題標記用 `SubQuestion.marker`，001 最終版沒有這個欄位 | 改用 003 `app.importStore.latestMarkers()[blankCell]`（只在伺服器）；寫回預覽顯示不含標記的答案，寫在 Assumptions |
+| A4 | Inconsistency | MEDIUM | spec「需請 001 修改」 | C1～C4 仍要求 001 修改；使用者 2026-11-22 決定不再請 001 改 | 改為「無」：確認視窗文字依 001 FR-041 由 006 決定（新增 T035 確認頁面文字）；公布範圍已由 feature-split 第 4 節定案；結束時間已從 001 移除；預覽不含標記 |
+| A5 | Inconsistency | MEDIUM | research RD-03、data-model `isEnded` | 001 與 feature-split：最後一題結束或被接受時直接進入 `FINISHED`，不經過「本題已結束」 | `isEnded` 改為 `phase === FINISHED \|\| endedAt.has(n)`；Edge Cases、時序圖註記 |
+| A6 | Underspecification | MEDIUM | spec AC-24、Edge Cases、quickstart 13 | 001 D21 尚未實作：老師重新登入後回不到結果頁，原本「重新登入後再寫回可以成功」做不到；002 任何人登入都會取代老師 | AC-24、Edge Cases 寫明暫時限制；Assumptions 寫明寫回使用最後登入帳號的授權 |
+| A7 | Coverage | MEDIUM | spec Clarifications、tasks | S-QuestionDone 也呼叫 `getAllResults`（001 contracts） | Clarifications 與 AC-10 寫明同一套公布範圍；T032 檢查題目進度只含已結束的題目 |
+
+### 重跑結果
+
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
+|----|----------|----------|-------------|---------|----------------|
+| L5 | Dependency | LOW | spec AC-24、Edge Cases | 寫回失敗後重新登入無法回到結果頁，直到 001 完成 D21 | 已寫明為暫時限制；001 實作 D21 後不需再改 006 |
+| L6 | Consistency | LOW | spec Assumptions | 001「相對於設計稿的調整」仍把「寫回前建立備份工作表」列為移除的畫面元素 | 006 的備份只在伺服器執行、頁面不顯示，與該表不衝突；已寫明 |
+| L3 | Underspecification | LOW | spec AC-26 | 寫入逾時無法確認（沿用） | 已列為待使用者確認 |
+| L4 | Consistency | LOW | research RD-04 | 找不到工作表回報 `SHEET_NOT_FOUND`（沿用） | 不需修改 |
+
+**Constitution Alignment Issues**: 無。VI：整輪結束前不公開順位與差距、學生只拿到本組的送出，在伺服器端過濾（001 contracts「學生端只取得可公開的結果」）；II：新增的 REQ-RES-21 有 AC-30 與 T011、T014、T032；I：三張圖已更新並重新產生 PNG。
+
+### Metrics（第 4 次）
+
+- Total Requirements: 21
+- Total Acceptance Criteria: 30
+- Total Success Criteria: 8
+- Total Tasks: 35
+- Coverage: 100%（每條需求與 AC 都有任務）
+- Critical Issues Count: 0（HIGH 0、MEDIUM 0、LOW 4）

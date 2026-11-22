@@ -62,13 +62,13 @@ IO --> SockH
 SockH --> Members : groupOf(socket)
 SockH --> Query
 Query --> ActStore : current()：phase、questions、endedAt
-Query --> SubStore : list(n)、winner(n)
+Query --> SubStore : list(n)、winner(n)\n（計算 behindFirstMs）
 
 Api --> Routes
 Routes --> ReqT : preHandler
 Routes --> WBS
 WBS --> ActStore : 活動已結束？使用哪份學習單
-WBS --> ImpStore : latest()：blankCell、marker
+WBS --> ImpStore : latest()：blankCell；\nlatestMarkers()：小題標記
 WBS --> Reparse : 版面檢查；sheetId 與現有工作表名稱
 WBS --> Query : allResults(null)
 WBS ..> IWriter
@@ -81,7 +81,7 @@ note right of Query
   公布範圍（REQ-RES-01～04）：
   題目未結束 → 不提供
   題目已結束、活動未結束 → 成功組別與答案、
-    送出組數、本組自己的送出
+    送出組數、本組自己的送出（不含順位）
   活動已結束 → 每題所有送出
 end note
 

@@ -24,7 +24,7 @@ description: "Task list for 006 結果與寫回"
 **Purpose**: 006 的測試替身
 
 - [ ] T001 [P] 建立 `server/tests/helpers/FakeSpreadsheetWriter.ts`：實作 `SpreadsheetWriter`，記錄 `duplicateSheet`、`writeTexts` 的呼叫順序與參數；可設定任一方法丟出指定的錯誤（Google 401／403／404／500、逾時）
-- [ ] T002 [P] 建立 `server/tests/helpers/resultFakes.ts`：004 `ActivityStore`、`GroupMembership`，005 `SubmissionStore`（`list`、`winner`），003 `ImportStore`、`SpreadsheetReader`（`app.spreadsheetReader` 的替身，經 `buildApp` 的 `deps.spreadsheetReader` 注入；以 003 的 `server/tests/helpers/gridBuilder.ts` 產生 `SheetGrid`；可設定丟出 `SheetsReadError` 或 Google 401）的替身；`ActivityState` 含 `endedAt`；提供「4 題、6 組、第 2 題已結束、第 3 題搶答中」與「4 題已全部結束（含沒有送出、有 `UNJUDGED` 的題目）」兩份固定資料，題目內容與 001 `MockFixtures` 的「題組＋單題範本」相同（4 題，其中 2 題為題組；伺服器測試不引用前端檔案）
+- [ ] T002 [P] 建立 `server/tests/helpers/resultFakes.ts`：004 `ActivityStore`、`GroupMembership`，005 `SubmissionStore`（`list`、`winner`），003 `ImportStore`（`latest()` 與 `latestMarkers()`，題組小題帶「（1）」等標記）、`SpreadsheetReader`（`app.spreadsheetReader` 的替身，經 `buildApp` 的 `deps.spreadsheetReader` 注入；以 003 的 `server/tests/helpers/gridBuilder.ts` 產生 `SheetGrid`；可設定丟出 `SheetsReadError` 或 Google 401）的替身；`ActivityState` 含 `endedAt`；提供「4 題、6 組、第 2 題已結束、第 3 題搶答中」與「4 題已全部結束（含沒有送出、有 `UNJUDGED` 的題目，最後一題由老師接受而直接進入 `FINISHED`）」兩份固定資料，題目內容與 001 `MockFixtures` 的「題組＋單題範本」相同（4 題，其中 2 題為題組；伺服器測試不引用前端檔案）
 
 ---
 
@@ -48,7 +48,7 @@ description: "Task list for 006 結果與寫回"
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T004 [P] [US1] `server/tests/unit/results/ResultQuery.question.test.ts`：已結束的題目回傳成功組別、各小題答案與 `submissionCount`（AC-01）；第 5 組只多拿到本組的送出、看不到其他沒有成功的組別（AC-02、REQ-RES-03）；有送出但沒有成功組別、沒有送出兩種情況（AC-03、AC-04）；`endedAt` 沒有該題時丟 `QUESTION_NOT_ENDED`（AC-05、REQ-RES-02）；`viewerGroup` 為 `null` 時 `submissions` 為空（AC-06）；沒有活動 → `NO_ACTIVITY`、題號 0、5、`1.5` → `QUESTION_NOT_FOUND`（REQ-RES-06）；`winner`、`submissions` 分別等於 005 替身的 `winner(n)`、`list(n)`（REQ-RES-05）
+- [ ] T004 [P] [US1] `server/tests/unit/results/ResultQuery.question.test.ts`：已結束的題目回傳成功組別、各小題答案與 `submissionCount`（AC-01）；第 5 組只多拿到本組的送出、看不到其他沒有成功的組別，回傳的 `winner` 與本組送出 `rank` 為 0、`behindFirstMs` 與 `submissions` 同長度且都是 0（AC-02、REQ-RES-03）；有送出但沒有成功組別、沒有送出兩種情況（AC-03、AC-04）；`endedAt` 沒有該題時丟 `QUESTION_NOT_ENDED`（AC-05、REQ-RES-02）；`viewerGroup` 為 `null` 時 `submissions` 為空（AC-06）；沒有活動 → `NO_ACTIVITY`、題號 0、5、`1.5` → `QUESTION_NOT_FOUND`（REQ-RES-06）；活動結束後 `winner`、`submissions` 分別等於 005 替身的 `winner(n)`、`list(n)`（REQ-RES-05）
 - [ ] T005 [P] [US1] `server/tests/integration/results/resultSocketHandlers.test.ts`：以 `socket.io-client` 連上 `buildApp` 建立的測試伺服器（`app.io`），`result:question` 的 ack 格式依 contracts；組別取自 `GroupMembership.groupOf(socket)`，payload 夾帶 `groupNumber` 也不影響結果（AC-06）；未結束的題目 ack `{ ok: false, code: "QUESTION_NOT_ENDED", message: "這一題還沒結束，結果尚未公布" }`（AC-05）
 - [ ] T006 [P] [US1] `server/tests/integration/results/resultLoad.test.ts`：200 個連線在題目結束後同時 emit `result:question`，全部在 1 秒內收到 ack（SC-005）
 - [ ] T007 [P] [US1] `frontend/tests/unit/ServerResultService.test.ts`（getQuestionResult 部分）：以假的 `RealtimeClient` 斷言呼叫 `emitWithAck("result:question", { questionNumber })`；ack 成功回傳 `QuestionResult`；ack `ok: false` → reject `UnexpectedError(message)`；`emitWithAck` reject 時原樣往上丟
@@ -71,13 +71,13 @@ description: "Task list for 006 結果與寫回"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T011 [P] [US2] `server/tests/unit/results/ResultQuery.all.test.ts`：`FINISHED` 時每題所有送出依 `rank` 排序，學生、老師、未加入組別的連線拿到相同內容（AC-07、AC-08、REQ-RES-04）；結束時待判定的送出為 `UNJUDGED` 且不是 `winner`（AC-09）；活動進行中只回第 1、2 題，每題只含呼叫者本組的送出（AC-10）；窮舉「題目未結束／已結束 × 活動未結束／已結束 × 6 組與 `null`」，未結束的題目送出出現 0 次、活動結束前他組未成功的送出出現 0 次（SC-006）
+- [ ] T011 [P] [US2] `server/tests/unit/results/ResultQuery.all.test.ts`：`FINISHED` 時每題所有送出依 `rank` 排序，學生、老師、未加入組別的連線拿到相同內容（AC-07、AC-08、REQ-RES-04）；結束時待判定的送出為 `UNJUDGED` 且不是 `winner`（AC-09）；`behindFirstMs` 以順位 1 的 `elapsedMs` 為基準，`elapsedMs` 3200、5000、5000 且第 2 名被接受時為 `[0, 1800, 1800]`，沒有送出時為 `[]`（AC-30、REQ-RES-21）；最後一題沒有 `endedAt` 但 `phase` 為 `FINISHED` 時仍算已結束；活動進行中只回第 1、2 題，每題只含呼叫者本組的送出且 `rank`、`behindFirstMs` 為 0（AC-10）；窮舉「題目未結束／已結束 × 活動未結束／已結束 × 6 組與 `null`」，未結束的題目送出出現 0 次、活動結束前他組未成功的送出出現 0 次（SC-006）
 - [ ] T012 [P] [US2] 在 `server/tests/integration/results/resultSocketHandlers.test.ts` 加入 `result:all`：ack 格式、只含已結束的題目、沒有活動 → `NO_ACTIVITY`
 - [ ] T013 [P] [US2] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `getAllResults`：成功、`ok: false`、逾時
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] 在 `server/src/results/ResultQuery.ts` 實作 `allResults`，在 `resultSocketHandlers.ts` 註冊 `result:all`，依 data-model 第 3 節
+- [ ] T014 [US2] 在 `server/src/results/ResultQuery.ts` 實作 `allResults` 與 `behindFirstMs` 的計算，在 `resultSocketHandlers.ts` 註冊 `result:all`，依 data-model 第 3 節與 research RD-12
 - [ ] T015 [US2] 在 `frontend/src/services/ServerResultService.ts` 實作 `getAllResults`
 
 **Checkpoint**: 全部結果可由伺服器取得，內容與 005 一致
@@ -93,7 +93,7 @@ description: "Task list for 006 結果與寫回"
 ### Tests for User Story 3 ⚠️
 
 - [ ] T016 [P] [US3] `server/tests/unit/results/cellText.test.ts`：`composeCellText("（1）", "CPU") === "（1）CPU"`、標記為空時只回答案（AC-13、REQ-RES-08）；`backupName` 依本機時間產生 `原名-備份-YYYYMMDD-HHmm`，重名依序加 `-2`、`-3`（AC-17、REQ-RES-13）
-- [ ] T017 [P] [US3] `server/tests/unit/results/WriteBackService.success.test.ts`：呼叫順序為 `SpreadsheetReader.load` → `GuidedNotesParser.parse`（003 真正的 parser）→ `duplicateSheet`（`sheetId` 為該工作表的 `SheetGrid.sheetId`）→ `writeTexts`，`writeTexts` 只呼叫一次；`ImportStore.save` 沒有被呼叫（AC-12、REQ-RES-12、13、14）；寫入的儲存格恰好是有成功組別題目的每個小題 `blankCell`，沒有其他儲存格（AC-14、AC-15、REQ-RES-07、09、10）；題組小題的文字為「標記＋答案」（AC-13）；所有題目都沒有成功組別 → 不呼叫 `load`、`duplicateSheet`、`writeTexts`，回 `{ ok: true, cellCount: 0 }`（AC-18）；連續寫回兩次，兩次 `writeTexts` 的內容相同、`duplicateSheet` 各一次（AC-19、REQ-RES-18）；`cellCount` 等於寫入格數（REQ-RES-20）
+- [ ] T017 [P] [US3] `server/tests/unit/results/WriteBackService.success.test.ts`：呼叫順序為 `SpreadsheetReader.load` → `GuidedNotesParser.parse`（003 真正的 parser）→ `duplicateSheet`（`sheetId` 為該工作表的 `SheetGrid.sheetId`）→ `writeTexts`，`writeTexts` 只呼叫一次；`ImportStore.save` 沒有被呼叫（AC-12、REQ-RES-12、13、14）；寫入的儲存格恰好是有成功組別題目的每個小題 `blankCell`，沒有其他儲存格（AC-14、AC-15、REQ-RES-07、09、10）；題組小題的文字為「`latestMarkers()[blankCell]` ＋答案」，沒有標記的格子只寫答案（AC-13）；所有題目都沒有成功組別 → 不呼叫 `load`、`duplicateSheet`、`writeTexts`，回 `{ ok: true, cellCount: 0 }`（AC-18）；連續寫回兩次，兩次 `writeTexts` 的內容相同、`duplicateSheet` 各一次（AC-19、REQ-RES-18）；`cellCount` 等於寫入格數（REQ-RES-20）
 - [ ] T018 [P] [US3] `server/tests/unit/results/GoogleSheetsWriter.test.ts`（以假的 `@googleapis/sheets` 回應）：`writeTexts` 只送一次 `spreadsheets.values.batchUpdate`，`valueInputOption` 為 `RAW`，「=1+1」原樣送出（AC-16、REQ-RES-11）；範圍為 `'<工作表>'!<cell>`，名稱中的 `'` 變成 `''`；`duplicateSheet` 送出一個 `duplicateSheet` 請求（`sourceSheetId`、`newSheetName`）；每個請求設定 15 秒逾時；每次呼叫都向 `app.googleClients.authorizedClient()` 取授權
 - [ ] T019 [P] [US3] `server/tests/integration/results/resultsRoutes.test.ts`（Fastify `inject()`）：帶有效老師憑證 `POST /api/results/write-back` → `200` 與 `WriteBackResult`；`WriteBackService` 丟出 `WriteBackFailure` 時回 `200` 與 `{ ok: false, cellCount: 0, failureReason }`，只有 `GOOGLE_AUTH_EXPIRED` 回 `401` 與 `ErrorBody { code, message }`（以假的 `WriteBackService`）
 - [ ] T020 [P] [US3] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `writeBack`：以假的 `ApiClient` 斷言呼叫 `request("POST", "/api/results/write-back")`；成功原樣回傳 body
@@ -140,9 +140,10 @@ description: "Task list for 006 結果與寫回"
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T031 在 `frontend/src/services/createServiceRegistry.ts` 把 `result` 綁定改為 `ServerResultService`（傳入 004 的 `RealtimeClient` 與 002 的 `ApiClient`），並更新 001 的 `ServiceRegistry` 單元測試：`result` 不再是模擬實作，`MockResultService` 只留給測試
-- [ ] T032 `frontend/tests/e2e/results.spec.ts`（Playwright，沿用 005 的多分頁 E2E 環境，Google 以替身取代）：第 2 題結束時老師分頁與第 5 組分頁顯示成功組別與答案、第 5 組分頁顯示本組被拒絕的送出且沒有其他組的答案（AC-01、AC-02、SC-006）；活動結束後學生全部結果頁顯示每題所有送出並醒目標示本組（AC-07）、老師結果頁（AC-08）；T-WriteBack 的說明文字為「這些填空格原本的內容會被覆蓋，寫回前會先建立備份工作表」（AC-11、REQ-RES-19，需 001 先完成 spec「需請 001 修改」C1）；寫回成功與失敗的顯示（REQ-RES-20）
+- [ ] T032 `frontend/tests/e2e/results.spec.ts`（Playwright，沿用 005 的多分頁 E2E 環境，Google 以替身取代）：第 2 題結束時老師分頁與第 5 組分頁顯示成功組別與答案、第 5 組分頁顯示本組被拒絕的送出且沒有其他組的答案，題目進度只含已結束的題目（AC-01、AC-02、AC-10、SC-006）；活動結束後學生全部結果頁顯示每題所有送出並醒目標示本組（AC-07）、老師結果頁顯示每題所有送出與比第一名慢的秒數（AC-08、AC-30）；T-WriteBack 的說明文字為「這些填空格原本的內容會被覆蓋，寫回前會先建立備份工作表」（AC-11、REQ-RES-19，依 T035）；寫回成功與失敗的顯示（REQ-RES-20）
 - [ ] T033 依 [quickstart.md](quickstart.md) 的 16 個情境做人工驗證，紀錄寫入 `specs/006-results-export/manual-verification.md`（SC-001～SC-004、SC-008、AC-12～AC-17、AC-21～AC-26 的真實 Google 行為）
 - [ ] T034 圖表一致性驗證：比對程式碼與 `diagrams/006-*.puml` 的組件、類別、方法與呼叫順序，結果寫入 `specs/006-results-export/diagram-verification.md`（原則 I）
+- [ ] T035 確認 001 `TeacherResultsPage` 的 T-WriteBack 說明文字為「這些填空格原本的內容會被覆蓋，寫回前會先建立備份工作表」；不是時只改這段文字（001 FR-041 規定說明文字依 006 的寫回規則撰寫，不改頁面的欄位、按鈕與切換）（AC-11、REQ-RES-19）
 
 ---
 
@@ -161,6 +162,7 @@ description: "Task list for 006 結果與寫回"
 | REQ-RES-02 | AC-05 | T004、T005、T008、T009 |
 | REQ-RES-03 | AC-02、AC-06、SC-006 | T004、T005、T008、T032 |
 | REQ-RES-04 | AC-07、AC-08、AC-10 | T011、T012、T014、T015、T032 |
+| REQ-RES-21 | AC-30 | T011、T014、T032 |
 | REQ-RES-05 | AC-09 | T004、T011、T008 |
 | REQ-RES-06 | AC-05 | T004、T012、T008、T014 |
 | REQ-RES-07 | AC-12、SC-001 | T017、T023、T024、T033 |
@@ -175,7 +177,7 @@ description: "Task list for 006 結果與寫回"
 | REQ-RES-16 | AC-20 | T026、T029 |
 | REQ-RES-17 | AC-29 | T026、T029 |
 | REQ-RES-18 | AC-19、AC-28 | T017、T026、T029 |
-| REQ-RES-19 | AC-11 | T032（需 001 C1） |
+| REQ-RES-19 | AC-11 | T035、T032 |
 | REQ-RES-20 | AC-12、AC-22 | T017、T020、T025、T028、T030、T032 |
 
 | 成功準則 | 任務 |
