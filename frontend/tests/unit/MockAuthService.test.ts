@@ -11,7 +11,7 @@ function setup(choice: string | null) {
 }
 
 describe('MockAuthService (M1, M9)', () => {
-  it('offers the three mock account options', async () => {
+  it('offers only the teacher account and cancel (M1)', async () => {
     const session = new MockSession();
     const listener = vi.fn(() => session.answer(ACCOUNT_CHOICE.CANCEL));
     session.onRequest(listener);
@@ -20,7 +20,6 @@ describe('MockAuthService (M1, M9)', () => {
       title: '模擬帳號選擇',
       options: [
         { id: ACCOUNT_CHOICE.TEACHER, label: '模擬老師帳號' },
-        { id: ACCOUNT_CHOICE.NON_TEACHER, label: '模擬非老師帳號' },
         { id: ACCOUNT_CHOICE.CANCEL, label: '取消' },
       ],
     });
@@ -36,16 +35,7 @@ describe('MockAuthService (M1, M9)', () => {
     await expect(auth.getCurrentAccount()).resolves.toEqual(MockFixtures.teacherAccount);
   });
 
-  it('fails with NOT_TEACHER for the non-teacher account', async () => {
-    const { auth } = setup(ACCOUNT_CHOICE.NON_TEACHER);
-    await expect(auth.signInWithGoogle()).resolves.toEqual({
-      ok: false,
-      failure: SignInFailure.NOT_TEACHER,
-    });
-    await expect(auth.getCurrentAccount()).resolves.toBeNull();
-  });
-
-  it('fails with CANCELLED for cancel or closing the chooser', async () => {
+  it('fails with CANCELLED for cancel or closing the chooser (edge)', async () => {
     await expect(setup(ACCOUNT_CHOICE.CANCEL).auth.signInWithGoogle()).resolves.toEqual({
       ok: false,
       failure: SignInFailure.CANCELLED,
