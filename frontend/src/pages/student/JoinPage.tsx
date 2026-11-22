@@ -17,7 +17,6 @@ interface JoinPageProps {
 }
 
 export function JoinPage({ navigate }: JoinPageProps) {
-  void navigate;
   const { activity: activityService } = useServiceRegistry();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [error, setError] = useState<string>();
@@ -45,6 +44,10 @@ export function JoinPage({ navigate }: JoinPageProps) {
         {activity && <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>}
       </AppHeader>
       <main className={styles.main}>
+        {/* FR-007: lets a user who picked the wrong role go back without any service call. */}
+        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
+          返回首頁
+        </button>
         <ErrorArea message={error} />
         {activity ? (
           <>
