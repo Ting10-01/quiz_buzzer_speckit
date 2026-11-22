@@ -225,6 +225,30 @@ const teammateAnswers: Record<number, string[]> = {
   4: ['IP'],
 };
 
+/** One step of the phase seen by the home page and student pages (M7). */
+export interface ViewerStep {
+  phase: ActivityPhase;
+  currentQuestion?: number;
+}
+
+/**
+ * M7: NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → … → OPEN(last) → FINISHED.
+ * The last question skips QUESTION_ENDED. Shared by the activity mock (phases) and the
+ * submission mock (which question the student is answering).
+ */
+const viewerSequence: readonly ViewerStep[] = [
+  { phase: ActivityPhase.NO_ACTIVITY },
+  { phase: ActivityPhase.PREPARING },
+  ...activity.questions.flatMap((question, i): ViewerStep[] => {
+    const open = { phase: ActivityPhase.OPEN, currentQuestion: question.number };
+    const isLast = i === activity.questions.length - 1;
+    return isLast
+      ? [open]
+      : [open, { phase: ActivityPhase.QUESTION_ENDED, currentQuestion: question.number }];
+  }),
+  { phase: ActivityPhase.FINISHED },
+];
+
 export const MockFixtures = {
   teacherAccount,
   spreadsheets,
@@ -233,4 +257,5 @@ export const MockFixtures = {
   groupMembers,
   submissionsByQuestion,
   teammateAnswers,
+  viewerSequence,
 };

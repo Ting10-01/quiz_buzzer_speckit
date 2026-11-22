@@ -1,4 +1,5 @@
-// M3 (teacher-side activity) and M7 (phase seen by the home page and student pages).
+// M3 (teacher-side activity) and M7 (phase seen by the home page and student pages, sequence in
+// MockFixtures.viewerSequence).
 // The two are independent: teacher calls change MockSession.teacherActivity, while
 // getCurrentActivity / onPhaseChange only follow MockSession.viewerPhaseIndex.
 import {
@@ -16,34 +17,15 @@ import type {
 import { MockFixtures } from './MockFixtures';
 import { MOCK_UNEXPECTED_ERROR, MOCK_VALIDATION_MESSAGE, type MockSession } from './MockSession';
 
-interface ViewerStep {
-  phase: ActivityPhase;
-  currentQuestion?: number;
-}
-
-/** M7: NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → … → QUESTION_ENDED(last) → FINISHED. */
-function viewerSequence(): ViewerStep[] {
-  const steps: ViewerStep[] = [
-    { phase: ActivityPhase.NO_ACTIVITY },
-    { phase: ActivityPhase.PREPARING },
-  ];
-  for (const question of MockFixtures.activity.questions) {
-    steps.push(
-      { phase: ActivityPhase.OPEN, currentQuestion: question.number },
-      { phase: ActivityPhase.QUESTION_ENDED, currentQuestion: question.number },
-    );
-  }
-  steps.push({ phase: ActivityPhase.FINISHED });
-  return steps;
-}
-
 export class MockActivityService
   implements ActivityService, PhaseMockControl, ValidationMockControl
 {
-  private readonly sequence = viewerSequence();
+  private readonly sequence = MockFixtures.viewerSequence;
   private readonly phaseListeners = new Set<(activity: Activity) => void>();
 
-  constructor(private readonly session: MockSession) {}
+  constructor(private readonly session: MockSession) {
+    session.setViewerPhaseAdvancer(() => this.stepViewerPhase());
+  }
 
   async createActivity(settings: ActivitySettings): Promise<Activity | ValidationError> {
     if (this.session.consumeUnexpectedError()) throw MOCK_UNEXPECTED_ERROR;
@@ -102,16 +84,21 @@ export class MockActivityService
   }
 
   async advancePhase(): Promise<Activity> {
+    return this.stepViewerPhase();
+  }
+
+  failNextValidation(): void {
+    this.session.pendingValidationFailure.activity = true;
+  }
+
+  /** M7 step shared by advancePhase() and MockSession.advanceViewerPhase() (M6). */
+  private stepViewerPhase(): Activity {
     const last = this.sequence.length - 1;
     this.session.viewerPhaseIndex = Math.min(this.session.viewerPhaseIndex + 1, last);
     // The index is at least 1 here, so there is always an activity.
     const activity = this.viewerActivity()!;
     this.phaseListeners.forEach((listener) => listener(structuredClone(activity)));
     return activity;
-  }
-
-  failNextValidation(): void {
-    this.session.pendingValidationFailure.activity = true;
   }
 
   private saveSettings(settings: ActivitySettings): Activity | ValidationError {
