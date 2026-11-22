@@ -30,12 +30,14 @@ description: "001 畫面與流程原型的實作任務"
 
 ## 已解決的文件衝突
 
-產生任務時發現下列衝突，經使用者決定（2026-11-21）後已修改 `contracts/service-interfaces.md`。
+產生任務時發現下列衝突，經使用者決定後處理：C-1、C-2（2026-11-21）修改 `contracts/service-interfaces.md`；C-3、C-4（2026-11-22）見表。
 
 | 編號 | 衝突 | 決定 | 影響的任務 |
 | --- | --- | --- | --- |
 | C-1 | contract 的 `getCurrentActivity()` 列出「T-Lobby 載入時」呼叫；但時序圖第 2 段的 T-Lobby 使用 `createActivity` 回傳的 `Activity`，且 data-model 規定 `getCurrentActivity` 只反映首頁與學生端的 `viewerPhaseIndex` | 修改 contract：T-Lobby 不呼叫 `getCurrentActivity()`，使用 `createActivity`、`updateSettings` 回傳的 `Activity`，之後由 `onActivityChange` 更新 | T059、T065 |
 | C-2 | FR-057 要求 S-QuestionDone 顯示題目進度，但 contract 的 `getAllResults()` 呼叫頁面沒有列 S-QuestionDone | 修改 contract：S-QuestionDone 呼叫 `getAllResults()`。學生頁面呼叫結果介面時只取得可公開的內容，公開範圍由 006 決定，在伺服器端過濾；頁面不自行過濾，001 的模擬實作不過濾 | T083、T089 |
+| C-3 | data-model 的 `MockSession` 欄位表把 `teacherActivity`、`viewerPhaseIndex` 的寫入者只列為 MockActivityService；但 M4、M6 與時序圖第 3 段要求 MockSubmissionService 在接受時結束老師端的題目、推進學生端的階段 | 修改 data-model：寫入者補上 MockSubmissionService（`judge(ACCEPTED)`、`simulateJudgement(ACCEPTED)`），兩條模擬狀態的說明一併補上 | T113、T114、T124–T126 |
+| C-4 | FR-032 規定按鈕是否可用依送出介面回傳的結果呈現，但 `Submission` 沒有「可判定」欄位 | 不改類別圖：依修訂後的 FR-032（spec commit `spec(001): align ui flow with feature split`），`SubmissionTable` 只讓 `rank` 最小的 `PENDING` 列可按；規則已由 feature-split 3.2 定案，變更須先改 spec（原則 II），不屬於 005 的擴充點 | T068、T073 |
 
 ---
 
@@ -138,7 +140,7 @@ description: "001 畫面與流程原型的實作任務"
 - [ ] T052 [P] [US1] 在 `frontend/src/pages/teacher/PickPage.tsx`（與 `.module.css`）實作 T-Pick 版面：載入時 `getCurrentAccount()` 顯示帳號；「從 Google 雲端硬碟挑選」按鈕（行為於 T062 完成）、「取消」→ `Main`；`ErrorArea`；不出現「連結 Google 帳號」「解除連結」（SC-004）
 - [ ] T053 [P] [US1] 在 `frontend/src/pages/student/JoinPage.tsx`（與 `.module.css`）實作 S-Join 顯示：學生版 `AppHeader`（尚無組別）、載入時 `getCurrentActivity()`、訂閱 `onPhaseChange`；沒有活動時顯示「目前沒有活動，請等老師建立活動」；有活動時以 `GroupGrid` 列出組別；`ErrorArea`
 - [ ] T054 [US1] 在 `frontend/src/app/AppRouter.tsx` 接上 `Main`、`T-Login`、`T-Pick`、`S-Join`，老師頁首「搶答板」導向 `Main`
-- [ ] T055 [US1] 在 Phase 3.5 完成後執行 `npm test`、`npm run test:e2e`，確認 T044–T048 與 T104–T106 通過；依 quickstart Q1、Q2、Q11 人工驗證，結果寫入 `specs/001-ui-prototype/manual-verification.md`
+- [ ] T055 [US1] 在 Phase 3.5、3.6 完成後執行 `npm test`、`npm run test:e2e`，確認 T044–T048、T104–T106、T117–T119 通過；依 quickstart Q1、Q2、Q11、Q14（T-Login、S-Join 部分）人工驗證，結果寫入 `specs/001-ui-prototype/manual-verification.md`
 
 **Checkpoint**: US1 可獨立展示（MVP）。
 
@@ -146,7 +148,7 @@ description: "001 畫面與流程原型的實作任務"
 
 ## Phase 3.5: 規格修訂（2026-11-21）
 
-**Purpose**: 套用 2026-11-21 的兩項 spec 修訂（commit `spec(001): revise spec for analyze findings and teacher sign-in`）：
+**Purpose**: 套用 2026-11-21 的兩項 spec 修訂（commit `spec(001): revise spec for analyze and teacher sign-in`）：
 
 - **捨棄「此帳號不是老師帳號」**：Google 帳號無法判斷是否為老師，以 Google 登入的人即為老師（FR-013、M1、D1；US1 AC-5 刪除）。T012、T018、T026、T045、T048 中關於 `NOT_TEACHER` 與「模擬非老師帳號」的內容由本 Phase 取代。
 - **模擬控制的「已設定」提示**：點「模擬：驗證失敗」「模擬：非預期錯誤」後，控制列立即顯示提示，數秒後或切換頁面時消失（FR-061、US5 AC-11）。補充 T037、T041。
@@ -172,6 +174,49 @@ description: "001 畫面與流程原型的實作任務"
 
 ---
 
+## Phase 3.6: 規格修訂（2026-11-22）
+
+**Purpose**: 套用 Phase 3 完成後的兩個 spec commit（`spec(001): align ui flow with feature split`、`spec(001): sync plan and tasks with feature split revisions`）中影響已完成程式碼的部分：
+
+- **返回首頁與瀏覽器上一頁**：T-Login、S-Join 新增「返回首頁」（FR-007、US1 AC-6）；瀏覽器上一頁等同不呼叫介面的返回類按鈕，沒有這類按鈕的頁面停留，開啟的視窗只被關閉（FR-014、US1 AC-7、research RD-11）。
+- **判定與送出規則**：只有最早一筆待判定的答案可判定；接受時本題結束（最後一題時活動結束），`judge` 改回傳 `JudgeOutcome`（FR-032、FR-032a、M4）；每組每題只送出一次、被拒絕後不能再送出、新增同組組員送出（FR-056、FR-056a、M5）；「模擬：接受」同時推進學生端階段（M6）；最後一題不經過「本題已結束」（M7）。
+- **加入組別的目的頁**：新增 `getGroupSubmission`（S4、S8–S10、research RD-14）。
+- **模擬資料**：沒有送出的題目從最後一題改為第 3 題（M4）。
+
+T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T037、T041、T045、T047、T048 中與上述衝突的內容由本 Phase 取代。本 Phase 在 Phase 3.5 之後、Phase 4 之前完成。
+
+### Tests（先改，確認失敗）
+
+- [ ] T113 [P] 修改 `frontend/tests/unit/MockSubmissionService.test.ts`（M4–M6，見 C-3）：`listSubmissions(q)` 第 3 題回傳空陣列（邊界），其他題 ≥ 2 筆；只有 `rank` 最小的 `PENDING` 可判定，對其他列呼叫 `judge` 時丟出一般的 `Error`（程式錯誤，頁面不會觸發；不使用 `UnexpectedError`，FR-009 的模擬錯誤只有 M9 一種）；`judge(q, group, REJECTED)` 回傳的 `JudgeOutcome.activity.phase` 仍為 `OPEN`，下一筆成為最早的 `PENDING`；`judge(q, group, ACCEPTED)` 回傳 `QUESTION_ENDED`（最後一題為 `FINISHED`）並寫入 `MockSession.teacherActivity`；`getGroupSubmission(q)` 加入後、送出前回傳 `null`，`submitAnswer` 後回傳本組這一題的送出；`simulateTeammateSubmission()` 以固定的模擬答案建立本組這一題的 `PENDING` 送出並通知 `onGroupSubmitted`；本組這一題已有送出後再呼叫 `submitAnswer` 時丟出一般的 `Error`（M5 每組每題只送出一次，頁面不會觸發，邊界）；`simulateJudgement(ACCEPTED)` 通知 `onJudgement` 且讓學生端階段推進一次，`simulateJudgement(REJECTED)` 不改變階段（邊界）；刪除「被拒絕後再送出產生新的一筆」的案例
+- [ ] T114 [P] 修改 `frontend/tests/unit/MockActivityService.test.ts`（M6、M7，見 C-3）：`advancePhase()` 序列為 `… → OPEN(4) → FINISHED`，最後一題不經過 `QUESTION_ENDED`；`MockSession` 觸發的階段推進（M6 的接受）同樣通知 `onPhaseChange` listener；`FINISHED` 後再推進不變（邊界）
+- [ ] T115 [P] 修改 `frontend/tests/unit/createServiceRegistry.test.ts`：七個模擬控制欄位都存在，新增 `teammateControl` 且與 `submission` 為同一個模擬實作
+- [ ] T116 [P] 擴充 `frontend/tests/component/MockControlBar.test.tsx`（FR-061、US5 AC-7）：「模擬：同組組員送出」只在 `S-Answer` 出現，點擊呼叫 `teammateControl.simulateTeammateSubmission()`；`teammateControl` 為 `undefined` 時不顯示（邊界）
+- [ ] T117 [P] 擴充 `frontend/tests/component/TeacherLoginPage.test.tsx` 與 `frontend/tests/component/JoinPage.test.tsx`（FR-007、US1 AC-6）：兩頁都有「返回首頁」，點擊 → `Main`，且不呼叫任何介面方法；S-Join 沒有活動時也有「返回首頁」（邊界，H4）
+- [ ] T118 [P] 新增 `frontend/tests/component/AppRouter.history.test.tsx`（FR-014、US1 AC-7）：每次切換頁面都 `pushState` 一筆不改網址的紀錄；在 `T-Login`、`S-Join` 觸發 `popstate` → `Main`；在 `T-Pick` → `Main`（「取消」）；在 `Main` 觸發 `popstate` 停留且再補一筆紀錄（邊界）；模擬帳號選擇（`ConfirmDialog`）開啟時觸發 `popstate` 只關閉選擇器並呼叫 `choicePrompt.answer(null)`，頁面不切換（邊界）
+- [ ] T119 [P] 擴充 `frontend/tests/e2e/us1-entry.spec.ts`：quickstart Q14 中 T-Login、S-Join 的部分（「返回首頁」與 `page.goBack()` 都回到首頁；模擬選擇器開啟時 `goBack()` 只關閉選擇器）
+
+### Implementation
+
+- [ ] T120 在 `shared/src/entities.ts` 新增 `JudgeOutcome`（`submissions: Submission[]`、`activity: Activity`）（data-model 第 1 節、類別圖）
+- [ ] T121 在 `frontend/src/services/interfaces.ts` 依類別圖修改 `SubmissionService`：`judge(questionNumber, groupNumber, judgement): Promise<JudgeOutcome>`；新增 `getGroupSubmission(questionNumber: number): Promise<Submission | null>` 與 `onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe`（兩者都不帶組別，原則 VI）；新增 mock only 的 `TeammateMockControl`（`simulateTeammateSubmission(): Promise<Submission>`）（依賴 T120）
+- [ ] T122 在 `frontend/src/services/ServiceRegistry.ts` 新增 `teammateControl?: TeammateMockControl`（data-model 第 2 節；依賴 T121）
+- [ ] T123 在 `frontend/src/services/mock/MockFixtures.ts` 把沒有送出的題目從第 4 題改為第 3 題，第 1、2、4 題各 ≥ 2 筆（M4；兩份可辨識的學習單都要調整）；新增同組組員的模擬答案（每題一組，答案數等於該題小題數，M5）
+- [ ] T124 在 `frontend/src/services/mock/MockSession.ts` 新增只供模擬服務使用的學生端階段推進管道：`setViewerPhaseAdvancer(fn)`（由 MockActivityService 註冊）與 `advanceViewerPhase()`（由 MockSubmissionService 在模擬接受時呼叫），讓 M6 的推進與 `advancePhase()` 走同一段程式並通知 `onPhaseChange`（見 C-3；時序圖第 3 段）
+- [ ] T125 在 `frontend/src/services/mock/MockActivityService.ts` 依 M7 修改學生端序列，最後一題由 `OPEN` 直接到 `FINISHED`；在建構時向 `MockSession` 註冊 `setViewerPhaseAdvancer`（依賴 T124）
+- [ ] T126 在 `frontend/src/services/mock/MockSubmissionService.ts` 依 M4–M6 修改：`judge` 只接受最早一筆 `PENDING`，回傳 `JudgeOutcome`，`ACCEPTED` 時把 `MockSession.teacherActivity` 設為 `QUESTION_ENDED`（最後一題為 `FINISHED`）（見 C-3）；實作 `getGroupSubmission`、`onGroupSubmitted`、`simulateTeammateSubmission`（`implements TeammateMockControl`）；`simulateJudgement(ACCEPTED)` 呼叫 `MockSession.advanceViewerPhase()`；每組每題只記錄一筆送出（依賴 T121、T123、T124）
+- [ ] T127 在 `frontend/src/services/createServiceRegistry.ts` 把 MockSubmissionService 綁定到 `teammateControl`（依賴 T122、T126）
+- [ ] T128 在 `frontend/src/components/MockControlBar.tsx` 新增「模擬：同組組員送出」控制，只在 `S-Answer` 且 `teammateControl` 存在時顯示（contracts/mock-controls.md；依賴 T122）
+- [ ] T129 [P] 在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 新增「返回首頁」按鈕 → `Main`，不呼叫介面（FR-007）
+- [ ] T130 [P] 在 `frontend/src/pages/student/JoinPage.tsx` 新增「返回首頁」按鈕 → `Main`，有活動與沒有活動兩種狀態都顯示，不呼叫介面（FR-007、H4）
+- [ ] T131 在 `frontend/src/components/ConfirmDialog.tsx` 匯出 `closeTopDialog(): boolean`：開啟中的 `ConfirmDialog` 以堆疊記錄，呼叫時對最上層執行其 `onClose`（等同取消類按鈕）並回傳 true，沒有開啟的視窗時回傳 false（FR-014）
+- [ ] T132 在 `frontend/src/app/AppRouter.tsx` 實作 FR-014（research RD-11）：每次切換頁面以 `history.pushState` 加入一筆不改網址的紀錄；監聽 `popstate`，先呼叫 `closeTopDialog()`，為 true 時補回一筆紀錄並停止；否則依「返回類按鈕對照」切換（`T-Login`、`S-Join` → `Main`，`T-Pick` → `Main`，`T-Import` → `T-Pick`，`T-Setup` 建立模式 → `T-Import`，修改模式 → `T-Lobby`）；其他頁面補回一筆紀錄並停留。對照集中在 AppRouter 一處，後續 Story 接上新頁面時只在此表加入（依賴 T131）
+- [ ] T134 [P] 把 `specs/001-ui-prototype/manual-verification.md` 樣板的情境範圍由 Q1–Q12 改為 Q1–Q14（說明文字與表頭；T010 已完成，quickstart 新增 Q13、Q14）
+- [ ] T133 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T113–T119 通過，且其他測試沒有退步
+
+**Checkpoint**: 已完成的實作與 2026-11-22 的 spec 一致，接著完成 T055 的人工驗證。
+
+---
+
 ## Phase 4: User Story 2 - 老師完成活動準備 (Priority: P1)
 
 **Goal**: T-Pick 挑選、T-Import、T-ImportError、T-Setup（建立／修改模式）、T-Lobby。涵蓋 R2、R2.1、R2.2、E1、R3、FR-020–FR-025、FR-008。
@@ -184,7 +229,7 @@ description: "001 畫面與流程原型的實作任務"
 - [ ] T057 [P] [US2] `frontend/tests/component/ImportPage.test.tsx`：T-Import 顯示 FR-021 全部項目（標題、可編輯／僅檢視、工作表分頁、表頭列與欄、預覽、題數、題組數、填空格數、每題類型與填空格位置）；切換工作表呼叫 `readWorksheet` 並依結果切換（T4、T5）；「重新挑選」取消時停留；「取消」→ `T-Pick`；「確認匯入，下一步」→ `T-Setup`（`create`）且不呼叫介面；T-ImportError 顯示錯誤原因、目前表頭、認得的寫法、修正方式（FR-022），「重新讀取」成功 → `T-Import`、仍失敗 → 停留（邊界，T8）；非預期錯誤顯示於 `ErrorArea`
 - [ ] T058 [P] [US2] `frontend/tests/component/SetupPage.test.tsx`：沒有活動名稱欄位（FR-023）；「+」「−」各改變組數 1 並更新組別清單，不呼叫介面、不切換頁面（US2 AC-7）；建立模式按鈕為「上一步」「建立活動」，修改模式為「取消」「儲存設定」（FR-024）；`createActivity` 回傳 `Activity` → `T-Lobby`；回傳 `ValidationError` 時停留並在組數欄位旁顯示 `message`（邊界，FR-008）；修改模式「取消」→ `T-Lobby`、「儲存設定」成功 → `T-Lobby`、`updateSettings` 回傳 `ValidationError` 時停留並在組數欄位旁顯示 `message`（邊界，US2 AC-9）；非預期錯誤時組數維持輸入值
 - [ ] T059 [P] [US2] `frontend/tests/component/ConsolePage.lobby.test.tsx`：T-Lobby 以傳入的 `Activity` 顯示各組已加入人數、尚未有人加入的組別、題目清單（題號與類型）（FR-025）；訂閱 `onActivityChange`，通知後以快照取代人數；「修改設定」→ `T-Setup`（`edit`）。不呼叫 `getCurrentActivity()`
-- [ ] T060 [P] [US2] `frontend/tests/e2e/us2-preparation.spec.ts`：走 quickstart Q3、Q4（三份學習單、重新讀取、關閉選擇器、驗證失敗後再建立、修改設定來回）
+- [ ] T060 [P] [US2] `frontend/tests/e2e/us2-preparation.spec.ts`：走 quickstart Q3、Q4（三份學習單、重新讀取、關閉選擇器、驗證失敗後再建立、修改設定來回）；以及 Q14 中 T-Pick、T-Import、T-Setup 的上一頁（分別等同「取消」「取消」「上一步／取消」），T-Lobby 按上一頁停留（FR-014）
 
 ### Implementation for User Story 2
 
@@ -204,22 +249,24 @@ description: "001 畫面與流程原型的實作任務"
 
 **Goal**: T-Live、T-EndConfirm、T-QuestionEnd、T-Results、T-WriteBack。涵蓋 R3、R4、R5、R5.1、R10、E4、FR-030–FR-034、FR-040–FR-042。
 
-**Independent Test**: 從 T-Lobby 依序開放每一題、接受或不接受、結束每一題，最後進入結果頁，以兩份學習單分別完成寫回成功與失敗（quickstart Q5、Q6）。
+**Goal 補充**: 接受後本題自動結束（FR-032a）；只有最早一筆待判定的答案可判定（FR-032）。
+
+**Independent Test**: 從 T-Lobby 依序開放每一題；先「不接受」最早一筆、再「接受」下一筆，本題自動結束；第 3 題沒有送出時以「結束這一題」結束；最後進入結果頁，以兩份學習單分別完成寫回成功與失敗（quickstart Q5、Q6）。
 
 ### Tests for User Story 3
 
-- [ ] T068 [P] [US3] `frontend/tests/component/ConsolePage.live.test.tsx`：「開放第 1 題」呼叫 `openQuestion(1)` 後顯示 T-Live，呼叫 `listSubmissions(1)` 並訂閱 `onSubmissionsChange(1, …)`；顯示 FR-030 項目；答案列表依 `rank` 排列，每列有順位、組別、各小題答案、經過時間、判定狀態與「接受」「不接受」（FR-031、FR-032）；按鈕是否可用依回傳結果（只有 `PENDING` 可用）；點「接受」呼叫 `judge(q, group, ACCEPTED)` 並以回傳列表取代顯示；沒有送出時答案列表為空並列出全部未送出組別（邊界，US3 AC-5）；`onSubmissionsChange` 通知後以快照取代列表
-- [ ] T069 [P] [US3] `frontend/tests/component/ConsolePage.endQuestion.test.tsx`：「結束這一題」開啟確認視窗，列出已送出組數、目前搶答成功組別（若有）、還沒送出的組別，最後一題時另外說明會進入結果頁（FR-033）；「繼續作答」關閉視窗、資料不變（T14）；「結束並公布結果」呼叫 `endQuestion(n)`，`QUESTION_ENDED` → T-QuestionEnd 並呼叫 `getQuestionResult(n)`、`getAllResults()`；`FINISHED` → `T-Results`；`endQuestion` reject 時先關閉視窗再在 `ErrorArea` 顯示（FR-009）；T-QuestionEnd 顯示搶答成功組別與答案，或「沒有組別搶答成功」「沒有組別送出」（邊界），以及「開放第 n+1 題」
-- [ ] T070 [P] [US3] `frontend/tests/component/TeacherResultsPage.test.tsx`：載入時 `getAllResults()` 並顯示 FR-040 項目（每題成功組別與答案、送出組數、各送出比第一名慢的秒數、各組搶到題數、寫回預覽）；比第一名慢的秒數取自 `behindFirstMs`（以與 `elapsedMs` 不一致的假資料斷言頁面顯示的是 `behindFirstMs`，不自行計算，FR-003）；頁面不出現結束時間與總耗時（spec「相對於設計稿的調整」）；「寫回 Google Sheets」開啟 T-WriteBack，列出目標試算表、工作表、格數、題數與影響範圍說明（FR-041）；「取消」關閉且不呼叫 `writeBack`（US3 AC-13）；「寫回」成功顯示格數、失敗顯示原因（邊界，FR-042）；沒有匯出 CSV、備份工作表、開新一輪、舊答案還原、結束時間（SC-004）
-- [ ] T071 [P] [US3] `frontend/tests/e2e/us3-hosting.spec.ts`：走 quickstart Q5、Q6（含最後一題沒有送出、兩份學習單的寫回成功與失敗）
+- [ ] T068 [P] [US3] `frontend/tests/component/ConsolePage.live.test.tsx`：「開放第 1 題」呼叫 `openQuestion(1)` 後顯示 T-Live，呼叫 `listSubmissions(1)` 並訂閱 `onSubmissionsChange(1, …)`；顯示 FR-030 項目；答案列表依 `rank` 排列，每列有順位、組別、各小題答案、經過時間、判定狀態與「接受」「不接受」（FR-031）；只有 `rank` 最小的 `PENDING` 列按鈕可用（FR-032、US3 AC-2，見 C-4）；點「不接受」呼叫 `judge(q, group, REJECTED)`，回傳 `activity.phase` 為 `OPEN` 時停留並以 `submissions` 取代列表，該列顯示「不接受」、下一筆變成可用（US3 AC-4）；點「接受」回傳 `QUESTION_ENDED` → T-QuestionEnd 並呼叫 `getQuestionResult(q)`、`getAllResults()`，回傳 `FINISHED` → `T-Results`（FR-032a、US3 AC-3，最後一題為邊界）；沒有送出時答案列表為空並列出全部未送出組別（邊界，US3 AC-5）；每一列都不接受後，所有「接受」「不接受」都不可用，只剩「結束這一題」（spec 頁面清單 T-Live「全部不接受」，邊界）；`onSubmissionsChange` 通知後以快照取代列表；`judge` reject 時停留並在 `ErrorArea` 顯示
+- [ ] T069 [P] [US3] `frontend/tests/component/ConsolePage.endQuestion.test.tsx`：「結束這一題」開啟確認視窗，列出本題已送出組數與還沒送出的組別，最後一題時另外說明會進入結果頁（FR-033）；「繼續作答」關閉視窗、資料不變（T14）；「結束並公布結果」呼叫 `endQuestion(n)`，`QUESTION_ENDED` → T-QuestionEnd 並呼叫 `getQuestionResult(n)`、`getAllResults()`；`FINISHED` → `T-Results`；`endQuestion` reject 時先關閉視窗再在 `ErrorArea` 顯示（FR-009）；確認視窗開啟時觸發 `popstate` 只關閉視窗（FR-014）；T-QuestionEnd 顯示搶答成功組別與答案，或「沒有組別搶答成功」「沒有組別送出」（邊界）、本題送出組數、題目進度、各組搶到題數，以及「開放第 n+1 題」（FR-034）
+- [ ] T070 [P] [US3] `frontend/tests/component/TeacherResultsPage.test.tsx`：載入時 `getAllResults()` 並顯示 FR-040 項目（每題成功組別與答案、送出組數、每題所有送出組別的答案、順位與判定、各送出比第一名慢的秒數、各組搶到題數、寫回預覽）；比第一名慢的秒數取自 `behindFirstMs`（以與 `elapsedMs` 不一致的假資料斷言頁面顯示的是 `behindFirstMs`，不自行計算，FR-003）；頁面不出現結束時間與總耗時（spec「相對於設計稿的調整」）；「寫回 Google Sheets」開啟 T-WriteBack，列出目標試算表、工作表、格數、題數與影響範圍說明（FR-041）；「取消」關閉且不呼叫 `writeBack`（US3 AC-13）；確認視窗開啟時觸發 `popstate` 只關閉 T-WriteBack，不呼叫 `writeBack`（FR-014，邊界）；「寫回」成功顯示格數、失敗顯示原因（邊界，FR-042）；沒有匯出 CSV、備份工作表、開新一輪、舊答案還原、結束時間（SC-004）
+- [ ] T071 [P] [US3] `frontend/tests/e2e/us3-hosting.spec.ts`：走 quickstart Q5、Q6（只有最早一筆可判定；不接受後輪到下一筆；接受後進入本題已結束，最後一題接受後直接進入結果頁；第 3 題沒有送出時以「結束這一題」結束並顯示「沒有組別送出」；兩份學習單的寫回成功與失敗）
 
 ### Implementation for User Story 3
 
 - [ ] T072 [P] [US3] 在 `frontend/src/components/QuestionProgress.tsx`（與 `.module.css`）實作題目進度：props `questions: Question[]`、`results: QuestionResult[]`、`currentQuestion?: number`；每題顯示搶答成功組別或狀態，另可顯示各組搶到的題數
-- [ ] T073 [P] [US3] 在 `frontend/src/components/SubmissionTable.tsx`（與 `.module.css`）實作答案列表：props `submissions: Submission[]`、`onJudge?: (group, judgement) => void`；依 `rank` 顯示順位、組別、`answers`、經過時間、判定狀態（待判定／已接受／不接受）；`onJudge` 存在且 `judgement === PENDING` 時「接受」「不接受」可用
-- [ ] T074 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-Lobby「開放第 1 題」與 T-Live 檢視：`openQuestion(n)` → `listSubmissions(n)`、`onSubmissionsChange(n, …)`、`getAllResults()`（題目進度）；顯示 FR-030；以 `SubmissionTable` 列出答案並以 `judge` 更新；不出現剩餘時間、連線分頁（SC-004）
-- [ ] T075 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-EndConfirm（以 `ConfirmDialog`）與 T-QuestionEnd：依 T069 的規則；T-QuestionEnd 以 `QuestionProgress` 顯示進度，「開放第 n+1 題」呼叫 `openQuestion(n+1)` 回到 T-Live；最後一題結束 → `navigate` 到 `T-Results`
-- [ ] T076 [US3] 在 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）實作 T-Results 與 T-WriteBack：載入 `getAllResults()`；比第一名慢的秒數只把 `behindFirstMs` 換算成秒顯示，不由 `elapsedMs` 自行計算（FR-003）；不顯示結束時間與總耗時（SC-004）；以 `SheetPreview` 顯示寫回預覽；「寫回 Google Sheets」開啟 `ConfirmDialog`；「寫回」關閉視窗後呼叫 `writeBack()` 並顯示寫回結果（尚未寫回／成功／失敗）；`ErrorArea`
+- [ ] T073 [P] [US3] 在 `frontend/src/components/SubmissionTable.tsx`（與 `.module.css`）實作答案列表：props `submissions: Submission[]`、`onJudge?: (group, judgement) => void`；依 `rank` 顯示順位、組別、`answers`、經過時間、判定狀態（待判定／已接受／不接受）；`onJudge` 存在時只有 `rank` 最小的 `PENDING` 列「接受」「不接受」可用（M4，見 C-4）
+- [ ] T074 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-Lobby「開放第 1 題」與 T-Live 檢視：`openQuestion(n)` → `listSubmissions(n)`、`onSubmissionsChange(n, …)`、`getAllResults()`（題目進度）；顯示 FR-030；以 `SubmissionTable` 列出答案；`judge` 回傳 `JudgeOutcome` 後以 `submissions` 更新列表，並依 `activity.phase` 切換：`OPEN` 留在 T-Live、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → `navigate` 到 `T-Results`（FR-032a）；不出現剩餘時間、連線分頁（SC-004）
+- [ ] T075 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-EndConfirm（以 `ConfirmDialog`，內容只列本題已送出組數與還沒送出的組別，FR-033）與 T-QuestionEnd：依 T069 的規則；T-QuestionEnd 顯示本題送出組數，以 `QuestionProgress` 顯示進度，「開放第 n+1 題」呼叫 `openQuestion(n+1)` 回到 T-Live；最後一題結束 → `navigate` 到 `T-Results`
+- [ ] T076 [US3] 在 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）實作 T-Results 與 T-WriteBack：載入 `getAllResults()`，顯示每題所有送出組別的答案、順位與判定（FR-040）；比第一名慢的秒數只把 `behindFirstMs` 換算成秒顯示，不由 `elapsedMs` 自行計算（FR-003）；不顯示結束時間與總耗時（SC-004）；以 `SheetPreview` 顯示寫回預覽；「寫回 Google Sheets」開啟 `ConfirmDialog`；「寫回」關閉視窗後呼叫 `writeBack()` 並顯示寫回結果（尚未寫回／成功／失敗）；`ErrorArea`
 - [ ] T077 [US3] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Live`、`T-QuestionEnd`、`T-Results`
 - [ ] T078 [US3] 執行 `npm test`、`npm run test:e2e`，確認 T068–T071 通過；依 quickstart Q5、Q6 人工驗證並記錄於 `manual-verification.md`
 
@@ -229,29 +276,29 @@ description: "001 畫面與流程原型的實作任務"
 
 ## Phase 6: User Story 4 - 學生以組別作答 (Priority: P1)
 
-**Goal**: S-Join 選組與加入、S-Wait、S-Answer（作答中／被拒絕）、S-Submitted（等待判定／已接受）、S-QuestionDone、S-Results。涵蓋 R6–R9、E1、E4、FR-050–FR-058。
+**Goal**: S-Join 選組與加入（依階段與本組狀態決定目的頁）、S-Wait、S-Answer、S-Submitted（等待判定／不接受）、S-QuestionDone、S-Results。涵蓋 R6–R9、E1、E4、FR-050–FR-058、FR-056a。
 
-**Independent Test**: 學生加入組別，以模擬控制推進到作答，送出後分別走「被接受」與「被拒絕 → 重送」，最後推進到全部結果（quickstart Q7、Q8）。
+**Independent Test**: 學生加入組別，以模擬控制推進到作答，分別走「送出 → 接受 → 本題結果」「送出 → 不接受 → 停在等待判定」「同組組員送出 → 等待判定」三條路徑，最後推進到全部結果；並在不同階段加入組別（quickstart Q7、Q8、Q13）。
 
 ### Tests for User Story 4
 
-- [ ] T079 [P] [US4] 擴充 `frontend/tests/component/JoinPage.test.tsx`：未選組別時底部按鈕不可用（邊界，US4 AC-2）；點選組別後標示已選、按鈕變為「加入第 n 組」（AC-1）；點擊呼叫 `joinGroup(n)`，`PREPARING` → `S-Wait`、`OPEN` → `S-Answer`（S4）；帶入先前選擇的組別時預先標示已選（AC-4）
-- [ ] T080 [P] [US4] `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait 顯示組別、目前階段（準備中）與說明文字位置（FR-051）；「選錯組別？重新選擇」呼叫 `leaveGroup()`（不帶參數）→ `S-Join` 並保留原組別為已選；`onPhaseChange` 通知 `OPEN` → S-Answer
-- [ ] T081 [P] [US4] `frontend/tests/component/StudentPlayPage.answer.test.tsx`：題組時每個小題一個答案欄、只有一個「整組送出」與一個送出提示區（FR-052、FR-053）；送出呼叫 `submitAnswer(q, answers)`（不帶組別）→ S-Submitted 顯示送出的答案與「等待老師判定」；`ValidationError` 時停留並在第一個答案欄旁顯示（邊界，US4 AC-10）；非預期錯誤時答案欄內容不變；`onPhaseChange` 通知 `QUESTION_ENDED` → S-QuestionDone 並呼叫 `getQuestionResult(q)`
-- [ ] T082 [P] [US4] `frontend/tests/component/StudentPlayPage.judgement.test.tsx`：S-Submitted 訂閱 `onJudgement`；`ACCEPTED` 時停留並顯示「老師已接受本組答案」（FR-055）；`REJECTED` 時回到 S-Answer 被拒絕狀態，顯示「老師沒有接受本組的答案」、答案欄保留上次送出內容、「整組送出」可用（FR-056），重送後回到 S-Submitted；`MockModeBadge` 收到的 `awaitingJudgement` 只在等待判定狀態為 true
-- [ ] T083 [P] [US4] `frontend/tests/component/StudentPlayPage.questionDone.test.tsx` 與 `frontend/tests/component/StudentResultsPage.test.tsx`：S-QuestionDone 顯示本題成功組別與答案，或「沒有組別搶答成功」「沒有組別送出」（邊界，spec Edge Cases）、本組送出的答案（若有）、題目進度（呼叫 `getAllResults()`，見 C-2）；頁面只呈現回傳內容，不自行過濾其他組別的資料（FR-057）；`onPhaseChange` 通知 `OPEN` → S-Answer、`FINISHED` → `S-Results`；S-Results 顯示本組搶到的題數與每一題結果，頁面上沒有任何按鈕（FR-058）
-- [ ] T084 [P] [US4] `frontend/tests/e2e/us4-student.spec.ts`：走 quickstart Q7、Q8；並驗證 SC-007——S-Answer 與 S-Submitted 上不出現其他組別的組號、答案或送出狀態（FR-054）
+- [ ] T079 [P] [US4] 擴充 `frontend/tests/component/JoinPage.test.tsx`：未選組別時底部按鈕不可用（邊界，US4 AC-2）；點選組別後標示已選、按鈕變為「加入第 n 組」（AC-1）；點擊呼叫 `joinGroup(n)` 後依 `phase` 切換（RD-14）：`PREPARING` → `S-Wait`；`QUESTION_ENDED` → `S-QuestionDone`（S8）；`FINISHED` → `S-Results`（S9）；`OPEN` → 呼叫 `getGroupSubmission(q)`，`null` → `S-Answer`（S4），`PENDING` → `S-Submitted` 等待判定、`REJECTED` → `S-Submitted` 不接受（S10、FR-056a，以假 registry 驗證的邊界）；帶入先前選擇的組別時預先標示已選（AC-4）
+- [ ] T080 [P] [US4] `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait 顯示組別、階段「準備中」與說明文字位置（FR-051）；沒有「返回首頁」（FR-007）；「選錯組別？重新選擇」呼叫 `leaveGroup()`（不帶參數）→ `S-Join` 並保留原組別為已選；`onPhaseChange` 通知 `OPEN` → S-Answer；觸發 `popstate` 時停留（FR-014，邊界）
+- [ ] T081 [P] [US4] `frontend/tests/component/StudentPlayPage.answer.test.tsx`：題組時每個小題一個答案欄、只有一個「整組送出」與一個送出提示區（FR-052、FR-053）；送出呼叫 `submitAnswer(q, answers)`（不帶組別）→ S-Submitted 顯示送出的答案與「等待老師判定」（US4 AC-6）；訂閱 `onGroupSubmitted`，通知後 → S-Submitted 顯示組員送出的答案（S7、FR-056a、US4 AC-12）；`ValidationError` 時停留並在第一個答案欄旁顯示（邊界，US4 AC-10）；非預期錯誤時答案欄內容不變；`onPhaseChange` 通知 `QUESTION_ENDED` → S-QuestionDone 並呼叫 `getQuestionResult(q)`、`FINISHED` → `S-Results`
+- [ ] T082 [P] [US4] `frontend/tests/component/StudentPlayPage.judgement.test.tsx`：S-Submitted 訂閱 `onJudgement`；`REJECTED` 時停留並顯示「老師沒有接受本組的答案」與本組送出的答案，頁面上沒有「整組送出」或任何答案欄（FR-056、US4 AC-8，邊界）；`ACCEPTED` 時頁面本身不切換，隨後 `onPhaseChange` 通知 `QUESTION_ENDED` → S-QuestionDone、`FINISHED` → `S-Results`（FR-055、US4 AC-7）；不接受狀態下 `onPhaseChange` 推進同樣切換（US4 AC-9）；頁面不出現「已接受」狀態；`MockModeBadge` 收到的 `awaitingJudgement` 只在等待判定狀態為 true
+- [ ] T083 [P] [US4] `frontend/tests/component/StudentPlayPage.questionDone.test.tsx` 與 `frontend/tests/component/StudentResultsPage.test.tsx`：S-QuestionDone 顯示本題成功組別與答案，或「沒有組別搶答成功」「沒有組別送出」（邊界，spec Edge Cases）、本題送出組數、本組送出的答案（若有）、題目進度（呼叫 `getAllResults()`，見 C-2）；頁面只呈現回傳內容，不自行過濾其他組別的資料（FR-057）；`onPhaseChange` 通知 `OPEN` → S-Answer；S-Results 顯示本組搶到的題數，以及每一題所有送出組別的答案、順位與判定，頁面上沒有任何按鈕（FR-058）；本組搶到 0 題時顯示 0（邊界，S9）
+- [ ] T084 [P] [US4] `frontend/tests/e2e/us4-student.spec.ts`：走 quickstart Q7、Q8、Q13；並驗證 SC-007——S-Answer 與 S-Submitted 上不出現其他組別的組號、答案或送出狀態（FR-054）
 
 ### Implementation for User Story 4
 
-- [ ] T085 [US4] 在 `frontend/src/pages/student/JoinPage.tsx` 完成選組與加入：`GroupGrid` 可選、底部按鈕「加入第 n 組」（未選時不可用）、`joinGroup(n)` 後依回傳 `phase` 導向（`PREPARING` → `S-Wait`、`OPEN` → `S-Answer`）；接受 AppRouter 傳入的 `previousGroup` 預先選取
+- [ ] T085 [US4] 在 `frontend/src/pages/student/JoinPage.tsx` 完成選組與加入：`GroupGrid` 可選、底部按鈕「加入第 n 組」（未選時不可用）、`joinGroup(n)` 後依 research RD-14 導向（`PREPARING` → `S-Wait`；`OPEN` → `getGroupSubmission(q)`，`null` → `S-Answer`、有送出 → `S-Submitted` 並帶入該送出；`QUESTION_ENDED` → `S-QuestionDone`；`FINISHED` → `S-Results`）；接受 AppRouter 傳入的 `previousGroup` 預先選取
 - [ ] T086 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx`（與 `.module.css`）建立 StudentPlayPage，實作 S-Wait：學生版 `AppHeader` 顯示組別；顯示階段與說明文字位置（不沿用設計稿的規則說明與限時，SC-004）；「選錯組別？重新選擇」；訂閱 `onPhaseChange` 依「階段推動的切換」表切換內部狀態；`ErrorArea`
-- [ ] T087 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Answer（作答中／被拒絕）：顯示組別、題號／總題數、題型、題目敘述（若有）、每小題一個答案欄、送出提示區、「整組送出」（001 一律可用）；`ValidationError` 顯示在第一個答案欄旁；被拒絕狀態保留上次答案。頁面不得出現其他組別的作答狀況（FR-054）
-- [ ] T088 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Submitted（等待判定／已接受）：顯示本組送出的答案；訂閱 `onJudgement`；依結果切換到已接受或 S-Answer 被拒絕；把 `awaitingJudgement` 回報給 AppRouter 以傳給 `MockModeBadge`
-- [ ] T089 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-QuestionDone：`getQuestionResult(q)` 與 `getAllResults()`（見 C-2；只呈現回傳內容，不自行過濾），以 `QuestionProgress` 顯示進度；`FINISHED` → `navigate` 到 `S-Results`
-- [ ] T090 [P] [US4] 在 `frontend/src/pages/student/StudentResultsPage.tsx`（與 `.module.css`）實作 S-Results：`getAllResults()`，顯示本組搶到的題數與每題結果；不提供任何按鈕，不出現「開新一輪」（SC-004）
-- [ ] T091 [US4] 在 `frontend/src/app/AppRouter.tsx` 接上 `S-Wait`、`S-Answer`、`S-Submitted`、`S-QuestionDone`、`S-Results`（後四者都由 StudentPlayPage 或 StudentResultsPage 呈現），並把 StudentPlayPage 的內部狀態對應到傳給 `MockModeBadge` 的頁面 id
-- [ ] T092 [US4] 執行 `npm test`、`npm run test:e2e`，確認 T079–T084 通過；依 quickstart Q7、Q8 人工驗證並記錄於 `manual-verification.md`
+- [ ] T087 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Answer：顯示組別、題號／總題數、題型、題目敘述（若有）、每小題一個答案欄、送出提示區、「整組送出」（001 一律可用）；`ValidationError` 顯示在第一個答案欄旁；訂閱 `onGroupSubmitted`，通知後切換到 S-Submitted 並顯示組員送出的答案（FR-056a）。沒有「被拒絕」狀態；頁面不得出現其他組別的作答狀況（FR-054）
+- [ ] T088 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Submitted（等待判定／不接受）：顯示本組送出的答案（本人或組員送出）；初始狀態依傳入送出的 `judgement`（`PENDING` 為等待判定、`REJECTED` 為不接受，S10）；訂閱 `onJudgement`，`REJECTED` 時改為不接受狀態並顯示「老師沒有接受本組的答案」，不提供任何再次送出的方式（FR-056）；`ACCEPTED` 時不自行切換，由 `onPhaseChange` 推動（FR-055）；把 `awaitingJudgement` 回報給 AppRouter 以傳給 `MockModeBadge`
+- [ ] T089 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-QuestionDone：`getQuestionResult(q)` 與 `getAllResults()`（見 C-2；只呈現回傳內容，不自行過濾），顯示 FR-057 項目並以 `QuestionProgress` 顯示進度；`onPhaseChange` 通知 `OPEN` → S-Answer；S-Answer、S-Submitted 收到 `FINISHED` 時 → `navigate` 到 `S-Results`（最後一題不經過本頁）
+- [ ] T090 [P] [US4] 在 `frontend/src/pages/student/StudentResultsPage.tsx`（與 `.module.css`）實作 S-Results：`getAllResults()`，顯示本組搶到的題數，以及每一題所有送出組別的答案、順位與判定（FR-058）；不提供任何按鈕，不出現「開新一輪」（SC-004）
+- [ ] T091 [US4] 在 `frontend/src/app/AppRouter.tsx` 接上 `S-Wait`、`S-Answer`、`S-Submitted`（參數帶入本組送出）、`S-QuestionDone`、`S-Results`（前四者由 StudentPlayPage、最後由 StudentResultsPage 呈現），並把 StudentPlayPage 的內部狀態對應到傳給 `MockModeBadge` 的頁面 id；這些頁面在 FR-014 的對照中都屬於「停留」
+- [ ] T092 [US4] 執行 `npm test`、`npm run test:e2e`，確認 T079–T084 通過；依 quickstart Q7、Q8、Q13 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: 老師端與學生端流程都完整。
 
@@ -265,8 +312,8 @@ description: "001 畫面與流程原型的實作任務"
 
 ### Tests for User Story 5
 
-- [ ] T093 [P] [US5] `frontend/tests/e2e/us5-screen-flow.spec.ts`：以 test 名稱標註畫面流程圖的每條箭頭（含 H1、H2、T1–T15、S1–S5 與圖上有文字的箭頭），逐條觸發並斷言到達的頁面（SC-001、SC-002）；每次到達新頁面都斷言「模擬模式」標示可見（SC-003）
-- [ ] T094 [P] [US5] `frontend/tests/e2e/us5-mock-controls.spec.ts`：在每個頁面斷言模擬控制列只出現 FR-061 指定的控制（US5 AC-6、AC-7）；「模擬：驗證失敗」只影響下一次送出（US5 AC-8）；學生在 S-Wait 推進後到 S-Answer（AC-4）；`FINISHED` 後再推進不變（邊界）
+- [ ] T093 [P] [US5] `frontend/tests/e2e/us5-screen-flow.spec.ts`：以 test 名稱標註畫面流程圖的每條箭頭（H1–H4、T1–T15、S1–S9 與圖上有文字的箭頭；S10 依 SC-002 除外，改由 T079 的元件測試涵蓋），逐條觸發並斷言到達的頁面（SC-001、SC-002）；在 T-ImportError、T-Live、T-QuestionEnd、T-Results、S-Answer、S-Submitted、S-QuestionDone、S-Results 各執行一次 `page.goBack()` 並斷言停留在原頁，`page.reload()` 後回到 Main（FR-014）；每次到達新頁面都斷言「模擬模式」標示可見（SC-003）
+- [ ] T094 [P] [US5] `frontend/tests/e2e/us5-mock-controls.spec.ts`：在每個頁面斷言模擬控制列只出現 FR-061 指定的控制，「模擬：同組組員送出」只在 S-Answer（US5 AC-6、AC-7）；「模擬：接受」進入本題結果頁（最後一題為全部結果頁）、「模擬：不接受」停在等待判定頁（AC-5）；「模擬：驗證失敗」只影響下一次送出（AC-8）；學生在 S-Wait 推進後到 S-Answer（AC-4）；`FINISHED` 後再推進不變（邊界）
 - [ ] T095 [P] [US5] `frontend/tests/e2e/us5-unexpected-error.spec.ts`：對 FR-061 列出的 12 個頁面（T-Login、T-Pick、T-Import、T-ImportError、T-Setup、T-Lobby、T-Live、T-QuestionEnd、T-Results、S-Join、S-Wait、S-Answer）各點「模擬：非預期錯誤」再點一個會呼叫介面的按鈕，斷言停留原頁、`ErrorArea` 顯示「模擬：連不上伺服器」、已輸入內容不變；T-Live 的「結束並公布結果」與 T-Results 的「寫回」先關閉確認視窗；再點一次成功並清除訊息（US5 AC-9、AC-10，quickstart Q12）
 - [ ] T096 [P] [US5] `frontend/tests/e2e/us5-removed-elements.spec.ts`：走過所有頁面，斷言 spec「相對於設計稿的調整」列出的文字一個都不出現：「公平模式」「匯出 CSV」「限時」「剩餘時間」「時間到」「清掉舊答案」「備份」「開新一輪」「連結 Google 帳號」「解除連結」「複製網址」「連線分頁」「離線」、活動結束時間與總耗時（「結束 ·」「共 」後接時間）與活動名稱（SC-004）
 - [ ] T097 [P] [US5] `frontend/tests/component/AppRouter.test.tsx`：以 `isMockMode: false` 且沒有模擬控制的假 registry 渲染 `AppRouter`，斷言「模擬模式」標示與控制列出現 0 次（SC-003、FR-005）；學生頁面套上置中欄（spec Assumptions）
@@ -285,7 +332,7 @@ description: "001 畫面與流程原型的實作任務"
 - [ ] T100 [P] 確認 ESLint 規則有效：暫時在任一頁面加入 `import ... from '../services/mock/MockFixtures'`，`npm run lint` 應報錯，確認後移除（原則 III）
 - [ ] T101 [P] 檢查 `frontend/src/`、`shared/src/` 中的註解與命名皆為英文、同一介面元素沒有重複實作（原則 IX）
 - [ ] T102 依 `quickstart.md` 從乾淨環境執行 `npm install`、`npx playwright install chromium`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，回報每個指令與結果（原則 VIII）
-- [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q12 且每個 User Story 至少一筆紀錄
+- [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄
 
 完成後進入 CLAUDE.md 第 2 節步驟 7（圖表一致性驗證，產出 `diagram-verification.md`），不在本任務清單中。
 
@@ -301,29 +348,31 @@ description: "001 畫面與流程原型的實作任務"
 | FR-004 模擬實作 | T017–T031 |
 | FR-005 模擬模式標示 | T037、T042、T093、T097 |
 | FR-006 階段推動的切換 | T020、T028、T047、T080–T083、T093 |
-| FR-007 搶答板連回首頁 | T036、T038、T054 |
+| FR-007 搶答板與返回首頁 | T036、T038、T054、T117、T129、T130 |
 | FR-008 驗證錯誤顯示 | T058、T064、T081、T087、T094 |
 | FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095 |
+| FR-014 瀏覽器上一頁 | T060、T069、T080、T118、T119、T131、T132 |
 | FR-010–FR-013 | T044、T045、T050、T051、T105、T110 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
 | FR-023、FR-024 | T058、T064 |
 | FR-025 | T059、T065 |
-| FR-030–FR-034 | T068、T069、T072–T075 |
+| FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076 |
 | FR-050 | T047、T053、T079、T085 |
 | FR-051 | T080、T086 |
 | FR-052、FR-053 | T081、T087 |
 | FR-054 | T029、T084、T087 |
-| FR-055、FR-056 | T082、T088 |
+| FR-055、FR-056 | T082、T088、T113、T124、T126 |
+| FR-056a | T079、T081、T085、T087、T088、T113、T121、T126 |
 | FR-057 | T083、T089 |
 | FR-058 | T083、T090 |
-| FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、M4–M6 T021/T029、M7 T020/T028、M8 T022/T030、M9 T017/T025 |
-| FR-061 | T037、T041、T094、T107、T111 |
+| FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
+| FR-061 | T037、T041、T094、T107、T111、T116、T128 |
 | SC-001、SC-002 | T093、T095 |
 | SC-003 | T037、T093、T097 |
 | SC-004 | T096 |
-| SC-005、SC-006 | T055、T092（人工驗證計時） |
+| SC-005、SC-006 | T055、T092（人工驗證計時）、T134 |
 | SC-007 | T084 |
 
 ---
@@ -335,7 +384,7 @@ description: "001 畫面與流程原型的實作任務"
 - **Setup (Phase 1)**: 無依賴
 - **Foundational (Phase 2)**: 依賴 Phase 1；阻擋所有 Story
 - **US1 (Phase 3)**: 依賴 Phase 2
-- **規格修訂 (Phase 3.5)**: 依賴 Phase 3；在 Phase 4 之前完成（修改 Phase 2、3 已建立的檔案）
+- **規格修訂 (Phase 3.5、3.6)**: 依賴 Phase 3；依序執行（3.5 → 3.6），修改 Phase 2、3 已建立的檔案；完成後才做 T055 與 Phase 4
 - **US2 (Phase 4)**: 依賴 Phase 2；延續 US1 的 `PickPage.tsx`（T062 修改 T052 的檔案）
 - **US3 (Phase 5)**: 依賴 Phase 2；延續 US2 的 `ConsolePage.tsx`（T074 修改 T065 的檔案）
 - **US4 (Phase 6)**: 依賴 Phase 2；延續 US1 的 `JoinPage.tsx`；使用 US3 的 `QuestionProgress`（T072）

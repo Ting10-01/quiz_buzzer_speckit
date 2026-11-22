@@ -114,23 +114,36 @@
 | HomePage、TeacherLoginPage、PickPage、ImportPage、SetupPage、ConsolePage、TeacherResultsPage | `frontend/src/pages/` 下同名檔案 |
 | JoinPage、StudentPlayPage、StudentResultsPage | `frontend/src/pages/student/` 下同名檔案 |
 | AppHeader、QuestionProgress、SubmissionTable、GroupGrid、ConfirmDialog、SheetPreview、ErrorArea、MockModeBadge、MockControlBar | `frontend/src/components/` 下同名檔案 |
-| AuthService、GuidedNotesService、ActivityService、SubmissionService、ResultService、PhaseMockControl、JudgementMockControl、ValidationMockControl、UnexpectedErrorMockControl、MockChoicePrompt、ChoiceRequest、ChoiceOption、Unsubscribe | `frontend/src/services/interfaces.ts` |
+| AuthService、GuidedNotesService、ActivityService、SubmissionService、ResultService、PhaseMockControl、JudgementMockControl、TeammateMockControl、ValidationMockControl、UnexpectedErrorMockControl、MockChoicePrompt、ChoiceRequest、ChoiceOption、Unsubscribe | `frontend/src/services/interfaces.ts` |
 | ServiceRegistry | `frontend/src/services/ServiceRegistry.ts`；綁定在 `createServiceRegistry.ts` |
-| Entities package（含 UnexpectedError） | `shared/src/entities.ts` |
+| Entities package（含 UnexpectedError、JudgeOutcome） | `shared/src/entities.ts` |
 | Mock*Service、MockFixtures、MockSession | `frontend/src/services/mock/` 下同名檔案 |
 
 ## RD-11 頁面切換
 
 - **Decision**: `AppRouter` 以 React state 保存目前的頁面與頁面參數，不使用 URL 路由，也不使用路由套件。開啟或重新整理分頁一律回到首頁。
+- **瀏覽器上一頁（FR-014）**: `AppRouter` 每次切換頁面時以 History API（`pushState`）加入一筆不改變網址的紀錄，並監聽 `popstate`：
+  - 有確認視窗或模擬選擇器開啟時，只關閉它（等同按其取消類按鈕）。
+  - 目前頁面有不呼叫介面的返回類按鈕（T-Login、S-Join 的「返回首頁」，T-Pick、T-Import、T-Setup 修改模式的「取消」，T-Setup 建立模式的「上一步」）時，執行與該按鈕相同的切換。
+  - 其他頁面再加入一筆紀錄，停留在原頁面，不改變頁面與資料。
+  - 返回類按鈕的目的頁集中在 `AppRouter` 的一張對照表；頁面上的按鈕與上一頁都呼叫同一個 `navigate` 目的頁，對照表只記錄 FR-014 的對應，不另外實作切換（IX）。`AppRouter` 已以 `PageState` 列出所有頁面，集中一處比讓各頁宣告少一個頁面與 `AppRouter` 之間的介面。
+  - 確認視窗與模擬選擇器都以 `ConfirmDialog` 呈現；`ConfirmDialog` 以堆疊記錄開啟中的視窗，並匯出 `closeTopDialog()`，`AppRouter` 收到 `popstate` 時先呼叫它，有視窗被關閉就停止（組件圖 `AppRouter ..> ConfirmDialog`）。
 - **Rationale**: spec 沒有任何以網址進入頁面的需求（學生由首頁選「我是學生」進入）；重新整理回到首頁，與 M7「重新整理回到沒有活動」一致；少一個套件（XI）。
-- **Alternatives considered**: React Router 等 URL 路由：可直接以網址開啟某頁，但重新整理後頁面與重置的模擬狀態不一致，且沒有需求。
+- **Alternatives considered**: React Router 等 URL 路由：可直接以網址開啟某頁，但重新整理後頁面與重置的模擬狀態不一致，且沒有需求；它的「上一頁」會回到任意歷史頁面，與 FR-014「沒有返回類按鈕的頁面停在原頁」衝突。
 - **對後續子功能的影響**: 004 若需要「學生重新整理後回到原組別」或「老師重新整理後回到控制台」（spec D21），須先修改 001 的頁面切換。
 
 ## RD-12 階段推動的切換
 
-- **Decision**: 學生頁面與首頁透過 `ActivityService.onPhaseChange` 訂閱階段，依「階段推動的切換」表切換頁面；`S-Submitted` 透過 `SubmissionService.onJudgement` 訂閱判定；老師端 T-Lobby 透過 `onActivityChange`、T-Live 透過 `onSubmissionsChange` 即時更新。001 由模擬控制列（`advancePhase`、`simulateJudgement`）觸發這些事件。
+- **Decision**: 學生頁面與首頁透過 `ActivityService.onPhaseChange` 訂閱階段，依「階段推動的切換」表切換頁面；`S-Answer` 透過 `SubmissionService.onGroupSubmitted` 得知同組組員送出；`S-Submitted` 透過 `SubmissionService.onJudgement` 訂閱判定（接受時本題結束，頁面切換仍由 `onPhaseChange` 推動，不由判定結果推導階段）；老師端點「接受」後依 `judge` 回傳的 `JudgeOutcome.activity` 切換；老師端 T-Lobby 透過 `onActivityChange`、T-Live 透過 `onSubmissionsChange` 即時更新。001 由模擬控制列（`advancePhase`、`simulateJudgement`、`simulateTeammateSubmission`）觸發這些事件；「模擬：接受」同時推進階段（M6）。
 - **Rationale**: 頁面對事件的反應在 001 就寫好，004、005 只需以真正的實作推送同樣的事件，頁面不改（feature-split 3.3）。頁面只呈現事件帶來的 `Activity`，不自行推導階段（V）。
 - **與 FR-006 的關係**: 001 不實作跨分頁的階段同步；同步由 004 的真正實作提供。
+
+## RD-14 加入組別後的目的頁
+
+- **Decision**: S-Join 點「加入第 n 組」後，依 `joinGroup` 回傳的 `Activity.phase` 決定目的頁：`PREPARING` → S-Wait；`QUESTION_ENDED` → S-QuestionDone（S8）；`FINISHED` → S-Results（S9）；`OPEN` → 再呼叫 `SubmissionService.getGroupSubmission(q)`，`null` 進入 S-Answer（S4），有送出則進入 S-Submitted 並依 `judgement` 顯示等待判定或不接受（S10）。
+- **Rationale**: `joinGroup` 只回傳活動，`onGroupSubmitted` 只通知訂閱之後的送出，頁面無法得知本組在加入前是否已送出。以查詢方法明確取得，頁面在 001 就能寫好 S10 的切換並以假的 registry 測試；005 只新增實作，不改頁面（feature-split 3.3）。查詢與其他學生端方法一樣不傳組別（原則 VI）。
+- **Alternatives considered**: 訂閱 `onGroupSubmitted` 時立即重送已有的送出：真正的實作經網路非同步送達，頁面會先顯示 S-Answer 再跳到 S-Submitted（違反 FR-056a「不進入作答頁」），或要新增 spec 沒有的載入中狀態（違反原則 II）。
+- **001 的模擬實作**: `getGroupSubmission` 依 `MockSession` 回傳本組這一題的送出；學生加入時本組一定還沒送出，所以回傳 `null`，S10 不觸發（spec SC-002 除外項）。S8、S9 以「模擬：推進到下一個階段」在 S-Join 推進到對應階段後加入即可展示。
 
 ## RD-13 介面回傳的錯誤
 

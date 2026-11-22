@@ -123,7 +123,8 @@ Page -> Sub : onJudgement(listener)
 alt 判定：接受（本題結束）
   Demo -> Bar : 點「模擬：接受」
   Bar -> Sub : simulateJudgement(ACCEPTED)（M6，JudgementMockControl）
-  Sub -> Sess : viewerPhaseIndex 推進一次（M6）
+  Sub -> Sess : advanceViewerPhase()（M6）
+  Sess -> Act : 推進一次（與 advancePhase 同一段程式）
   Act --> Page : 階段：本題已結束（最後一題時為已結束）
 else 判定：不接受
   Demo -> Bar : 點「模擬：不接受」

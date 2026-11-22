@@ -9,7 +9,7 @@
 - 非預期錯誤（例如連不上伺服器）以 `UnexpectedError`（`message`）reject；真正的實作必須把自己的非預期錯誤轉成 `UnexpectedError`，種類與訊息由負責的子功能定義。頁面捕捉後停留在原頁、不改變已輸入的內容，在共通的 `ErrorArea` 顯示 `message`；由確認視窗的按鈕引起時先關閉視窗；切換頁面或該頁下一次介面呼叫成功時清除（FR-009）。下列各表的「頁面如何呈現」只描述 Promise 完成時的情況。
 - 頁面以 `shared/src/guards.ts` 的型別判斷函式區分聯集型別的回傳值。
 - 回傳的物件是當下狀態的快照；頁面不得修改，也不得自行推導共享狀態（原則 V）。
-- 驗證規則、可判定的條件、公布範圍等規則由各介面的負責子功能定義；001 的頁面只呈現回傳結果。
+- 驗證規則、可判定的條件、公布範圍等規則由各介面的負責子功能定義；001 的頁面只呈現回傳結果。例外：可判定的列依 spec FR-032（feature-split 3.2 已定案的規則），由頁面依回傳列表的順位與判定狀態決定。
 
 ## AuthService（002 取代）
 
@@ -33,7 +33,7 @@
 | `updateSettings(settings)` | `Promise<Activity \| ValidationError>` | T-Setup（修改模式）「儲存設定」 | 同上 |
 | `openQuestion(n)` | `Promise<Activity>` | T-Lobby「開放第 1 題」；T-QuestionEnd「開放第 n+1 題」 | T-Live（第 n 題） |
 | `endQuestion(n)` | `Promise<Activity>` | T-EndConfirm「結束並公布結果」 | `QUESTION_ENDED`：T-QuestionEnd；`FINISHED`：T-Results |
-| `joinGroup(n)` | `Promise<Activity>` | S-Join「加入第 n 組」 | 依 `phase` 切換（spec「階段推動的切換」）；`PREPARING` 時為 S-Wait |
+| `joinGroup(n)` | `Promise<Activity>` | S-Join「加入第 n 組」 | 依 `phase` 切換（spec「階段推動的切換」、research RD-14）：`PREPARING` → S-Wait；`OPEN` → 先呼叫 `getGroupSubmission`；`QUESTION_ENDED` → S-QuestionDone；`FINISHED` → S-Results |
 | `leaveGroup()` | `Promise<void>` | S-Wait「選錯組別？重新選擇」 | S-Join；服務不再記住本分頁的組別 |
 | `getCurrentActivity()` | `Promise<Activity \| null>` | Main、S-Join 載入時 | `null`：「目前沒有活動」（FR-010、FR-050）。T-Lobby 不呼叫，改用 `createActivity`、`updateSettings` 回傳的 `Activity`，之後由 `onActivityChange` 更新（時序圖第 2 段） |
 | `onPhaseChange(listener)` | `Unsubscribe` | Main、S-Join、S-Wait、S-Answer、S-Submitted、S-QuestionDone | 依 spec「階段推動的切換」表切換；Main 更新目前活動資訊 |
@@ -46,12 +46,14 @@
 | `submitAnswer(q, answers)` | `Promise<Submission \| ValidationError>` | S-Answer「整組送出」 | `Submission`：S-Submitted（等待判定）；`ValidationError`：留在 S-Answer 顯示錯誤 |
 | `listSubmissions(q)` | `Promise<Submission[]>` | T-Live 載入時 | 依 `rank` 列出（FR-031） |
 | `onSubmissionsChange(q, listener)` | `Unsubscribe` | T-Live | 以通知的完整列表取代目前的答案列表（spec「階段推動的切換」T-Live 列）。001 的模擬實作不會通知 |
-| `judge(q, group, judgement)` | `Promise<Submission[]>` | T-Live 每列「接受」「不接受」 | 以回傳的列表更新每列的判定狀態與按鈕是否可用（FR-032） |
-| `onJudgement(listener)` | `Unsubscribe` | S-Submitted | `ACCEPTED`：顯示「老師已接受本組答案」；`REJECTED`：S-Answer 被拒絕狀態（FR-055、FR-056） |
+| `judge(q, group, judgement)` | `Promise<JudgeOutcome>` | T-Live 每列「接受」「不接受」 | 以 `submissions` 更新每列的判定狀態與按鈕是否可用（FR-032）；依 `activity.phase` 切換：`QUESTION_ENDED` → T-QuestionEnd，`FINISHED` → T-Results，仍為 `OPEN` → 留在 T-Live（FR-032a） |
+| `getGroupSubmission(q)` | `Promise<Submission \| null>` | S-Join 加入後，階段為 `OPEN` 時 | `null` → S-Answer（S4）；`Submission` → S-Submitted，依 `judgement` 顯示等待判定或不接受（S10、FR-056a）。001 的模擬實作一律回傳 `null` |
+| `onGroupSubmitted(listener)` | `Unsubscribe` | S-Answer | 同組組員送出時切換到 S-Submitted，顯示組員送出的答案（S7、FR-056a） |
+| `onJudgement(listener)` | `Unsubscribe` | S-Submitted | `REJECTED`：留在 S-Submitted，顯示「老師沒有接受本組的答案」，不提供再次送出（FR-056）；`ACCEPTED`：本題結束，頁面切換由 `onPhaseChange` 推動（FR-055） |
 
 `answers` 的順序對應該題 `subQuestions` 的順序；題組整組一次送出（FR-052）。學生端沒有取得其他組別送出的方法（FR-054、原則 VI）。
 
-**組別由服務判斷**：`joinGroup(n)` 成功後，服務記住本分頁所屬的組別；`submitAnswer`、`onJudgement`、`leaveGroup` 不傳組別，一律作用於本分頁的組別。頁面不得以任何方式指定其他組別。真正的實作由伺服器依連線身分判斷組別（原則 VI）；001 的模擬實作記在 `MockSession.joinedGroup`。尚未加入組別就呼叫這些方法屬於呼叫順序錯誤，頁面流程不會發生（S-Answer、S-Submitted 只能經 S-Join 進入）。
+**組別由服務判斷**：`joinGroup(n)` 成功後，服務記住本分頁所屬的組別；`submitAnswer`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement`、`leaveGroup` 不傳組別，一律作用於本分頁的組別。頁面不得以任何方式指定其他組別。真正的實作由伺服器依連線身分判斷組別（原則 VI）；001 的模擬實作記在 `MockSession.joinedGroup`。尚未加入組別就呼叫這些方法屬於呼叫順序錯誤，頁面流程不會發生（S-Answer、S-Submitted 只能經 S-Join 進入）。
 
 **老師端的即時更新**：`onActivityChange`、`onSubmissionsChange` 每次通知完整的快照，不通知差異；頁面直接以快照取代顯示的內容，不自行合併或推導（原則 V）。`judge(q, group, judgement)` 由老師指定要判定的組別，老師身分由 002 驗證。
 
