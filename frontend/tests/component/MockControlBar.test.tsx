@@ -48,6 +48,7 @@ function fullControls() {
   return {
     phaseControl: { advancePhase: vi.fn(() => new Promise<never>(() => {})) },
     judgementControl: { simulateJudgement: vi.fn(() => new Promise<never>(() => {})) },
+    teammateControl: { simulateTeammateSubmission: vi.fn(() => new Promise<never>(() => {})) },
     activityValidationControl: { failNextValidation: vi.fn() },
     submissionValidationControl: { failNextValidation: vi.fn() },
     unexpectedErrorControl: { failNextCall: vi.fn() },
@@ -67,6 +68,7 @@ describe('MockControlBar (FR-061)', () => {
     const expected: string[] = [];
     if (ADVANCE.includes(page)) expected.push('模擬：推進到下一個階段');
     if (page === 'S-Submitted') expected.push('模擬：接受', '模擬：不接受');
+    if (page === 'S-Answer') expected.push('模擬：同組組員送出');
     if (VALIDATION.includes(page)) expected.push('模擬：驗證失敗');
     if (UNEXPECTED.includes(page)) expected.push('模擬：非預期錯誤');
     expect(labels()).toEqual(expected);
@@ -102,6 +104,21 @@ describe('MockControlBar (FR-061)', () => {
     expect(controls.activityValidationControl.failNextValidation).toHaveBeenCalledTimes(1);
     expect(controls.submissionValidationControl.failNextValidation).not.toHaveBeenCalled();
     expect(controls.unexpectedErrorControl.failNextCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls simulateTeammateSubmission on S-Answer (US5 AC-7)', async () => {
+    const controls = fullControls();
+    renderWithRegistry(<MockControlBar page="S-Answer" awaitingJudgement={false} />, createFakeRegistry(controls));
+    await userEvent.click(screen.getByRole('button', { name: '模擬：同組組員送出' }));
+    expect(controls.teammateControl.simulateTeammateSubmission).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the teammate control when teammateControl is undefined (edge)', () => {
+    const { teammateControl, ...rest } = fullControls();
+    void teammateControl;
+    renderWithRegistry(<MockControlBar page="S-Answer" awaitingJudgement={false} />, createFakeRegistry(rest));
+    expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: '模擬：同組組員送出' })).not.toBeInTheDocument();
   });
 
   it('uses the submission validation control on S-Answer', async () => {
