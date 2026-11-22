@@ -61,9 +61,9 @@ describe('MockResultService (M8)', () => {
 
   it('returns empty results for a question without submissions (edge)', async () => {
     const { submission, result } = await setup();
-    await submission.listSubmissions(4);
-    await expect(result.getQuestionResult(4)).resolves.toEqual({
-      questionNumber: 4,
+    await submission.listSubmissions(3);
+    await expect(result.getQuestionResult(3)).resolves.toEqual({
+      questionNumber: 3,
       winner: undefined,
       submissionCount: 0,
       submissions: [],
