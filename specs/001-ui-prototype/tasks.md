@@ -101,7 +101,7 @@ description: "001 畫面與流程原型的實作任務"
 
 - [X] T033 [P] 建立 `frontend/tests/helpers/createFakeRegistry.ts`：回傳所有方法為 `vi.fn()` 的 `ServiceRegistry`，可覆寫個別方法與模擬控制、可設定 `isMockMode`；另提供 `renderWithRegistry(ui, registry)` 包上 `ServiceRegistryProvider`
 - [X] T034 在 `frontend/src/app/AppRouter.tsx` 建立頁面切換骨架：以 React state 保存 `PageState`（discriminated union，一次列出 spec 頁面清單的 16 個頁面 id 與各自需要的參數，例如 `T-Import` 帶 `ImportSuccess`、`T-ImportError` 帶 `Spreadsheet` 與 `ImportError`、`T-Setup` 帶 `mode: 'create' | 'edit'`），不使用 URL 路由，重新整理一律回到 `Main`（RD-11）；提供 `navigate(page)` 給頁面；學生頁面（`S-*`）外層套上 390 px 寬、水平置中的欄位；畫面固定位置渲染 `MockModeBadge` 並傳入目前頁面 id。尚未實作的頁面在各 Story 加入 switch
-- [ ] T035 在 `frontend/src/main.tsx` 建立 registry（`createServiceRegistry()`）、包上 `ServiceRegistryProvider`、渲染 `AppRouter`，並載入 `tokens.css`、`global.css` 與 `@fontsource/inter`、`@fontsource/noto-sans-tc`（只載入頁面用到的字重）
+- [X] T035 在 `frontend/src/main.tsx` 建立 registry（`createServiceRegistry()`）、包上 `ServiceRegistryProvider`、渲染 `AppRouter`，並載入 `tokens.css`、`global.css` 與 `@fontsource/inter`、`@fontsource/noto-sans-tc`（只載入頁面用到的字重）
 
 ### 共用元件（先寫測試）
 
