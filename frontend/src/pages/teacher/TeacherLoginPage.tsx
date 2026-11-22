@@ -10,7 +10,6 @@ import styles from './TeacherLoginPage.module.css';
 
 const FAILURE_MESSAGE: Record<SignInFailure, string> = {
   [SignInFailure.CANCELLED]: '已取消登入',
-  [SignInFailure.NOT_TEACHER]: '此帳號不是老師帳號',
 };
 
 export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
