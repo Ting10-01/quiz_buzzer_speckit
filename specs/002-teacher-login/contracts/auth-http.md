@@ -24,16 +24,17 @@
 
 - **Headers**：`X-Requested-With: XmlHttpRequest`（必填，research RD-09）
 - **Request**：`{ "code": "<Google 授權碼>" }`（非空字串，最長 2,048 字元）
-- **Response 200**：`{ "teacherToken": "<43 字元 base64url>", "account": { "name": "teacher", "email": "teacher@example.com" } }`。這次登入使前一組老師憑證作廢，並中斷舊的老師即時連線。
+- **Response 200（登入成功）**：`{ "ok": true, "teacherToken": "<43 字元 base64url>", "account": { "name": "teacher", "email": "teacher@example.com" } }`。以 Google 登入的人即為老師，不比對帳號；這次登入取代前一個老師（同一個帳號或另一個帳號都一樣）：前一組老師憑證作廢、中斷舊的老師即時連線、Google 授權換成這次登入的帳號（REQ-AUTH-02、REQ-AUTH-03）。
+- **Response 200（預期中的登入失敗）**：`{ "ok": false, "failure": "SCOPE_DENIED" }`：使用者沒有同意 `drive.file`；伺服器丟棄這組授權，目前的老師不變（REQ-AUTH-05）。預期中的失敗以 200 回傳，與 003–006 的慣例一致。
 
 | HTTP | code | message | 說明 |
 | --- | --- | --- | --- |
 | 400 | `BAD_REQUEST` | 登入請求格式錯誤 | 缺少標頭、`code` 不是非空字串或超過長度 |
 | 400 | `INVALID_CODE` | Google 登入未完成，請再試一次 | Google 不接受授權碼（`invalid_grant`） |
-| 403 | `NOT_TEACHER` | 此帳號不是老師帳號 | 已有老師且帳號不同；伺服器不保留這組授權 |
-| 403 | `SCOPE_DENIED` | 需要同意存取 Google 試算表才能使用老師功能 | 使用者沒有同意 `drive.file`；不綁定 |
 | 502 | `GOOGLE_UNAVAILABLE` | 連不上 Google，請稍後再試 | 15 秒內沒有回應或網路錯誤 |
 | 503 | `GOOGLE_NOT_CONFIGURED` | （共通） | |
+
+沒有 `NOT_TEACHER`（2026-11-22 刪除；001 FR-013）。
 
 ## GET /api/auth/me
 
@@ -57,10 +58,9 @@
 
 | 情況 | `signInWithGoogle()` 的結果 |
 | --- | --- |
-| `POST /api/auth/google` 200 | 存入 `TeacherCredentialStore`；`{ ok: true, account }` |
+| `POST /api/auth/google` 200 `ok: true` | 存入 `TeacherCredentialStore`（取代本分頁原有的憑證）；`{ ok: true, account }` |
 | Google 視窗 `CANCELLED` | `{ ok: false, failure: CANCELLED }`，不呼叫伺服器 |
-| 403 `NOT_TEACHER` | `{ ok: false, failure: NOT_TEACHER }` |
-| 403 `SCOPE_DENIED` | `{ ok: false, failure: SCOPE_DENIED }` |
+| `POST /api/auth/google` 200 `ok: false, failure: SCOPE_DENIED` | `{ ok: false, failure: SCOPE_DENIED }`；本分頁原有的憑證不變 |
 | Google 視窗 `POPUP_BLOCKED` | reject `UnexpectedError`「瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試」 |
 | Google 視窗 `LOAD_FAILED` | reject `UnexpectedError`「無法載入 Google 登入，請確認網路連線」 |
 | 其他錯誤回應、連不上伺服器 | reject `ApiError`（`message` 見上表或「連不上伺服器，請確認伺服器已啟動」） |

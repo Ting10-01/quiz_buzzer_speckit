@@ -8,10 +8,10 @@
 
 | 名稱 | 位置 | 用法 |
 | --- | --- | --- |
-| `buildApp(config, deps)` | `server/src/app.ts` | 伺服器組合根。003–006 在這裡以 `app.register(xxxRoutes)` 註冊自己的路由（新增一行，屬於預期中的修改，原則 III） |
+| `buildApp(config, deps)` | `server/src/app.ts` | 伺服器組合根。003–006 在這裡以 `app.register(xxxRoutes)` 註冊自己的路由（新增一行，屬於預期中的修改，原則 III）。`deps.gateway` 是 002 的替身注入點；003–006 可在 `deps` 加入自己的替身（例如 003 的 `deps.spreadsheetReader`） |
 | `app.requireTeacher` | `server/src/auth/requireTeacher.ts`（由 `buildApp` 以 `decorate` 提供） | 老師專用路由加 `{ preHandler: app.requireTeacher }`。不得自行解析 `Authorization` |
 | `app.io`、`TEACHER_ROOM` | `server/src/realtime/socketServer.ts` | 見 [socket-handshake.md](./socket-handshake.md) |
-| `GoogleClientProvider.authorizedClient()` | `server/src/auth/GoogleClientProvider.ts`（`buildApp` 以 `app.googleClients` 提供） | 003、006 把回傳的 `OAuth2Client` 交給 `@googleapis/sheets`、`@googleapis/drive`（`auth` 參數）。沒有老師登入時丟 `TeacherNotSignedInError` |
+| `GoogleClientProvider.authorizedClient()` | `server/src/auth/GoogleClientProvider.ts`（`buildApp` 以 `app.googleClients` 提供） | 003、006 把回傳的 `OAuth2Client` 交給 `@googleapis/sheets`、`@googleapis/drive`（`auth` 參數）。沒有老師登入時丟 `TeacherNotSignedInError`。授權永遠屬於目前的老師；任何人登入都會換成新帳號的授權，所以每次呼叫 Google 前都要重新呼叫 `authorizedClient()`，不得保存舊的 client |
 | `isGoogleAuthExpired(error)` | 同上 | Google API 呼叫失敗時判斷是否為授權失效；為 true 時回 `401 GOOGLE_AUTH_EXPIRED`「Google 授權已失效，請回首頁重新登入」 |
 | `ErrorBody` | `server/src/http/errors.ts` | 錯誤回應一律為 `{ code, message }`；`message` 是給老師看的中文 |
 | `loggerOptions` | `server/src/logger.ts` | 新增機敏欄位時加到 `redact.paths`，不得在其他地方另設 logger |
