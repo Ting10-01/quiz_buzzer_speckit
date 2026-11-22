@@ -50,7 +50,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T003 建立 `frontend/package.json` 與 `frontend/tsconfig.json`（`strict: true`，相依 `@quiz-buzzer/shared`）；dependencies：`react`、`react-dom`、`@fontsource/inter`、`@fontsource/noto-sans-tc`；devDependencies：`vite`、`@vitejs/plugin-react`、`typescript`、`vitest`、`jsdom`、`@testing-library/react`、`@testing-library/user-event`、`@testing-library/jest-dom`、`@playwright/test`、`eslint`、`typescript-eslint`、`eslint-plugin-react-hooks`。不加入路由或狀態管理套件（research RD-11、原則 XI）
 - [X] T004 建立 `frontend/vite.config.ts`：React plugin；Vitest 設定 `environment: 'jsdom'`、`include: ['tests/unit/**/*.test.ts', 'tests/component/**/*.test.tsx']`、`setupFiles: ['tests/setup.ts']`
 - [X] T005 [P] 建立 `frontend/tests/setup.ts`，載入 `@testing-library/jest-dom/vitest`
-- [ ] T006 [P] 建立 `frontend/playwright.config.ts`：`testDir: 'tests/e2e'`、只用 Chromium、`webServer` 執行 `npm run dev` 並等待 Vite 網址
+- [X] T006 [P] 建立 `frontend/playwright.config.ts`：`testDir: 'tests/e2e'`、只用 Chromium、`webServer` 執行 `npm run dev` 並等待 Vite 網址
 - [ ] T007 [P] 建立 `frontend/eslint.config.js`：typescript-eslint 建議規則、react-hooks 規則；對 `src/**` 設定 `no-restricted-imports` 禁止引用 `**/services/mock/**`，只有 `src/services/createServiceRegistry.ts` 例外（原則 III）
 - [ ] T008 [P] 建立 `frontend/index.html`（`lang="zh-Hant"`，掛載點 `#root`；不得引用 Google Fonts 或其他外部字型網址，字型由 T035 從本機套件載入，research「字型」、原則 VIII）
 - [ ] T009 [P] 建立 `frontend/src/styles/tokens.css`：把 `docs/design/dark/*.html` 中 `:root` 的深色主題 CSS 變數原樣搬入；不得加入 `data-theme`、`prefers-color-scheme` 或淺色變數（research RD-09）。建立 `frontend/src/styles/global.css`：body 背景與字型（`Inter, "Noto Sans TC", system-ui`）
