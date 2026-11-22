@@ -1,0 +1,51 @@
+.grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.cell {
+  min-height: 76px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 2px solid var(--raised);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selectable {
+  cursor: pointer;
+}
+
+.selectable:hover {
+  background: var(--raised);
+}
+
+.selectable:focus-visible {
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: 2px;
+}
+
+.selectable[aria-checked='true'] {
+  border-color: var(--text);
+  background: var(--active);
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.count {
+  color: var(--muted);
+  font-size: 13px;
+}
