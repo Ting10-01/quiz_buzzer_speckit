@@ -6,11 +6,13 @@ description: "Task list for 002 老師登入"
 
 **Input**: Design documents from `specs/002-teacher-login/`
 
-**Prerequisites**: plan.md、spec.md、research.md、data-model.md、contracts/、quickstart.md；001 的 `frontend/`、`shared/`、`createServiceRegistry()` 已合併到 `main`（001 tasks 完成）。
+**Prerequisites**: plan.md、spec.md、research.md、data-model.md、contracts/、quickstart.md；001 的 spec 已合併（PR #10），001 的 `frontend/`、`shared/`、`createServiceRegistry()` 實作完成後才開始（001 tasks 完成）。
+
+**2026-11-22 修訂**：配合 001 最終版，以 Google 登入的人即為老師、任何登入取代前一個老師；刪除 `NOT_TEACHER` 與「第一個登入的帳號才是老師」的任務內容；T023 不再等待 001，改由 002 新增 `SCOPE_DENIED`；`SCOPE_DENIED` 以 200 回傳。任務編號不變。
 
 **Tests**: 原則 VIII 要求每個 User Story 至少一個正常案例與一個邊界案例的自動化測試，Google 一律以替身取代。測試先寫、先確認失敗，再實作。
 
-**Organization**: 依 User Story 分 Phase。P1 的 US1（登入）、US2（重新登入）、US3（拒絕非老師）在前，P2 的 US4（Google 授權）、US5（機敏資料與錯誤）在後。
+**Organization**: 依 User Story 分 Phase。P1 的 US1（登入）、US2（重新登入取代前一個老師）、US3（拒絕未登入者）在前，P2 的 US4（Google 授權）、US5（機敏資料與錯誤）在後。
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -41,7 +43,7 @@ description: "Task list for 002 老師登入"
 - [ ] T006 [P] 實作 `server/src/config.ts`：`loadConfig(env): AppConfig`、`AppConfig { port, google: GoogleConfig | null, missingGoogleVars }`、`GoogleConfig { clientId, clientSecret, apiKey, appId }`；整個伺服器只有這裡讀 `process.env`（data-model 3）
 - [ ] T007 [P] 實作 `server/src/logger.ts`：`loggerOptions`，`redact.paths` 為 `req.headers.authorization`、`req.headers.cookie`、`*.teacherToken`、`*.accessToken`、`*.refreshToken`、`*.access_token`、`*.refresh_token`、`*.id_token`、`*.code`、`*.clientSecret`、`*.apiKey`，`censor: '[Redacted]'`（research RD-07）
 - [ ] T008 [P] 實作 `server/src/http/errors.ts`：`ErrorBody { code, message }`、`sendError(reply, status, code, message)`、Fastify `setErrorHandler`（未預期錯誤回 `500 INTERNAL`「伺服器發生錯誤，請稍後再試」，不回傳堆疊；log 只記 `code` 與 `message`）
-- [ ] T009 [P] 實作 `server/src/auth/GoogleOAuthGateway.ts`：介面 `GoogleOAuthGateway { exchangeCode(code): Promise<GoogleSignIn>; createClient(tokens): OAuth2Client }`、`GoogleSignIn { sub, email, grantedScopes, tokens }`、`GoogleTokens { accessToken, refreshToken, expiryDate }`、`GoogleUnavailableError { code = 'GOOGLE_UNAVAILABLE' }`（data-model 3）
+- [ ] T009 [P] 實作 `server/src/auth/GoogleOAuthGateway.ts`：介面 `GoogleOAuthGateway { exchangeCode(code): Promise<GoogleSignIn>; createClient(tokens): OAuth2Client }`、`GoogleSignIn { email, grantedScopes, tokens }`、`GoogleTokens { accessToken, refreshToken, expiryDate }`、`GoogleUnavailableError { code = 'GOOGLE_UNAVAILABLE' }`（data-model 3）
 - [ ] T010 [P] 建立 `server/tests/helpers/fakeGoogleGateway.ts`：可設定 `code → GoogleSignIn` 的對應、指定的 `code` 延遲完成（測同時登入）、丟出 `GoogleUnavailableError` 或 `invalid_grant`；`createClient` 回傳可控制 `getAccessToken` 結果的假 client
 - [ ] T011 [P] 建立 `server/tests/helpers/logCapture.ts`：以 pino 目的地串流收集 log 行，供測試搜尋字串
 - [ ] T012 實作 `server/src/app.ts` 的 `buildApp(config, deps)`：建立 Fastify（`loggerOptions`）、註冊錯誤處理；預留 `authRoutes`、`requireTeacher`、`app.googleClients`、Socket.IO 的註冊位置（後續任務補上）；依 T006–T009
@@ -58,23 +60,23 @@ description: "Task list for 002 老師登入"
 
 ## Phase 3: User Story 1 - 老師用 Google 帳號登入 (Priority: P1) 🎯 MVP
 
-**Goal**: 第一個登入的 Google 帳號成為老師；其他帳號 `NOT_TEACHER`；取消為 `CANCELLED`；沒同意 `drive.file` 為 `SCOPE_DENIED`
+**Goal**: 以 Google 登入成功的人成為老師；取消為 `CANCELLED`；沒同意 `drive.file` 為 `SCOPE_DENIED`（002 新增）
 
-**Independent Test**: 以假 gateway 與假 GIS，帳號 A 登入成功、帳號 B 失敗、取消失敗、缺權限失敗；A 與 B 同時登入只有一人成功
+**Independent Test**: 以假 gateway 與假 GIS，帳號 A 登入成功、取消失敗、缺權限失敗且原本的老師不受影響
 
 ### Tests for User Story 1
 
-- [ ] T019 [P] [US1] `server/tests/unit/TeacherAuth.test.ts`（登入部分）：沒有老師時帳號 A `signIn` 成功並綁定、回傳 43 字元 base64url 的 `teacherToken` 與 `account`（`name` 為 email `@` 前面）（AC-01）；之後帳號 B 回 `NOT_TEACHER` 且 A 的憑證仍 `verify` 為 true、`GoogleClientProvider` 未被 `replace`（AC-02）；缺 `drive.file` 回 `SCOPE_DENIED`，沒有老師時仍沒有老師（AC-04）；A、B 同時 `signIn`（假 gateway 延遲）重複 100 次，每次恰好一個成功（AC-05、SC-005）；新的 `TeacherAuth`（模擬重新啟動）由 B 先登入則 B 成為老師（AC-06）
-- [ ] T020 [P] [US1] `server/tests/integration/authRoutes.test.ts`（登入部分）：`GET /api/auth/config` 回 `{ clientId }`；`POST /api/auth/google` 成功回 `{ teacherToken, account }`；缺 `X-Requested-With` 或 `code` 不是 1–2,048 字元的字串回 `400 BAD_REQUEST`；`NOT_TEACHER`、`SCOPE_DENIED` 回 403 與 contracts/auth-http.md 的 message；`invalid_grant` 回 `400 INVALID_CODE`；`GET /api/auth/me` 帶有效憑證回 `TeacherAccount`
-- [ ] T021 [P] [US1] `frontend/tests/unit/http/HttpAuthService.test.ts`（登入部分）：以假的 `GoogleIdentityClient` 與 `fetch` 驗證 contracts/auth-http.md「前端如何轉換」的每一列：成功存入憑證並回 `{ ok: true, account }`；`CANCELLED` 不呼叫伺服器；403 `NOT_TEACHER`、`SCOPE_DENIED` 轉成登入失敗；登入進行中再呼叫回傳同一個 Promise、只開一次 Google 視窗；`getCurrentAccount()` 沒有憑證回 `null`、有憑證回帳號（AC-01～AC-04、REQ-AUTH-11）
-- [ ] T022 [P] [US1] `frontend/tests/e2e/teacher-login.spec.ts`（登入部分）：以 `server/tests/e2e/startTestServer.ts` 與 `page.route` 替換 GIS script；首頁 →「我是老師」→「用 Google 登入」→ T-Pick 顯示帳號 A；另一個 browser context 用帳號 B 看到「此帳號不是老師帳號」；替身回 `CANCELLED` 時看到「已取消登入」；回缺權限的帳號時看到「需要同意存取 Google 試算表才能使用老師功能」
+- [ ] T019 [P] [US1] `server/tests/unit/TeacherAuth.test.ts`（登入部分）：沒有老師時帳號 A `signIn` 成功、回傳 43 字元 base64url 的 `teacherToken` 與 `account`（`name` 為 email `@` 前面），`GoogleClientProvider.replace` 以 A 的 tokens 呼叫（AC-01）；缺 `drive.file` 回 `SCOPE_DENIED`：沒有老師時仍沒有老師，已有老師時原本的憑證仍 `verify` 為 true、`replace` 沒有被呼叫（AC-04）
+- [ ] T020 [P] [US1] `server/tests/integration/authRoutes.test.ts`（登入部分）：`GET /api/auth/config` 回 `{ clientId }`；`POST /api/auth/google` 成功回 200 `{ ok: true, teacherToken, account }`；缺 `drive.file` 回 200 `{ ok: false, failure: 'SCOPE_DENIED' }`（預期中的失敗用 200）；缺 `X-Requested-With` 或 `code` 不是 1–2,048 字元的字串回 `400 BAD_REQUEST`；`invalid_grant` 回 `400 INVALID_CODE`；`GET /api/auth/me` 帶有效憑證回 `TeacherAccount`；回應中沒有 `NOT_TEACHER`
+- [ ] T021 [P] [US1] `frontend/tests/unit/http/HttpAuthService.test.ts`（登入部分）：以假的 `GoogleIdentityClient` 與 `fetch` 驗證 contracts/auth-http.md「前端如何轉換」的每一列：成功存入憑證並回 `{ ok: true, account }`；`CANCELLED` 不呼叫伺服器；200 `{ ok: false, failure: 'SCOPE_DENIED' }` 轉成登入失敗且本分頁原有憑證不變；登入進行中再呼叫回傳同一個 Promise、只開一次 Google 視窗；`getCurrentAccount()` 沒有憑證回 `null`、有憑證回帳號（AC-01、AC-03、AC-04、REQ-AUTH-11）
+- [ ] T022 [P] [US1] `frontend/tests/e2e/teacher-login.spec.ts`（登入部分）：以 `server/tests/e2e/startTestServer.ts` 與 `page.route` 替換 GIS script；首頁 →「我是老師」→「用 Google 登入」→ T-Pick 顯示帳號 A；替身回 `CANCELLED` 時看到「已取消登入」；回缺權限的帳號時看到「需要同意存取 Google 試算表才能使用老師功能」
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] 在 `shared/src/entities.ts` 的 `SignInFailure` 加入 `SCOPE_DENIED`。**前置條件**：spec「需請 001 修改」第 1 條已由 001 合併（含 T-Login 的訊息）；未合併前本任務與 T021、T022 的 `SCOPE_DENIED` 案例暫停，並在 PR 註明
-- [ ] T024 [US1] 實作 `server/src/auth/GoogleAuthLibraryGateway.ts`：`exchangeCode` 以 `OAuth2Client.getToken({ code, redirect_uri: 'postmessage' })` 交換、`verifyIdToken({ audience: clientId })` 取出 `sub`、`email`，`scope` 以空白切成 `grantedScopes`；沒有 refresh token、逾時（15 秒）或網路錯誤丟 `GoogleUnavailableError`；`createClient(tokens)` 回傳帶 client id、secret 與 credentials 的 `OAuth2Client`（research RD-01、RD-11）
+- [ ] T023 [US1] 新增 002 的登入失敗種類（001 data-model：「其他失敗種類由 002 新增」；001 FR-013）：在 `shared/src/entities.ts` 的 `SignInFailure` 加入 `SCOPE_DENIED`；在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照加入 `SCOPE_DENIED` →「需要同意存取 Google 試算表才能使用老師功能」（只加訊息文字，不改欄位、按鈕或頁面切換）；在 `frontend/tests/component/TeacherLoginPage.test.tsx` 加入 `SCOPE_DENIED` 顯示該訊息並停留在 T-Login 的案例
+- [ ] T024 [US1] 實作 `server/src/auth/GoogleAuthLibraryGateway.ts`：`exchangeCode` 以 `OAuth2Client.getToken({ code, redirect_uri: 'postmessage' })` 交換、`verifyIdToken({ audience: clientId })` 取出 `email`，`scope` 以空白切成 `grantedScopes`；沒有 refresh token、逾時（15 秒）或網路錯誤丟 `GoogleUnavailableError`；`createClient(tokens)` 回傳帶 client id、secret 與 credentials 的 `OAuth2Client`（research RD-01、RD-11）
 - [ ] T025 [US1] 實作 `server/src/auth/GoogleClientProvider.ts` 的 `replace(tokens)`（以 `gateway.createClient` 建立並取代 client）與 `authorizedClient()`（沒有 client 丟 `TeacherNotSignedInError`，`code = 'NOT_SIGNED_IN'`）
-- [ ] T026 [US1] 實作 `server/src/auth/TeacherAuth.ts`：`signIn`、`verify`（`timingSafeEqual`，長度不同回 false）、`currentAccount`；`exchangeCode` 之後到綁定完成之間不得有 `await`（data-model 4）；`teacherToken` 為 `crypto.randomBytes(32).toString('base64url')`；log `auth.signIn` 事件（`result`、`email`、`rotated`）；依 T024、T025
+- [ ] T026 [US1] 實作 `server/src/auth/TeacherAuth.ts`：`signIn`、`verify`（`timingSafeEqual`，長度不同回 false）、`currentAccount`；不比對帳號，`drive.file` 已同意就成為老師；`exchangeCode` 之後到換發完成之間不得有 `await`（data-model 4）；`teacherToken` 為 `crypto.randomBytes(32).toString('base64url')`；log `auth.signIn` 事件（`result`、`email`、`replaced`）；依 T024、T025
 - [ ] T027 [US1] 實作 `server/src/auth/requireTeacher.ts`：只接受 `Authorization: Bearer <token>`，`verify` 失敗回 `401 UNAUTHORIZED`「需要老師登入」且不執行路由；在 `buildApp` 以 `app.decorate('requireTeacher', ...)` 提供
 - [ ] T028 [US1] 實作 `server/src/auth/authRoutes.ts` 的 `GET /api/auth/config`、`POST /api/auth/google`、`GET /api/auth/me`（依 contracts/auth-http.md），並在 `server/src/app.ts` 註冊 `authRoutes`、以 `app.googleClients` 提供 `GoogleClientProvider`
 - [ ] T029 [P] [US1] 實作 `frontend/src/services/http/GoogleIdentityClient.ts`：介面 `GoogleIdentityClient`、`GoogleCodeResult`、`GoogleCodeError`（`CANCELLED`、`POPUP_BLOCKED`、`LOAD_FAILED`）
@@ -83,32 +85,32 @@ description: "Task list for 002 老師登入"
 - [ ] T032 [US1] 修改 `frontend/src/services/createServiceRegistry.ts`：只把 `auth` 綁定改為 `HttpAuthService`（以 `GisGoogleIdentityClient`、`ApiClient`、`TeacherCredentialStore` 建立）；其他綁定、頁面、介面不改；`MockAuthService` 保留供測試（001 plan「替換模擬實作的方式」）
 - [ ] T033 [US1] 建立 `server/tests/e2e/startTestServer.ts`：以假 gateway 啟動 `buildApp`（帳號 A、B、缺權限帳號三種授權碼），供 T022 使用
 
-**Checkpoint**: US1 可單獨展示：真正的 Google 登入（人工）或替身（自動）都能決定老師
+**Checkpoint**: US1 可單獨展示：真正的 Google 登入（人工）或替身（自動）登入成功即為老師
 
 ---
 
-## Phase 4: User Story 2 - 老師用同一個帳號重新登入 (Priority: P1)
+## Phase 4: User Story 2 - 重新登入取代前一個老師 (Priority: P1)
 
-**Goal**: 同帳號重新登入成功，舊憑證作廢，活動與 Google 授權依規則更換
+**Goal**: 任何登入成功（同一個帳號或另一個帳號）都取代前一個老師：舊憑證作廢、Google 授權換成新帳號、活動不變
 
-**Independent Test**: 帳號 A 在分頁 1、分頁 2 先後登入；分頁 1 的請求被拒絕且即時連線被中斷
+**Independent Test**: 帳號 A 在分頁 1 登入，再於分頁 2 以帳號 A 或帳號 B 登入；分頁 1 的請求被拒絕且即時連線被中斷
 
 ### Tests for User Story 2
 
-- [ ] T034 [P] [US2] `server/tests/unit/TeacherAuth.test.ts`（重新登入部分）：帳號 A 再次 `signIn` 回新的憑證，舊憑證 `verify` 為 false、新憑證為 true；`GoogleClientProvider.replace` 以新 tokens 呼叫；`onRotate` 監聽者被呼叫一次；第一次綁定時不呼叫 `onRotate`（AC-07、AC-08、REQ-AUTH-03）
-- [ ] T035 [P] [US2] `server/tests/integration/authRoutes.test.ts`（重新登入部分）：同帳號第二次 `POST /api/auth/google` 後，舊憑證呼叫 `GET /api/auth/me` 回 401、新憑證回 200（AC-08）
-- [ ] T036 [P] [US2] `frontend/tests/e2e/teacher-login.spec.ts`（重新登入部分）：分頁 1 登入 → 重新整理後 `sessionStorage` 仍有憑證（AC-09）→ 回首頁再登入成功（AC-07）；分頁 2 以帳號 A 登入後，分頁 1 在 T-Pick 重新呼叫 `getCurrentAccount` 時共通錯誤訊息區顯示「老師登入已失效，請回首頁重新登入」（AC-08）
+- [ ] T034 [P] [US2] `server/tests/unit/TeacherAuth.test.ts`（取代部分）：帳號 A 再次 `signIn`、以及帳號 B 在 A 之後 `signIn`，都回新的憑證，舊憑證 `verify` 為 false、新憑證為 true，`currentAccount()` 為最後登入的帳號；`GoogleClientProvider.replace` 以新 tokens 呼叫；`onRotate` 監聽者被呼叫一次；第一次登入時不呼叫 `onRotate`（AC-07、AC-08、AC-26）；A、B 同時 `signIn`（假 gateway 延遲）重複 100 次，每次結束時恰好一組憑證有效，且最後一次 `replace` 的 tokens 屬於持有有效憑證的帳號（AC-27、SC-005）；新的 `TeacherAuth`（模擬重新啟動）沒有老師
+- [ ] T035 [P] [US2] `server/tests/integration/authRoutes.test.ts`（取代部分）：帳號 A 登入後，同帳號或帳號 B 再 `POST /api/auth/google`，舊憑證呼叫 `GET /api/auth/me` 回 401、新憑證回 200 且回傳最後登入的帳號（AC-08、AC-26）
+- [ ] T036 [P] [US2] `frontend/tests/e2e/teacher-login.spec.ts`（重新登入部分）：分頁 1 登入 → 重新整理後 `sessionStorage` 仍有憑證（AC-09）→ 回首頁再登入成功並進入 T-Pick（AC-07，D21 暫時限制）；另一個 browser context 以帳號 B 登入後，分頁 1 在 T-Pick 重新呼叫 `getCurrentAccount` 時共通錯誤訊息區顯示「老師登入已失效，請回首頁重新登入」（AC-08、AC-26）
 
 ### Implementation for User Story 2
 
-- [ ] T037 [US2] 在 `server/src/auth/TeacherAuth.ts` 完成同帳號換發：取代 `teacherToken`、`replace(tokens)`、通知 `onRotate`；不得呼叫或引用任何活動狀態（REQ-AUTH-03）
+- [ ] T037 [US2] 在 `server/src/auth/TeacherAuth.ts` 完成取代：任何帳號登入成功都取代 `TeacherBinding`、換發 `teacherToken`、`replace(tokens)`，原本有老師時通知 `onRotate`；三者在同一段同步程式中完成；不得呼叫或引用任何活動狀態（REQ-AUTH-03）
 - [ ] T038 [US2] 確認 `frontend/src/services/http/HttpAuthService.ts` 在同分頁再次登入時以新憑證取代舊憑證（`TeacherCredentialStore.set`），並在 T021 補上對應案例
 
-**Checkpoint**: US2 可單獨展示：同帳號重新登入、舊分頁失效
+**Checkpoint**: US2 可單獨展示：重新登入或換帳號登入後舊分頁失效，活動不變
 
 ---
 
-## Phase 5: User Story 3 - 伺服器拒絕非老師的請求 (Priority: P1)
+## Phase 5: User Story 3 - 伺服器拒絕未登入者的老師請求 (Priority: P1)
 
 **Goal**: 所有老師專用的 HTTP 請求與即時連線都在伺服器端驗證老師憑證
 
@@ -117,7 +119,7 @@ description: "Task list for 002 老師登入"
 ### Tests for User Story 3
 
 - [ ] T039 [P] [US3] `server/tests/integration/requireTeacher.test.ts`：在測試用 app 註冊一個掛 `app.requireTeacher` 的假路由（會改變計數器）；沒有標頭、`Basic xxx`、`Bearer`（空）、錯誤憑證、作廢憑證、設了 cookie 但沒有標頭，全部回 `401 UNAUTHORIZED`「需要老師登入」且計數器不變；有效憑證回 200（AC-10、AC-11、AC-12、SC-002）
-- [ ] T040 [P] [US3] `server/tests/integration/socketHandshake.test.ts`：以 `socket.io-client` 連線：沒有 `auth.teacherToken` 被接受且不在 `TEACHER_ROOM`，`io.to(TEACHER_ROOM).emit` 的訊息收不到（AC-14、SC-003）；錯誤或作廢的憑證收到 `connect_error`，`message === 'UNAUTHORIZED'`（AC-13）；有效憑證被接受、`socket.data.isTeacher === true`、收得到老師訊息（AC-15）；同帳號重新登入後舊的老師連線被中斷，重連被拒絕（AC-08）；只允許 `websocket` 傳輸
+- [ ] T040 [P] [US3] `server/tests/integration/socketHandshake.test.ts`：以 `socket.io-client` 連線：沒有 `auth.teacherToken` 被接受且不在 `TEACHER_ROOM`，`io.to(TEACHER_ROOM).emit` 的訊息收不到（AC-14、SC-003）；錯誤或作廢的憑證收到 `connect_error`，`message === 'UNAUTHORIZED'`（AC-13）；有效憑證被接受、`socket.data.isTeacher === true`、收得到老師訊息（AC-15）；同帳號或另一個帳號登入後舊的老師連線被中斷，重連被拒絕（AC-08、AC-26）；只允許 `websocket` 傳輸
 - [ ] T041 [P] [US3] `frontend/tests/e2e/teacher-login.spec.ts`（隔離部分）：老師分頁登入後，同一個 browser context 開學生分頁，學生分頁的 `sessionStorage` 沒有 `teacherToken`、`document.cookie` 為空，以 `fetch('/api/auth/me')` 回 401（AC-11）
 
 ### Implementation for User Story 3
@@ -157,7 +159,7 @@ description: "Task list for 002 老師登入"
 
 ### Tests for User Story 5
 
-- [ ] T048 [P] [US5] `server/tests/integration/logging.test.ts`：以 `logCapture` 跑完登入、同帳號重新登入、`NOT_TEACHER`、帶錯誤憑證的請求、picker-token；log 中搜尋不到假 gateway 的授權碼、access token、refresh token、老師憑證、client secret、API key 的值；請求的 `authorization` 顯示 `[Redacted]`（AC-20、SC-004）
+- [ ] T048 [P] [US5] `server/tests/integration/logging.test.ts`：以 `logCapture` 跑完登入、同帳號重新登入、另一個帳號登入、`SCOPE_DENIED`、帶錯誤憑證的請求、picker-token；log 中搜尋不到假 gateway 的授權碼、access token、refresh token、老師憑證、client secret、API key 的值；請求的 `authorization` 顯示 `[Redacted]`（AC-20、SC-004）
 - [ ] T049 [P] [US5] `server/tests/integration/authRoutes.test.ts`（錯誤部分）：`google = null` 時 `/api/auth/config`、`/api/auth/google`、`/api/auth/picker-token` 回 `503 GOOGLE_NOT_CONFIGURED`，`/api/auth/me` 帶有效憑證不受影響（AC-21）；假 gateway 丟 `GoogleUnavailableError` 時 `POST /api/auth/google` 回 `502 GOOGLE_UNAVAILABLE` 且伺服器沒有綁定（AC-22）；路由丟出未預期錯誤時回 `500 INTERNAL`，body 沒有堆疊
 - [ ] T050 [P] [US5] `server/tests/unit/GoogleAuthLibraryGateway.test.ts`：以 Vitest 假計時器與不回應的假 HTTP 傳輸驗證 15 秒後丟 `GoogleUnavailableError`（AC-22、SC-007）
 - [ ] T051 [P] [US5] `frontend/tests/unit/http/HttpAuthService.test.ts`（錯誤部分）：`POPUP_BLOCKED` reject「瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試」（AC-24）；`LOAD_FAILED` reject「無法載入 Google 登入，請確認網路連線」；`503`、`502`、`400 INVALID_CODE` reject 伺服器的 message（AC-21、AC-22）；`fetch` 失敗 reject「連不上伺服器，請確認伺服器已啟動」（AC-23）
@@ -186,7 +188,8 @@ description: "Task list for 002 老師登入"
 - **US1（T019–T033）** 是其他 Story 的前提（需要能登入才能測重新登入、拒絕、授權）。
 - **US2** 依 US1；**US3** 的 T040 換發後中斷的案例依 US2 的 `onRotate`（T037）。
 - **US4** 依 US1 的 `GoogleClientProvider`（T025）。**US5** 依 US1、US4 的路由。
-- T023（`SCOPE_DENIED`）依 001 的修改合併；不影響其他任務的進行。
+- T023（`SCOPE_DENIED`）只依 001 的 `shared/src/entities.ts` 與 `TeacherLoginPage.tsx` 已實作，不需等 001 修改 spec。
+- D21 的「重新登入後回到控制台」等 001 修改頁面切換；不影響本子功能的任何任務（T036 驗證的是暫時限制下進入 T-Pick）。
 - Polish 在所有 Story 之後。
 
 ### Parallel Opportunities
@@ -209,13 +212,13 @@ description: "Task list for 002 老師登入"
 
 | 需求 | 驗收準則 | 任務 |
 | --- | --- | --- |
-| REQ-AUTH-01 用 Google 登入、結果與訊息 | AC-01～AC-04 | T021、T022、T029、T030、T031、T032 |
-| REQ-AUTH-02 第一個登入的帳號是老師 | AC-01、AC-02、AC-05、AC-06 | T019、T020、T026、T033 |
-| REQ-AUTH-03 同帳號重新登入、舊憑證作廢 | AC-07、AC-08、AC-09 | T034、T035、T036、T037、T038、T040、T042 |
+| REQ-AUTH-01 用 Google 登入、結果與訊息 | AC-01、AC-03、AC-04 | T021、T022、T023、T029、T030、T031、T032 |
+| REQ-AUTH-02 以 Google 登入的人即為老師、同一時間一個老師 | AC-01、AC-26、AC-27 | T019、T020、T026、T033、T034 |
+| REQ-AUTH-03 任何登入取代前一個老師、舊憑證作廢、活動不變 | AC-07、AC-08、AC-09、AC-26、AC-27 | T034、T035、T036、T037、T038、T040、T042 |
 | REQ-AUTH-04 取消 | AC-03 | T021、T022、T030 |
 | REQ-AUTH-05 一次取得 `drive.file`、缺權限失敗 | AC-04 | T019、T020、T023、T024、T026、T030 |
 | REQ-AUTH-06 憑證只在本分頁、Bearer、不用 cookie | AC-09、AC-11 | T015、T016、T017、T018、T039、T041 |
-| REQ-AUTH-07 伺服器拒絕非老師的請求 | AC-10、AC-11、AC-12 | T027、T039、T043 |
+| REQ-AUTH-07 伺服器拒絕未登入者的老師請求 | AC-10、AC-11、AC-12 | T027、T039、T043 |
 | REQ-AUTH-08 即時連線的老師檢查 | AC-13、AC-14、AC-15 | T040、T042 |
 | REQ-AUTH-09 伺服器端 Google 授權 | AC-17、AC-18 | T025、T044、T046 |
 | REQ-AUTH-10 檔案選擇器資料 | AC-16、AC-19 | T045、T047 |
@@ -229,6 +232,6 @@ description: "Task list for 002 老師登入"
 | SC-002 老師請求 100% 被拒絕 | T039、T043 |
 | SC-003 學生收到老師訊息 0 則 | T040 |
 | SC-004 機密出現 0 次 | T048、T056 |
-| SC-005 同時登入 100 次恰好一人 | T019 |
+| SC-005 同時登入 100 次恰好一組有效憑證、授權屬於同一帳號 | T034 |
 | SC-006 重新整理後 1 分鐘內恢復 | T036、T055 |
 | SC-007 錯誤 15 秒內顯示 | T050、T051 |

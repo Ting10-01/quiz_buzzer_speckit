@@ -22,7 +22,7 @@
 
 ## 老師憑證換發
 
-老師重新登入（`TeacherAuth.onRotate`）時，伺服器執行 `io.in(TEACHER_ROOM).disconnectSockets(true)`：此刻在 `TEACHER_ROOM` 的連線都是舊憑證建立的，全部中斷。舊分頁重新連線時帶的是作廢的憑證，會被拒絕（`UNAUTHORIZED`）。新分頁以新憑證連線。
+任何人登入成功取代前一個老師（同一個帳號或另一個帳號，`TeacherAuth.onRotate`）時，伺服器執行 `io.in(TEACHER_ROOM).disconnectSockets(true)`：此刻在 `TEACHER_ROOM` 的連線都是舊憑證建立的，全部中斷。舊分頁重新連線時帶的是作廢的憑證，會被拒絕（`UNAUTHORIZED`）。新分頁以新憑證連線。
 
 ## 其他子功能的使用規則
 

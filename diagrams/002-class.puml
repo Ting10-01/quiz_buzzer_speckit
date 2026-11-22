@@ -12,7 +12,6 @@ package "Entities（001 提供，shared）" {
   }
   enum SignInFailure {
     CANCELLED
-    NOT_TEACHER
     SCOPE_DENIED
   }
   class SignInResult {
@@ -28,8 +27,9 @@ package "Entities（001 提供，shared）" {
 }
 
 note bottom of SignInFailure
-  SCOPE_DENIED 為 002 新增，
-  需請 001 修改（spec「需請 001 修改」第 1 條）
+  CANCELLED 為 001 定義；SCOPE_DENIED 為 002 新增
+  （001 data-model：其他失敗種類由 002 新增）。
+  以 Google 登入的人即為老師，沒有 NOT_TEACHER。
 end note
 
 package "Frontend（frontend/src/services/）" {
@@ -103,7 +103,6 @@ package "Server（server/src/）" {
     -binding: TeacherBinding [0..1]
   }
   class TeacherBinding {
-    googleSub: string
     account: TeacherAccount
     teacherToken: string
   }
@@ -119,7 +118,6 @@ package "Server（server/src/）" {
   }
   class GoogleAuthLibraryGateway
   class GoogleSignIn {
-    sub: string
     email: string
     grantedScopes: string[]
     tokens: GoogleTokens
@@ -202,16 +200,18 @@ TeacherBinding --> TeacherAccount
 SignInOutcome --> SignInFailure
 
 note bottom of TeacherAuth
-  伺服器啟動後第一個 signIn 成功的帳號成為老師（binding）；
-  其他 googleSub → NOT_TEACHER；同一 googleSub → 換發 teacherToken、
-  replace(tokens)、通知 onRotate（中斷舊的老師連線）。
-  缺少 drive.file → SCOPE_DENIED。exchangeCode 之後同步檢查並綁定，
-  兩人同時登入只有一人成為老師。全部只在記憶體。
+  以 Google 登入的人即為老師，不比對帳號。
+  signIn 成功（任何帳號）→ 取代 binding、換發 teacherToken、
+  replace(tokens)，原本有老師時通知 onRotate（中斷舊的老師連線）。
+  缺少 drive.file → SCOPE_DENIED，目前的老師不變。
+  exchangeCode 之後同步換發，同時登入以最後完成的為準，
+  有效憑證與 Google 授權一定屬於同一個帳號。全部只在記憶體。
 end note
 
 note bottom of GoogleClientProvider
   003、006 以 authorizedClient() 呼叫 Sheets / Drive API；
   OAuth2Client 帶長期授權，過期自動更新。
+  授權永遠屬於目前的老師，每次呼叫前重新取得。
   還沒有老師登入 → TeacherNotSignedInError。
 end note
 

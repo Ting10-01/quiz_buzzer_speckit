@@ -1,6 +1,6 @@
 # Research: 老師登入
 
-**Feature**: `002-teacher-login` | **Date**: 2026-11-21 | **Plan**: [plan.md](./plan.md)
+**Feature**: `002-teacher-login` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂） | **Plan**: [plan.md](./plan.md)
 
 整個專案共用的技術選擇沿用 001 的 [research.md](../001-ui-prototype/research.md)（RD-01～RD-08）：前端 React + TypeScript + Vite；後端 Node.js 24 LTS + TypeScript + Fastify；指令走 HTTP REST、推播走 Socket.IO；pino；Vitest、Playwright；npm workspaces `frontend/`、`shared/`、`server/`。本文件只記錄 002 自己要決定的事，不另選框架。
 
@@ -12,8 +12,8 @@
 
 - **Decision**:
   - 前端載入 Google Identity Services（`https://accounts.google.com/gsi/client`），以 `google.accounts.oauth2.initCodeClient` 開啟 popup，`scope` 為 `openid email https://www.googleapis.com/auth/drive.file`，`ux_mode: 'popup'`，`prompt: 'consent select_account'`。
-  - 拿到授權碼（`code`）後，前端 `POST /api/auth/google { code }`；伺服器以 `google-auth-library` 的 `OAuth2Client.getToken({ code, redirect_uri: 'postmessage' })` 換取授權，再以 `verifyIdToken({ audience: GOOGLE_CLIENT_ID })` 取出 `sub`、`email`。
-  - 老師身分（REQ-AUTH-02）與 Google 授權（REQ-AUTH-05）在同一次交換中取得。
+  - 拿到授權碼（`code`）後，前端 `POST /api/auth/google { code }`；伺服器以 `google-auth-library` 的 `OAuth2Client.getToken({ code, redirect_uri: 'postmessage' })` 換取授權，再以 `verifyIdToken({ audience: GOOGLE_CLIENT_ID })` 取出 `email`。
+  - 老師身分（REQ-AUTH-02）與 Google 授權（REQ-AUTH-05）在同一次交換中取得。id_token 只用來取得 `email`（顯示帳號），不用來判斷是不是老師。
 - **Rationale**:
   - popup 不離開目前的頁面；001 的頁面切換以 React state 保存、重新整理一律回首頁（001 RD-11），整頁導向到 Google 再導回會讓頁面回到首頁。
   - 授權碼在伺服器交換，長期授權（refresh token）只留在伺服器記憶體，006 在伺服器端寫回時拿得到；瀏覽器只拿到授權碼。
@@ -23,19 +23,20 @@
   - GIS token model（瀏覽器直接拿 access token）：沒有 refresh token，伺服器無法在一小時後代表老師寫回；access token 也會長時間停在瀏覽器。
   - 只用「Sign in with Google」按鈕（只拿 ID token）：拿不到 `drive.file` 授權，違反「登入同時取得授權」。
 
-## RD-02 老師綁定與老師憑證
+## RD-02 目前的老師與老師憑證
+
+2026-11-22 修訂：以 Google 登入的人即為老師（001 FR-013、feature-split 002），任何登入成功都取代前一個老師；不再比對帳號，也沒有 `NOT_TEACHER`。
 
 - **Decision**:
-  - `TeacherAuth` 在記憶體保存一份 `TeacherBinding`（`googleSub`、`account`、`teacherToken`）。伺服器啟動時沒有綁定。
-  - `signIn(code)`：`await gateway.exchangeCode(code)` 之後，**同步**完成下列判斷（中間沒有 `await`）：
-    1. 缺少 `drive.file` → `SCOPE_DENIED`，不綁定。
-    2. 已有綁定且 `sub` 不同 → `NOT_TEACHER`，丟棄這組授權。
-    3. 否則（沒有綁定，或 `sub` 相同）→ 產生新的 `teacherToken`，建立或更新綁定，`GoogleClientProvider.replace(tokens)`，通知 `onRotate` 的監聽者。
+  - `TeacherAuth` 在記憶體保存一份 `TeacherBinding`（`account`、`teacherToken`），代表目前的老師。伺服器啟動時沒有。
+  - `signIn(code)`：`await gateway.exchangeCode(code)` 之後，**同步**完成下列步驟（中間沒有 `await`）：
+    1. 缺少 `drive.file` → `SCOPE_DENIED`，丟棄這組授權，目前的老師不變。
+    2. 否則產生新的 `teacherToken`，以新帳號取代 `TeacherBinding`，`GoogleClientProvider.replace(tokens)`；原本已有老師時通知 `onRotate` 的監聽者（中斷舊的老師連線）。不論是同一個帳號還是另一個帳號，處理方式相同。
   - 老師憑證：`crypto.randomBytes(32).toString('base64url')`（43 字元）。驗證以 `crypto.timingSafeEqual` 比對，長度不同直接回 false。同一時間只有一組有效；換發後舊的立即無效（REQ-AUTH-03）。
   - 前端只存在 `sessionStorage` 的 `teacherToken`（同分頁重新整理仍在、其他分頁讀不到、分頁關閉消失）；請求以 `Authorization: Bearer <token>` 帶上；Socket.IO 以 `auth.teacherToken` 帶上。伺服器不設任何 cookie。
   - 老師憑證沒有時間限制，在伺服器重新啟動或被新的登入取代前一直有效（spec Edge Cases）。
-- **Rationale**: Node.js 單執行緒，`await` 之後的同步區段不會被其他請求插入，兩個帳號同時登入時只有先完成交換的那個能綁定（AC-05、SC-005），不需要鎖。`sessionStorage` 以分頁為單位，解決「同一個瀏覽器的學生分頁讀得到老師憑證」（001 RD-06、舊 002 R6）。以 `sub` 判斷同一帳號，不受電子郵件或名稱變更影響。
-- **Alternatives considered**: cookie session（被同一瀏覽器的所有分頁共用，學生分頁也會帶上）；`localStorage`（所有分頁共用）；JWT（不需要跨伺服器驗證，反而難以讓舊憑證立即作廢）；允許多組有效憑證（無法保證只有一個老師分頁在操作）。
+- **Rationale**: Node.js 單執行緒，`await` 之後的同步區段不會被其他請求插入；換發憑證與 `replace(tokens)` 在同一段同步程式中完成，所以兩次同時登入時最後完成的那次有效，且有效憑證與 Google 授權一定屬於同一個帳號（AC-27、SC-005），不需要鎖。`sessionStorage` 以分頁為單位，解決「同一個瀏覽器的學生分頁讀得到老師憑證」（001 RD-06、舊 002 R6）。
+- **Alternatives considered**: cookie session（被同一瀏覽器的所有分頁共用，學生分頁也會帶上）；`localStorage`（所有分頁共用）；JWT（不需要跨伺服器驗證，反而難以讓舊憑證立即作廢）；允許多組有效憑證（無法保證只有一個老師分頁在操作，且多組 Google 授權時 003、006 不知道用哪一組）；只允許第一個登入的帳號（2026-11-21 的做法，已被 001 FR-013 與 feature-split 取代）。
 
 ## RD-03 權限檢查與帳號名稱
 
@@ -78,7 +79,7 @@
 - **Decision**: Fastify 的 `logger` 設定：
   - `redact.paths`：`req.headers.authorization`、`req.headers.cookie`、`*.teacherToken`、`*.accessToken`、`*.refreshToken`、`*.access_token`、`*.refresh_token`、`*.id_token`、`*.code`、`*.clientSecret`、`*.apiKey`，`censor: '[Redacted]'`。
   - 不記錄請求與回應的 body（Fastify 預設即如此）；錯誤 log 只記錄 `code` 與 `message`，不記錄 Google 函式庫錯誤物件中的 `config`（裡面有請求 body）。
-  - 記錄登入事件：`auth.signIn`，欄位 `result`（`OK`、`NOT_TEACHER`、`SCOPE_DENIED`）、`email`、`rotated`（是否為重新登入）。
+  - 記錄登入事件：`auth.signIn`，欄位 `result`（`OK`、`SCOPE_DENIED`）、`email`、`replaced`（是否取代了前一個老師）。
 - **Rationale**: 原則 VI；001 RD-07。遮蔽清單集中在一個檔案，003–006 新增欄位時只改這裡。
 - **Alternatives considered**: 只靠「不要 log」的程式慣例（一行 `log.info(obj)` 就可能外洩）。
 
@@ -102,7 +103,7 @@
 - **Decision**:
   - `TeacherCredentialStore`：`get`、`set`、`clear`，包裝 `sessionStorage` 的 `teacherToken`；讀寫失敗（例如被瀏覽器停用）時視為沒有憑證。
   - `ApiClient.request(method, path, body?)`：有憑證就帶 `Authorization: Bearer`；JSON 進出。成功回傳 body；HTTP 錯誤以 `ApiError { status, code, message }` reject，`message` 取伺服器的 `ErrorBody.message`；`401 UNAUTHORIZED` 且本分頁有憑證時，message 改為「老師登入已失效，請回首頁重新登入」並清除本分頁的憑證；`fetch` 失敗以 `ApiError { status: 0, code: 'NETWORK' }`「連不上伺服器，請確認伺服器已啟動」reject。`ApiError` 具有 `message`，符合 001 的 `UnexpectedError`，可直接往上丟（001 RD-13）。003–006 的 `Http*Service` 共用它。
-  - `HttpAuthService.signInWithGoogle()`：`GET /api/auth/config` → `requestCode` → `POST /api/auth/google` → `TeacherCredentialStore.set` → `SignInResult`。`403 NOT_TEACHER`、`403 SCOPE_DENIED` 轉成登入失敗；Google 視窗取消轉成 `CANCELLED`；彈出視窗被擋、元件載入失敗轉成 `UnexpectedError`。進行中時再次呼叫，回傳同一個 Promise（spec Edge Cases：連續快速點擊）。
+  - `HttpAuthService.signInWithGoogle()`：`GET /api/auth/config` → `requestCode` → `POST /api/auth/google` → `TeacherCredentialStore.set` → `SignInResult`。`POST /api/auth/google` 以 200 回傳 `{ ok: false, failure: 'SCOPE_DENIED' }` 時轉成登入失敗（預期中的失敗用 200 回傳，與 003–006 的慣例一致；2026-11-22 由 403 改為 200）；Google 視窗取消轉成 `CANCELLED`；彈出視窗被擋、元件載入失敗轉成 `UnexpectedError`。進行中時再次呼叫，回傳同一個 Promise（spec Edge Cases：連續快速點擊）。
   - `HttpAuthService.getCurrentAccount()`：本分頁沒有憑證回 `null`；否則 `GET /api/auth/me`；憑證作廢時由 `ApiClient` reject「老師登入已失效，請回首頁重新登入」（REQ-AUTH-11）。
   - `GisGoogleIdentityClient`：第一次使用時插入 GIS `<script>`；`initCodeClient` 的 `callback` 回 `code` 或 `error`（`access_denied` → `CANCELLED`）；`error_callback` 的 `popup_closed` → `CANCELLED`、`popup_failed_to_open` → `POPUP_BLOCKED`；script 載入失敗 → `LOAD_FAILED`。
   - `createServiceRegistry()` 只改 `auth` 的綁定為 `HttpAuthService`（001 plan「替換模擬實作的方式」）。`choicePrompt` 在 `guidedNotes` 仍是模擬實作時保留；`MockAuthService` 保留，只供測試使用。
@@ -117,9 +118,9 @@
 ## RD-12 測試方式
 
 - **Decision**（沿用 001 RD-08）:
-  - 伺服器單元測試（Vitest）：`TeacherAuth` 以假的 `GoogleOAuthGateway`（`server/tests/helpers/fakeGoogleGateway.ts`）測綁定、`NOT_TEACHER`、`SCOPE_DENIED`、換發與作廢、同時登入；`loadConfig`；`GoogleClientProvider`、`isGoogleAuthExpired`。
+  - 伺服器單元測試（Vitest）：`TeacherAuth` 以假的 `GoogleOAuthGateway`（`server/tests/helpers/fakeGoogleGateway.ts`）測第一次登入、`SCOPE_DENIED`、同帳號與另一個帳號登入時的換發與作廢、同時登入；`loadConfig`；`GoogleClientProvider`、`isGoogleAuthExpired`。
   - 伺服器整合測試：`buildApp` + Fastify `inject()` 測四個路由與 `requireTeacher`；listen 隨機埠 + `socket.io-client` 測 handshake 與換發後中斷；以 pino 的目的地串流擷取 log，檢查不含任何憑證內容。
   - 前端單元測試：`ApiClient`、`TeacherCredentialStore`、`HttpAuthService`（假的 `GoogleIdentityClient` 與 `fetch`）。
-  - E2E（Playwright）：以 `server/tests/e2e/startTestServer.ts` 啟動使用假 gateway 的伺服器；以 `page.route` 把 GIS script 換成回傳固定授權碼的替身；驗證登入成功、`NOT_TEACHER`、取消、同帳號在第二個分頁登入使第一個分頁失效、學生分頁讀不到 `sessionStorage`。正式程式不含任何測試用開關。
+  - E2E（Playwright）：以 `server/tests/e2e/startTestServer.ts` 啟動使用假 gateway 的伺服器；以 `page.route` 把 GIS script 換成回傳固定授權碼的替身；驗證登入成功、取消、`SCOPE_DENIED`、在第二個分頁登入（同帳號或另一個帳號）使第一個分頁失效、學生分頁讀不到 `sessionStorage`。正式程式不含任何測試用開關。
   - 真正連線 Google 的流程只做人工驗證（[quickstart.md](./quickstart.md)），結果記錄在 `manual-verification.md`。
 - **Rationale**: 自動化測試不依賴 Google（原則 VIII）；人工驗證涵蓋真正的同意畫面與 Picker。

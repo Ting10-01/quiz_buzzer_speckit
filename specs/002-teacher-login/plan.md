@@ -6,15 +6,17 @@
 
 ## Summary
 
-002 讓老師在 T-Login 用 Google 帳號登入（R1），同一次登入取得 `drive.file` 授權（助教補充 10/21），並在伺服器端拒絕非老師的請求。伺服器啟動後第一個登入的 Google 帳號成為老師；同帳號可重新登入，舊憑證作廢（D21 的 002 部分）。
+002 讓老師在 T-Login 用 Google 帳號登入（R1），同一次登入取得 `drive.file` 授權（助教補充 10/21），並在伺服器端拒絕未登入者使用老師功能的請求。以 Google 登入的人即為老師（001 FR-013、feature-split 002）；任何人登入成功都取代前一個老師，舊憑證作廢、Google 授權換成新帳號（D21 的 002 部分）。D21 的「重新登入後回到控制台」等 001 修改頁面切換，在那之前重新登入後進入 T-Pick（暫時限制）。
+
+**2026-11-22 修訂**：配合 001 最終版（PR #10）與 feature-split 最新版，刪除「第一個登入的帳號才是老師」與 `NOT_TEACHER`；`SCOPE_DENIED` 由 002 新增（001 data-model 已授權），改以 200 回傳；「需請 001 修改」只剩 D21 的頁面切換。
 
 做法（[research.md](research.md)）：
 
 - 前端以 Google Identity Services 的授權碼 popup 取得 `code`，伺服器以 `google-auth-library` 交換授權並驗證 id_token（RD-01）。
-- 伺服器記憶體保存唯一的老師綁定與老師憑證；前端把憑證放在 `sessionStorage`，以 `Authorization: Bearer` 帶上（RD-02）。
+- 伺服器記憶體保存唯一的「目前的老師」（老師憑證與 Google 授權屬於同一個帳號）；前端把憑證放在 `sessionStorage`，以 `Authorization: Bearer` 帶上（RD-02）。
 - 002 建立 `server/` 骨架：Fastify 組合根 `buildApp`、`loadConfig`（環境變數）、pino 遮蔽機敏欄位、統一錯誤格式、Socket.IO 掛載與 handshake 老師驗證（RD-06～RD-08）。
 - 提供 003–006 共用的 `requireTeacher`、`GoogleClientProvider.authorizedClient()`、`GET /api/auth/picker-token`，以及前端的 `ApiClient`、`TeacherCredentialStore`（[contracts/server-extension.md](contracts/server-extension.md)）。
-- 前端只新增 `HttpAuthService` 並改 `createServiceRegistry()` 中 `auth` 的綁定；001 的頁面不改。
+- 前端只新增 `HttpAuthService` 並改 `createServiceRegistry()` 中 `auth` 的綁定；001 的頁面不改，唯一例外是依 001 FR-013 在 T-Login 的失敗訊息對照加上 `SCOPE_DENIED` 的訊息文字。
 
 **以三張圖為藍圖**：本計畫的組件、類別、方法與呼叫順序一律依 [`diagrams/002-component.puml`](../../diagrams/002-component.puml)、[`diagrams/002-class.puml`](../../diagrams/002-class.puml)、[`diagrams/002-sequence.puml`](../../diagrams/002-sequence.puml)。圖中每個組件與類別對應「藍圖對照」中的一個檔案；[data-model.md](data-model.md) 與類別圖一一對應。規劃時補進類別圖的項目見「圖表的修訂」。
 
@@ -24,7 +26,7 @@
 
 **Primary Dependencies**: 伺服器新增 `fastify`（5.x，內建 pino）、`socket.io`（4.x）、`google-auth-library`；開發用 `tsx`、`socket.io-client`（測試）。前端不新增套件（Google Identity Services 於執行期由 Google 載入）。版本於 implement 時鎖定在 `package-lock.json`
 
-**Storage**: 無。老師綁定、老師憑證、Google 授權只存在伺服器記憶體；老師憑證另存在老師分頁的 `sessionStorage`
+**Storage**: 無。目前的老師、老師憑證、Google 授權只存在伺服器記憶體；老師憑證另存在老師分頁的 `sessionStorage`
 
 **Testing**: Vitest（伺服器單元與 Fastify `inject()` 整合、前端單元）、`socket.io-client`（handshake 整合）、Playwright（E2E，以替身取代 Google）；真正連線 Google 只做人工驗證（research RD-12）
 
@@ -34,7 +36,7 @@
 
 **Performance Goals**: 依 SC-001（30 秒內完成登入）與 SC-007（每種錯誤 15 秒內顯示）；等待 Google 最多 15 秒
 
-**Constraints**: 金鑰只從環境變數讀取（四個 Google 變數，REQ-AUTH-12）；不讀寫 `credentials/`；不使用 cookie 判斷老師身分；001 的頁面、介面、實體欄位不改（`SignInFailure.SCOPE_DENIED` 等 001 修改後才加入）
+**Constraints**: 金鑰只從環境變數讀取（四個 Google 變數，REQ-AUTH-12）；不讀寫 `credentials/`；不使用 cookie 判斷老師身分；001 的頁面、介面、實體欄位不改；`SignInFailure` 由 002 新增 `SCOPE_DENIED`（001 data-model 寫明其他失敗種類由 002 新增）
 
 **Scale/Scope**: 1 位老師、同時最多約 200 個分頁連線（沿用 005 的壓力目標）；4 個 HTTP 路由、1 個 preHandler、1 個 Socket.IO 中介層
 
@@ -48,7 +50,7 @@
 | II. 規格先行與可追溯性 | 每條 REQ-AUTH 都有 AC；tasks 的追溯表對應每條 REQ 到任務與測試。規劃時新增的兩則訊息（`INVALID_CODE`、`INTERNAL`）已先加入 spec「登入結果與錯誤訊息」 | 通過 |
 | III. 分層架構與依賴抽象 | 前端：頁面 → `AuthService` ← `HttpAuthService`，只改組合根的綁定。伺服器：路由 → `TeacherAuth` → `GoogleOAuthGateway`（介面）；003–006 只在 `buildApp` 註冊路由、透過 `requireTeacher` 與 `GoogleClientProvider` 使用，不修改 002 的實作 | 通過 |
 | IV. 外部資料於執行期解析 | 002 不解析試算表；Google 回傳的 `scope`、id_token 於執行期檢查 | 不適用／通過 |
-| V. 單一權威狀態來源 | 誰是老師只由伺服器的 `TeacherAuth` 決定；前端只保存伺服器發的憑證，不自行判斷身分 | 通過 |
+| V. 單一權威狀態來源 | 誰是老師只由伺服器的 `TeacherAuth` 決定（最後一次登入成功的人）；老師憑證與 Google 授權在同一段同步程式中一起換發，不會分屬兩個帳號；前端只保存伺服器發的憑證，不自行判斷身分 | 通過 |
 | VI. 最小資訊揭露與機敏資料保護 | 老師檢查在伺服器端（`requireTeacher`、handshake）；憑證只在發出它的分頁；四個金鑰只從環境變數讀取；Google 授權只在記憶體；pino `redact`；picker-token 只回 access token、API key、app id。repo 只有 `server/.env.example`（只有名稱）。access token 與 API key 會出現在老師的瀏覽器，這是 Picker 的必要條件（research RD-05），API key 以 Google Cloud 限制來源與 API | 通過 |
 | VII. 輸入驗證與錯誤訊息 | `POST /api/auth/google` 驗證標頭與 `code`；`Authorization` 格式驗證；`PORT` 驗證；每種錯誤都有指定的中文訊息（spec 表） | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 都有正常與邊界案例的自動化測試；Google 以 `GoogleOAuthGateway`、`GoogleIdentityClient` 的替身取代；人工驗證 M1–M13 記在 `manual-verification.md` | 通過 |
@@ -68,7 +70,7 @@
 | `ApiClient`、`ApiError` | `frontend/src/services/http/ApiClient.ts` | component、class、sequence |
 | `TeacherCredentialStore` | `frontend/src/services/http/TeacherCredentialStore.ts` | component、class、sequence |
 | `createServiceRegistry`（001，只改 `auth` 綁定） | `frontend/src/services/createServiceRegistry.ts` | component |
-| `SignInFailure.SCOPE_DENIED`（001 修改後） | `shared/src/entities.ts` | class |
+| `SignInFailure.SCOPE_DENIED`（002 新增） | `shared/src/entities.ts`；訊息文字加在 `frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照（001 FR-013） | class |
 | `buildApp` | `server/src/app.ts` | component、class |
 | `AppConfig`、`GoogleConfig`、`loadConfig` | `server/src/config.ts` | component、class |
 | `loggerOptions` | `server/src/logger.ts` | component |
@@ -90,6 +92,7 @@
 | --- | --- | --- |
 | G-1 | research RD-11 需要區分「連不上 Google」與其他錯誤 | 類別圖新增 `GoogleUnavailableError`（`GoogleAuthLibraryGateway` 丟出） |
 | G-2 | 003、006 要從 `app` 取得 `GoogleClientProvider`（contracts/server-extension.md） | 類別圖新增 `buildApp --> TeacherAuth`、`buildApp --> GoogleClientProvider : app.googleClients` |
+| G-3 | 2026-11-22 配合 001 最終版：以 Google 登入的人即為老師、任何登入取代前一個老師、`SCOPE_DENIED` 由 002 新增且以 200 回傳 | 類別圖拿掉 `NOT_TEACHER`、`TeacherBinding.googleSub`、`GoogleSignIn.sub`，`SignInFailure` 註記改為「002 新增」；時序圖第 1 段拿掉「sub 不同 → NOT_TEACHER」分支，`SCOPE_DENIED` 改為 200，成功分支改為「取代前一個老師」並註明 D21 的暫時限制 |
 
 PNG 已重新產生。
 
@@ -181,8 +184,8 @@ frontend/
 | 伺服器端 Google 授權 | `app.googleClients.authorizedClient()`、`isGoogleAuthExpired` | 003、006 | server-extension.md |
 | 檔案選擇器 | `GET /api/auth/picker-token` | 003 | auth-http.md |
 | 前端呼叫伺服器 | `ApiClient`、`TeacherCredentialStore` | 003、004、005、006 | server-extension.md |
-| 登入失敗種類 | `SCOPE_DENIED` | 001（需修改） | spec「需請 001 修改」第 1 條 |
-| 重新登入回控制台 | 同帳號重新登入、活動不變 | 001（頁面切換）、004（何謂進行中） | spec「需請 001 修改」第 2 條 |
+| 登入失敗種類 | 002 新增 `SCOPE_DENIED`（T023） | 001（data-model 已授權由 002 新增） | spec D1 |
+| 重新登入回控制台 | 任何登入取代前一個老師、活動不變 | 001（頁面切換，已在 PR #10 留言）、004（何謂進行中） | spec「需請 001 修改」第 1 條；001 改之前為暫時限制，重新登入後進入 T-Pick |
 
 ## Complexity Tracking
 

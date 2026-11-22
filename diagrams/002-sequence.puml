@@ -1,5 +1,5 @@
 @startuml 002-sequence
-title 002 時序圖：老師登入、重新登入、拒絕非老師、提供 Google 授權
+title 002 時序圖：老師登入（任何登入取代前一個老師）、拒絕未登入者、提供 Google 授權
 
 skinparam defaultFontName "PingFang TC"
 skinparam sequenceMessageAlign left
@@ -46,31 +46,28 @@ else 已設定
     Routes -> TAuth : signIn(code)
     TAuth -> Gw : exchangeCode(code)
     Gw -> Google : 換取授權、驗證 id_token（最多 15 秒）
-    Google --> Gw : tokens、id_token(sub, email)、scope
+    Google --> Gw : tokens、id_token(email)、scope
     Gw --> TAuth : GoogleSignIn
-    note right of TAuth : await 之後同步檢查並綁定，\n不會有兩個帳號同時成為老師
+    note right of TAuth : 以 Google 登入的人即為老師，不比對帳號；\nawait 之後同步換發，同時登入以最後完成的為準
     alt 沒有同意 drive.file
-      TAuth --> Routes : SignInOutcome(SCOPE_DENIED)
-      Routes --> Api : 403 SCOPE_DENIED
-      Api --> Auth : reject ApiError(SCOPE_DENIED)
+      TAuth --> Routes : SignInOutcome(SCOPE_DENIED)（丟棄這組授權，目前的老師不變）
+      Routes --> Api : 200 { ok: false, failure: SCOPE_DENIED }
+      Api --> Auth : 回應
       Auth --> Page : SignInResult(failure: SCOPE_DENIED)
-    else 已有老師且 sub 不同
-      TAuth --> Routes : SignInOutcome(NOT_TEACHER)（丟棄這組授權）
-      Routes --> Api : 403 NOT_TEACHER
-      Api --> Auth : reject ApiError(NOT_TEACHER)
-      Auth --> Page : SignInResult(failure: NOT_TEACHER)
-      Page --> Teacher : 「此帳號不是老師帳號」
-    else 還沒有老師，或 sub 相同（重新登入）
-      TAuth -> TAuth : 產生新的 teacherToken（舊的作廢）
+      Page --> Teacher : 「需要同意存取 Google 試算表才能使用老師功能」
+    else 同意所有權限（第一次登入、同帳號重新登入或另一個帳號登入）
+      TAuth -> TAuth : 以新帳號取代目前的老師，產生新的 teacherToken（舊的作廢）
       TAuth -> Provider : replace(tokens)
       Provider -> Gw : createClient(tokens)
-      TAuth -> Sock : onRotate → 中斷舊的老師連線
+      opt 原本已有老師
+        TAuth -> Sock : onRotate → 中斷舊的老師連線
+      end
       TAuth --> Routes : SignInOutcome(ok, teacherToken, account)
-      Routes --> Api : 200 { teacherToken, account }
+      Routes --> Api : 200 { ok: true, teacherToken, account }
       Api --> Auth : 回應
       Auth -> Cred : set(teacherToken)
       Auth --> Page : SignInResult(ok, account)
-      Page --> Teacher : 挑選學習單頁（001）
+      Page --> Teacher : 挑選學習單頁（001；D21 回控制台等 001 修改，暫時一律進 T-Pick）
       Page -> Auth : getCurrentAccount()
       Auth -> Api : GET /api/auth/me
       Api -> Cred : get()
@@ -86,7 +83,7 @@ else 已設定
   end
 end
 
-== 2. 伺服器拒絕非老師（REQ-AUTH-06～08） ==
+== 2. 伺服器拒絕未登入者（REQ-AUTH-06～08） ==
 Student -> Api : 老師專用請求（本分頁沒有老師憑證）
 Api -> Guard : 沒有 Authorization 或憑證錯誤／作廢
 Guard -> TAuth : verify(token)
