@@ -26,6 +26,7 @@ export function createServiceRegistry(): ServiceRegistry {
     result: new MockResultService(session),
     phaseControl: activity,
     judgementControl: submission,
+    teammateControl: submission,
     activityValidationControl: activity,
     submissionValidationControl: submission,
     unexpectedErrorControl: session,
