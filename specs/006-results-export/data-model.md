@@ -10,9 +10,9 @@
 
 | 實體／介面 | 欄位或方法 | 006 的用法 |
 | --- | --- | --- |
-| `QuestionResult` | `questionNumber`、`winner?: Submission`、`submissionCount`、`submissions: Submission[]` | `ResultQuery` 的回傳值；`submissions` 依公布範圍過濾（第 3 節） |
+| `QuestionResult` | `questionNumber`、`winner?: Submission`、`submissionCount`、`behindFirstMs: number[]`、`submissions: Submission[]` | `ResultQuery` 的回傳值；`submissions`、`behindFirstMs` 依公布範圍過濾（第 3 節） |
 | `Submission` | `questionNumber`、`groupNumber`、`answers`、`rank`、`elapsedMs`、`judgement` | 由 005 產生，006 只讀取 |
-| `SubQuestion` | `index`、`blankCell`、`marker` | `marker` 由 003 要求 001 新增（003 spec「需請 001 修改」）；006 寫入「`marker` ＋答案」 |
+| `SubQuestion` | `index`、`blankCell` | `blankCell` 是寫入位置；小題標記不在這裡，取自 003 `ImportStore.latestMarkers()`（第 5 節） |
 | `WriteBackResult` | `ok`、`cellCount`、`failureReason?` | 寫回的回傳值；`failureReason` 為 spec「寫回失敗原因」表的訊息 |
 | `ResultService` | `getQuestionResult`、`getAllResults`、`writeBack` | 由 `ServerResultService` 實作 |
 | `UnexpectedError` | `message` | `ServerResultService` 遇到非預期錯誤時 reject 的值（002 的 `ApiError` 符合這個形狀） |
@@ -39,10 +39,10 @@
 | `submissions: SubmissionStore` | 005 |
 | `questionResult(questionNumber, viewerGroup): QuestionResult` | `state = activities.current()`；`null` → `NO_ACTIVITY`；題號不在 `state.questions` → `QUESTION_NOT_FOUND`；`isEnded` 為 false → `QUESTION_NOT_ENDED`；否則回傳 `visible(full, state.phase === FINISHED, viewerGroup)` |
 | `allResults(viewerGroup): QuestionResult[]` | `state` 為 `null` → `NO_ACTIVITY`；否則依 `state.questions` 的順序，只含 `isEnded` 為 true 的題目，每題經 `visible` 過濾 |
-| `isEnded(state, questionNumber)` | `state.endedAt.has(questionNumber)`（research RD-03） |
-| `visible(full, finished, viewerGroup)` | `finished` → `full`；否則 `{ ...full, submissions: full.submissions.filter(s => s.groupNumber === viewerGroup) }`（`viewerGroup` 為 `null` 時為空陣列） |
+| `isEnded(state, questionNumber)` | `state.phase === FINISHED \|\| state.endedAt.has(questionNumber)`（research RD-03） |
+| `visible(full, finished, viewerGroup)` | `finished` → `full`；否則 `own = full.submissions.filter(s => s.groupNumber === viewerGroup)`（`viewerGroup` 為 `null` 時為空陣列），回傳 `{ questionNumber, submissionCount, winner: hide(full.winner), submissions: own.map(hide), behindFirstMs: own.map(() => 0) }`；`hide(s) = { ...s, rank: 0 }`（research RD-02） |
 
-`full` 的組成：`submissions = submissions.list(n)`（依 `rank` 排序）、`winner = submissions.winner(n) ?? undefined`、`submissionCount = submissions.list(n).length`。
+`full` 的組成：`submissions = submissions.list(n)`（依 `rank` 排序）、`winner = submissions.winner(n) ?? undefined`、`submissionCount = submissions.list(n).length`、`behindFirstMs = list.map(s => s.elapsedMs - list[0].elapsedMs)`（第一名為最早送出的組別，001 D23，research RD-12；沒有送出時為 `[]`）。
 
 ### `ResultQueryError`、`ResultQueryErrorCode`
 
@@ -72,15 +72,15 @@
 | `now` | 取得目前時間（測試可替換） |
 | `writeBack(): Promise<WriteBackResult>` | 依「寫回步驟」執行；成功回 `{ ok: true, cellCount }`；失敗丟出 `WriteBackFailure`，由 `resultsRoutes` 轉成 HTTP 回應（見下表） |
 | `firstLayoutMismatch(stored, current): number \| null` | research RD-04；`current` 為 `ImportError` 時回 `stored` 的第一題題號 |
-| `planCells(stored, results): CellText[]` | 對每個有 `winner` 的題目、每個小題 `i`：`{ cell: subQuestions[i].blankCell, text: composeCellText(subQuestions[i].marker, winner.answers[i]) }`；沒有 `winner` 的題目不產生 |
+| `planCells(stored, markers, results): CellText[]` | 對每個有 `winner` 的題目、每個小題 `i`：`cell = subQuestions[i].blankCell`、`{ cell, text: composeCellText(markers[cell] ?? '', winner.answers[i]) }`；沒有 `winner` 的題目不產生 |
 | `mapGoogleError(error, step): WriteBackFailure` | research RD-07 的對應表 |
 
 **寫回步驟**（與時序圖第 3 段一致）：
 
 1. `inProgress` 為 true → `IN_PROGRESS`；否則設為 true（`finally` 清除）。
 2. `state = activities.current()`；為 `null` 或 `phase !== FINISHED` → `NOT_FINISHED`。
-3. `stored = imports.latest()`；為 `null`，或 `stored.spreadsheet.id`、`stored.spreadsheet.selectedWorksheet` 與 `state.spreadsheet` 不同 → `IMPORT_CHANGED`。
-4. `cells = planCells(stored, query.allResults(null))`；為空 → 回 `{ ok: true, cellCount: 0 }`，不讀取、不備份、不寫入。
+3. `stored = imports.latest()`、`markers = imports.latestMarkers()`；`stored` 為 `null`，或 `stored.spreadsheet.id`、`stored.spreadsheet.selectedWorksheet` 與 `state.spreadsheet` 不同 → `IMPORT_CHANGED`。
+4. `cells = planCells(stored, markers, query.allResults(null))`；為空 → 回 `{ ok: true, cellCount: 0 }`，不讀取、不備份、不寫入。
 5. `loaded = reader.load(id)`（錯誤 → `mapGoogleError(·, READ)`）；`grid` 為 `loaded.sheets` 中名稱等於 `selectedWorksheet` 的一個，沒有 → `SHEET_NOT_FOUND`；`loaded.editable === false` → `NO_EDIT_PERMISSION`；`current = parser.parse(grid, stored.spreadsheet)`；`firstLayoutMismatch(stored, current)` 有題號 → `LAYOUT_CHANGED`。
 6. `writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, now(), loaded.sheets.map(s => s.name)))`（錯誤 → `BACKUP`）。
 7. `writer.writeTexts(id, selectedWorksheet, cells)`（錯誤 → `WRITE`）。
@@ -143,7 +143,7 @@
 | `ActivityStore` | 004 | `current(): ActivityState \| null`：`phase`、`questions`、`spreadsheet`（`id`、`selectedWorksheet`）、`endedAt: Map<number, number>` |
 | `GroupMembership` | 004 | `groupOf(socket: { id: string }): number \| null` |
 | `SubmissionStore` | 005 | `list(questionNumber): Submission[]`（依 `rank` 排序）、`winner(questionNumber): Submission \| null` |
-| `ImportStore` | 003 | `latest(): Readonly<ImportSuccess> \| null` |
+| `ImportStore` | 003 | `latest(): Readonly<ImportSuccess> \| null`；`latestMarkers(): BlankMarkers \| null`（`blankCell` → 小題標記或 `""`，與 `latest()` 同一次讀取；只在伺服器）；以 `app.importStore` 提供 |
 | `SpreadsheetReader` | 003 | `load(spreadsheetId): Promise<LoadedSpreadsheet>`（`id`、`title`、`editable`、`sheets: SheetGrid[]`）；錯誤為 `SheetsReadError`（`kind`：`NO_ACCESS`、`UNAVAILABLE`、`AUTH_EXPIRED`），沒有老師登入時丟 002 的 `TeacherNotSignedInError`；以 `app.spreadsheetReader` 提供；不讀寫 `ImportStore` |
 | `SheetGrid` | 003 | `sheetId`、`name` |
 | `GuidedNotesParser` | 003 | `parse(grid: SheetGrid, spreadsheet: Spreadsheet): ImportSuccess \| ImportError`（沒有狀態，自行 `new`；不碰網路、不讀寫 `ImportStore`；失敗以回傳 `ImportError` 表示，不丟例外） |

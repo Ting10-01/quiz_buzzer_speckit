@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | `NO_ACTIVITY` | 目前沒有活動 | `ActivityStore.current()` 為 `null` |
 | `QUESTION_NOT_FOUND` | 沒有這一題 | 題號不在活動的題目中 |
-| `QUESTION_NOT_ENDED` | 這一題還沒結束，結果尚未公布 | `ActivityState.endedAt` 沒有這一題（REQ-RES-02） |
+| `QUESTION_NOT_ENDED` | 這一題還沒結束，結果尚未公布 | 活動還沒結束，且 `ActivityState.endedAt` 沒有這一題（REQ-RES-02） |
 
 ### `result:all`
 
@@ -26,13 +26,15 @@
 - **ack 成功**: `{ ok: true, results: QuestionResult[] }`：依題號排序，只含已結束的題目
 - **ack 失敗**: `{ ok: false, code: "NO_ACTIVITY", message: "目前沒有活動" }`
 
-### `QuestionResult` 的公布範圍（兩個事件相同）
+### `QuestionResult` 的公布範圍（兩個事件相同；feature-split 第 4 節）
 
-| 狀態 | `winner` | `submissionCount` | `submissions` |
-| --- | --- | --- | --- |
-| 題目未結束 | 不回傳該題 | — | — |
-| 題目已結束、活動未結束 | 005 `winner(n)`（沒有時不設） | `list(n).length` | 只有呼叫者所屬組別的那一筆；老師與沒有加入組別的連線為 `[]` |
-| 活動已結束（`FINISHED`） | 同上 | 同上 | 005 `list(n)`：該題所有送出，依 `rank` 遞增 |
+| 狀態 | `winner` | `submissionCount` | `submissions` | `behindFirstMs` |
+| --- | --- | --- | --- | --- |
+| 題目未結束 | 不回傳該題 | — | — | — |
+| 題目已結束、活動未結束 | 005 `winner(n)`（沒有時不設），`rank` 填 0 | `list(n).length` | 只有呼叫者所屬組別的那一筆，`rank` 填 0；老師與沒有加入組別的連線為 `[]` | 與 `submissions` 同長度，值都是 0 |
+| 活動已結束（`FINISHED`） | 005 `winner(n)` | 同上 | 005 `list(n)`：該題所有送出，依 `rank` 遞增 | 每筆 `elapsedMs` − 順位 1 的 `elapsedMs`（001 D23：第一名為最早送出的組別） |
+
+`rank` 填 0 表示不公開順位，與 005 給學生的 `Submission` 相同（001 的 `rank` 改成可選之前的做法）。
 
 `Submission.judgement` 沿用 005：題目結束後只有 `ACCEPTED`、`REJECTED`、`UNJUDGED`。
 

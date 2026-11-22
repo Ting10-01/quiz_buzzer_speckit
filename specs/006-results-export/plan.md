@@ -37,7 +37,7 @@
 | 原則 | 檢查 | 結果 |
 | --- | --- | --- |
 | I. PlantUML 設計優先 | 三張圖與 PNG 都在 `diagrams/`；本計畫的組件、類別與順序都依圖（「藍圖對照」） | 通過 |
-| II. 規格先行與可追溯性 | 計畫沒有加入 spec 沒有的行為；每條 REQ-RES 都有 AC 或 SC，tasks 階段對應任務與測試；需要 001 改頁面的地方已列在 spec「需請 001 修改」，不在 006 修改 | 通過 |
+| II. 規格先行與可追溯性 | 計畫沒有加入 spec 沒有的行為；每條 REQ-RES 都有 AC 或 SC，tasks 階段對應任務與測試；006 不需修改 001（spec「需請 001 修改」為無），只依 001 FR-041 決定確認視窗的文字 | 通過 |
 | III. 分層架構與依賴抽象 | 頁面 → `ResultService` ← `ServerResultService`，只改組合根的綁定；`WriteBackService` 只依賴 `SpreadsheetWriter` 介面與其他子功能公開的 store，Google 只出現在 `GoogleSheetsWriter`；001～005 的既有實作不修改 | 通過 |
 | IV. 外部資料於執行期解析 | 寫入位置只來自 003 匯入時解析出的 `blankCell`；版面檢查重用 003 的解析規則；對不上就拒絕，不猜測 | 通過 |
 | V. 單一權威狀態來源 | 結果只由 004、005 的權威狀態組出，不另存、不重新判定；頁面只呈現回傳的 `QuestionResult` | 通過 |
@@ -125,13 +125,14 @@ frontend/
 | 002 `ErrorBody`；`ApiClient` 遇到非 2xx 只保留 `{ status, code, message }` | 寫回的預期失敗一律 `200` + `WriteBackResult { ok: false }`；非 2xx 只用於兩種 401 與 500；socket ack 失敗用 `{ ok: false, code, message }` | 同上 |
 | 002 `app.io` | 註冊 `result:question`、`result:all` | 002 contracts/socket-handshake.md |
 | 002 前端 `ApiClient.request(method, path, body?)`、`ApiError` | `ServerResultService.writeBack` | 002 contracts/server-extension.md |
-| 003 `ImportStore.latest()` | `spreadsheet.id`、`selectedWorksheet`、`blankCell`、`marker` | 003 contracts/import-store.md |
+| 003 `app.importStore.latest()`、`latestMarkers()` | `spreadsheet.id`、`selectedWorksheet`、`blankCell`；`latestMarkers()[blankCell]` 為小題標記（只在伺服器） | 003 contracts/import-store.md |
 | 003 `app.spreadsheetReader.load()`、`SheetGrid`、`new GuidedNotesParser().parse()`、`SheetsReadError`（`NO_ACCESS`／`UNAVAILABLE`／`AUTH_EXPIRED`） | 版面檢查（不讀寫 `ImportStore`）；`sheetId` 與現有工作表名稱給備份用 | 003 contracts/import-store.md「給 006 的讀取工具」 |
 | 004 `ActivityStore.current(): ActivityState \| null` | `phase`、`questions`、`spreadsheet`、`endedAt` | 004 contracts/server-modules.md、data-model |
 | 004 `GroupMembership.groupOf(socket)` | 查詢者的組別 | 同上 |
 | 004 前端 `RealtimeClient.emitWithAck` | `result:*` 的送出與 5 秒逾時 | 004 data-model |
 | 005 `SubmissionStore.list(n)`、`winner(n)` | 每題依順位的送出與成功送出 | 005 contracts/submission-store.md |
-| 001 `SubQuestion.marker` | 寫入「標記＋答案」 | 003 spec「需請 001 修改」（006 不另外要求） |
+| 001 `QuestionResult.behindFirstMs`、D23 | `ResultQuery` 計算，第一名為最早送出的組別 | 001 data-model、contracts（research RD-12） |
+| 001 `getAllResults` 的呼叫頁面（含 S-QuestionDone） | 同一套公布範圍 | 001 contracts |
 
 ## Complexity Tracking
 

@@ -21,14 +21,14 @@
 
 - **Decision**: `ResultQuery` 先從 005 的 `SubmissionStore` 組出完整的 `QuestionResult`，再以 `visible(full, finished, viewerGroup)` 過濾：
   - 題目未結束 → 不回傳（`questionResult` 丟 `QUESTION_NOT_ENDED`；`allResults` 略過該題）。
-  - 題目已結束、活動未結束 → `winner`、`submissionCount` 原樣；`submissions` 只留 `groupNumber === viewerGroup` 的那一筆（`viewerGroup` 為 `null` 時為空）。
-  - 活動已結束（`FINISHED`）→ 原樣：所有送出，依 `rank` 排序。
-- **Rationale**: 一個純函式涵蓋三種情況，容易以單元測試窮舉（SC-006）；過濾在權威來源端執行（原則 VI）。老師在 T-QuestionEnd 只需要成功組別與送出組數（001 FR-034），不需要另外的老師版本（原則 XI）。
+  - 題目已結束、活動未結束 → `winner`、`submissionCount` 原樣；`submissions` 只留 `groupNumber === viewerGroup` 的那一筆（`viewerGroup` 為 `null` 時為空）；回傳的每筆 `Submission`（含 `winner`）`rank` 填 0，`behindFirstMs` 與 `submissions` 同長度、值都是 0。
+  - 活動已結束（`FINISHED`）→ 原樣：所有送出，依 `rank` 排序，`behindFirstMs` 為真正的值。
+- **Rationale**: feature-split 第 4 節：一題結束時只公布成功組別、答案與送出組數，順位與判定到整輪結束才公開；本組的送出是 001 FR-057 要顯示的「本組送出的答案」。`rank` 在 001 是必填欄位，用 0 表示「不公開」，與 005 給學生的 `Submission` 做法相同（使用者 2026-11-22 決定，等 001 把 `rank` 改成可選）。一個純函式涵蓋三種情況，容易以單元測試窮舉（SC-006）；過濾在權威來源端執行（原則 VI；001 contracts「學生端只取得可公開的結果」）。S-QuestionDone 的題目進度也走 `getAllResults`，套用同一個過濾。老師在 T-QuestionEnd 只需要成功組別與送出組數（001 FR-034），不需要另外的老師版本（原則 XI）。
 - **Alternatives considered**: 依角色分成老師版與學生版兩種回傳型別（要改 001 的實體與介面）。
 
 ## RD-03 怎麼判斷「一題已結束」
 
-- **Decision**: 讀 004 `ActivityStore.current()` 回傳的 `ActivityState`：第 n 題已結束 ⇔ `state.endedAt.has(n)`；活動已結束 ⇔ `state.phase === FINISHED`。沒有活動時 `current()` 為 `null`。
+- **Decision**: 讀 004 `ActivityStore.current()` 回傳的 `ActivityState`：第 n 題已結束 ⇔ `state.phase === FINISHED || state.endedAt.has(n)`；活動已結束 ⇔ `state.phase === FINISHED`。沒有活動時 `current()` 為 `null`。
 - **Rationale**: `endedAt` 是 004 在結束一題時寫入的權威狀態（004 data-model `ActivityState`），直接讀就好，不必依題號順序推算（原則 V）；004 讓最後一題結束時 `phase` 變成 `FINISHED`，所以活動結束時每一題都在 `endedAt` 中。
 
 ## RD-04 寫回前的版面檢查
@@ -95,3 +95,9 @@
   - 端對端（Playwright）：老師與學生分頁看到本題結果、全部結果，確認視窗文字（沿用 005 的 E2E 環境，Google 以替身取代）。
   - 真正連線 Google Sheets 的寫回只做人工驗證（[quickstart.md](quickstart.md)），紀錄寫入 `manual-verification.md`（原則 VIII）。
 - **Rationale**: 自動化測試不連真實的 Google（原則 VIII）；寫回的每個失敗分支都能在沒有網路時重現。
+
+## RD-12 「比第一名慢的時間」（001 D23）
+
+- **Decision**: 第一名是該題最早送出的組別（`rank` 1）。`ResultQuery` 計算 `behindFirstMs = list.map(s => s.elapsedMs - list[0].elapsedMs)`，與 `submissions` 同順序、單位毫秒；頁面只換算成秒（001 FR-040）。整輪結束前不公開（值為 0，RD-02）。
+- **Rationale**: 001 FR-040 的文字是「其他組別比第一名慢的秒數」，跟搶答順位一起呈現；以最早送出為基準時，每一列都是非負值、隨順位遞增（005 保證 `elapsedMs` 隨 `rank` 單調不減），老師一眼看得出各組的速度差。被接受的組別已另外標示為成功組別。
+- **Alternatives considered**: 以被接受的組別為第一名（被拒絕但較早送出的組別會是負值；沒有成功組別的題目無法計算）。
