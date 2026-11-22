@@ -1,0 +1,70 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+}
+
+.teacher {
+  gap: 12px 20px;
+  padding: 12px 32px;
+}
+
+.student {
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px;
+  flex: none;
+}
+
+.home {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.home:focus-visible {
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: 2px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.group {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--raised);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account {
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.brand {
+  font-weight: 600;
+  font-size: 16px;
+}

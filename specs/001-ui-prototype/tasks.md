@@ -107,7 +107,7 @@ description: "001 畫面與流程原型的實作任務"
 
 - [X] T036 [P] `frontend/tests/component/sharedComponents.test.tsx`：`AppHeader` 老師版有「搶答板」且點擊呼叫 `onHome`，學生版沒有回首頁連結並顯示組別（FR-007）；`ErrorArea` 有訊息時顯示、沒有時不佔內容；`ConfirmDialog` 顯示標題、內容與按鈕，點按鈕呼叫對應 callback
 - [X] T037 [P] `frontend/tests/component/MockControlBar.test.tsx`：依 FR-061 驗證每個頁面 id 出現的控制——「模擬：推進到下一個階段」只在 Main、S-Join、S-Wait、S-Answer、S-Submitted、S-QuestionDone；「模擬：接受」「模擬：不接受」只在 S-Submitted 的等待判定狀態；「模擬：驗證失敗」只在 T-Setup（呼叫 `activityValidationControl`）與 S-Answer（呼叫 `submissionValidationControl`）；「模擬：非預期錯誤」只在 T-Login、T-Pick、T-Import、T-ImportError、T-Setup、T-Lobby、T-Live、T-QuestionEnd、T-Results、S-Join、S-Wait、S-Answer；對應控制欄位為 `undefined` 時不顯示（邊界）；`choicePrompt` 發出請求時以 `ConfirmDialog` 列出選項，點選項呼叫 `answer(id)`，關閉呼叫 `answer(null)`。`MockModeBadge`：`isMockMode()` 為 true 時顯示「模擬模式」，為 false 時標示與控制列都不渲染（FR-005、SC-003）
-- [ ] T038 [P] 在 `frontend/src/components/AppHeader.tsx`（與 `AppHeader.module.css`）實作頁首：`variant: 'teacher' | 'student'`；老師版左側「搶答板」呼叫 `onHome`（只切換頁面，不呼叫介面）並可顯示帳號；學生版顯示組別、不提供回首頁連結
+- [X] T038 [P] 在 `frontend/src/components/AppHeader.tsx`（與 `AppHeader.module.css`）實作頁首：`variant: 'teacher' | 'student'`；老師版左側「搶答板」呼叫 `onHome`（只切換頁面，不呼叫介面）並可顯示帳號；學生版顯示組別、不提供回首頁連結
 - [ ] T039 [P] 在 `frontend/src/components/ErrorArea.tsx`（與 `.module.css`）實作共通錯誤訊息區：prop `message?: string`，`role="alert"`
 - [ ] T040 [P] 在 `frontend/src/components/ConfirmDialog.tsx`（與 `.module.css`）實作確認視窗：`open`、`title`、`children`、`actions: { label, onClick, variant? }[]`、`onClose`
 - [ ] T041 在 `frontend/src/components/MockControlBar.tsx`（與 `.module.css`）實作模擬控制列：prop `page`（頁面 id）與 `awaitingJudgement: boolean`；從 `useServiceRegistry()` 讀取模擬控制，依 contracts/mock-controls.md 的表格只顯示目前頁面可用且存在的控制；訂閱 `choicePrompt.onRequest`，以 `ConfirmDialog` 顯示模擬帳號選擇與模擬檔案選擇器（依賴 T040）
