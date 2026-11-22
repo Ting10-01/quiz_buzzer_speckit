@@ -16,7 +16,7 @@
 | 有 `studentToken` | 004 | `GroupMembership.attach(socket, studentToken)`；伺服器不認得時忽略 |
 | 所有接受的連線 | 004 | 連上後立即送一次 `activity:snapshot`（`isTeacher` 決定 `Audience`）（REQ-ACT-15） |
 | 斷線 | 004 | `GroupMembership.detach(socket)`；人數不變 |
-| 老師重新登入 | 002 | `io.in(TEACHER_ROOM).disconnectSockets(true)` 中斷舊老師連線；`RealtimeClient` 以 `io server disconnect` 為訊號重新連線 |
+| 任何人以 Google 登入（取代前一位老師） | 002 | `io.in(TEACHER_ROOM).disconnectSockets(true)` 中斷舊老師連線；`RealtimeClient` 以 `io server disconnect` 為訊號重新連線 |
 
 ## 伺服器 → 前端
 
@@ -34,7 +34,7 @@
 | `group:leave` | `{}` | `GroupAck` | 第 1 題開放後回 `error` |
 
 - `GroupAck.snapshot` 一律是處理後的 `Audience.PUBLIC` 快照（被拒絕時是目前狀態）。
-- payload 不是物件、`groupNumber` 不是整數時，回 `error`（`field: "groupNumber"`，「沒有第 n 組」）。
+- 被拒絕時 `error` 為 `{ code, message }`（`NO_ACTIVITY`、`NO_SUCH_GROUP`、`GROUP_LOCKED`，data-model「加入與離開組別被拒絕」）；payload 不是物件、`groupNumber` 不是整數時回 `NO_SUCH_GROUP`。前端以 `UnexpectedError(error.message)` reject。
 - 老師連線也可以送這兩個事件，效果與學生相同；頁面流程不會這樣做。
 
 ## 給 005 的規則

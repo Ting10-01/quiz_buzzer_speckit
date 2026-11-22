@@ -10,7 +10,7 @@ actor "老師" as Teacher
 actor "學生（各組，每組可多個分頁）" as Student
 
 package "前端（瀏覽器分頁）" {
-  package "001 頁面（不修改，需求見 spec「需請 001 修改」）" #EEEEEE {
+  package "001 頁面（001 最終版，不修改；D21 見 spec「需請 001 修改」C1）" #EEEEEE {
     component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage" as StudentPages
     component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup)\nConsolePage (T-Lobby / T-Live / T-QuestionEnd)" as TeacherPages
     component "ActivityService" <<interface>> as IActivity
@@ -49,7 +49,7 @@ Teacher --> TeacherPages
 Student --> StudentPages
 StudentPages ..> IActivity
 TeacherPages ..> IActivity
-TeacherPages ..> Rules : 組數範圍與預設（C3）
+TeacherPages ..> Rules : 組數範圍與預設\n（001 spec 交給 004 定義）
 Registry --> HttpAct : 綁定
 HttpAct -up-|> IActivity
 HttpAct --> Realtime : 推送、加入與離開組別

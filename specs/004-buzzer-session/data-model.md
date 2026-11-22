@@ -2,7 +2,7 @@
 
 **Feature**: `004-buzzer-session` | **Date**: 2026-11-21 | **Blueprint**: [`diagrams/004-class.puml`](../../diagrams/004-class.puml)
 
-類別名稱、欄位、方法與關聯和 `diagrams/004-class.puml` 一一對應。001 的實體（`Activity`、`Group`、`ActivityPhase`、`ActivitySettings`、`ValidationError`、`UnexpectedError`、`Spreadsheet`、`Question`）照 001 的 [data-model.md](../001-ui-prototype/data-model.md)，004 不改欄位；唯一的介面修改是 `joinGroup` 的回傳型別（spec「需請 001 修改」C2）。
+類別名稱、欄位、方法與關聯和 `diagrams/004-class.puml` 一一對應。001 的實體（`Activity`、`Group`、`ActivityPhase`、`ActivitySettings`、`ValidationError`、`UnexpectedError`、`Spreadsheet`、`Question`）照 001 的 [data-model.md](../001-ui-prototype/data-model.md)，004 不改欄位，也不改介面簽章（`joinGroup` 照 001 回傳 `Promise<Activity>`，預期中的失敗以 `UnexpectedError` reject）。
 
 ## 1. 共用型別（`shared/src/`，004 新增）
 
@@ -10,16 +10,16 @@
 
 | 常數 | 值 | 用途 |
 | --- | --- | --- |
-| `GROUP_COUNT_MIN` | 2 | T-Setup「−」何時不可用（C3）；伺服器驗證（REQ-ACT-02） |
-| `GROUP_COUNT_MAX` | 20 | T-Setup「+」何時不可用（C3）；伺服器驗證 |
-| `GROUP_COUNT_DEFAULT` | 6 | T-Setup 建立模式的初始值（C3） |
+| `GROUP_COUNT_MIN` | 2 | T-Setup「−」何時不可用（001 實作 T-Setup 時引用，001 spec US2 AC-7 已交給 004）；伺服器驗證（REQ-ACT-02） |
+| `GROUP_COUNT_MAX` | 20 | T-Setup「+」何時不可用（同上）；伺服器驗證 |
+| `GROUP_COUNT_DEFAULT` | 6 | T-Setup 建立模式的初始值（001 spec FR-023 把預設值交給 004） |
 
 ### `activitySync.ts`
 
 | 型別 | 欄位 | 規則 |
 | --- | --- | --- |
 | `ActivitySnapshot` | `version: number`、`activity: Activity \| null` | `version` 來自 `ActivityStore`，從 1 開始、每次 commit 加 1；`activity` 依對象由 `ActivityView` 產生；沒有活動時為 `null`、`version` 為 0 |
-| `GroupAck` | `snapshot: ActivitySnapshot`、`studentToken?: string`、`error?: ValidationError` | `group:join`、`group:leave` 的 ack。成功加入時有 `studentToken`；被拒絕時有 `error`（`field: "groupNumber"`），`snapshot` 仍是目前狀態 |
+| `GroupAck` | `snapshot: ActivitySnapshot`、`studentToken?: string`、`error?: { code: string; message: string }` | `group:join`、`group:leave` 的 ack。成功加入時有 `studentToken`；被拒絕時有 `error`（見「加入與離開組別被拒絕」），`snapshot` 仍是目前狀態；前端以 `UnexpectedError(error.message)` reject |
 
 ## 2. 伺服器（`server/src/activity/`）
 
@@ -104,7 +104,7 @@ QUESTION_ENDED(n) --openQuestion(n+1)--> OPEN(n+1)
 | `endQuestion(n)` | `ActivitySnapshot` | 沒有活動 → `NO_ACTIVITY`；依「狀態轉換」；不允許 → `QUESTION_NOT_OPEN`。005 可在自己的 `CommandQueue.run` 內呼叫 |
 | `joinGroup(socket, n)` | `GroupAck` | 見下方「組別規則」 |
 | `leaveGroup(socket)` | `GroupAck` | 沒加入 → 成功（不變）；已鎖定 → `error` |
-| `snapshot(audience)` | `ActivitySnapshot` | 目前狀態，給連線時第一次推送 |
+| `snapshot(audience)` | `ActivitySnapshot` | 目前狀態，給連線時第一次推送；也給 005 組 `JudgeOutcome.activity`。只讀取、沒有副作用，可以在 `CommandQueue.run` 內呼叫 |
 
 `createActivity`～`leaveGroup` 都在 `CommandQueue.run` 內執行；回傳的快照是 `Audience.TEACHER`（REST）或 `Audience.PUBLIC`（學生的 ack）。
 
@@ -113,31 +113,38 @@ QUESTION_ENDED(n) --openQuestion(n+1)--> OPEN(n+1)
 | `code` | `message` |
 | --- | --- |
 | `NO_IMPORT` | 請先匯入學習單 |
-| `ACTIVITY_EXISTS` | 已經有活動，不能再建立 |
+| `ACTIVITY_EXISTS` | 已經有進行中的活動，不能再建立；要重新開始請重新啟動伺服器 |
 | `NO_ACTIVITY` | 目前沒有活動 |
 | `SETTINGS_LOCKED` | 第 1 題開放後不能修改設定 |
 | `QUESTION_NOT_NEXT` | 現在不能開放第 n 題 |
 | `QUESTION_NOT_OPEN` | 第 n 題目前沒有開放，不能結束 |
 
-### `ValidationError` 的內容（REST 以 `200` 回傳 `ValidationError` 本身；ack 的 `error`）
+### `ValidationError` 的內容（REST 以 `200` 回傳 `ValidationError` 本身）
 
 | `field` | `message` | 條件 |
 | --- | --- | --- |
 | `groupCount` | 組數必須是 2 到 20 之間的整數 | 不是整數，或不在 2–20 |
 | `groupCount` | 第 n 組已有學生加入，組數不能少於 n | 修改設定時小於 `highestOccupiedGroup()` |
-| `groupNumber` | 目前沒有活動 | 加入時沒有活動 |
-| `groupNumber` | 沒有第 n 組 | 不是 1 到 `groupCount` 的整數 |
-| `groupNumber` | 第 1 題開放後不能換組，你在第 m 組 | 已鎖定且這條連線已在第 m 組（m ≠ n）；離開組別時同樣訊息 |
+
+### 加入與離開組別被拒絕（`GroupAck.error`，前端以 `UnexpectedError` reject）
+
+001 的 `joinGroup` 回傳 `Promise<Activity>`，沒有預期失敗的回傳值，所以這些拒絕以 `UnexpectedError(message)` 顯示在選組頁或等待開放頁的共通錯誤訊息區（001 FR-009）。
+
+| `code` | `message` | 條件 |
+| --- | --- | --- |
+| `NO_ACTIVITY` | 目前沒有活動 | 加入時沒有活動 |
+| `NO_SUCH_GROUP` | 沒有第 n 組 | 不是 1 到 `groupCount` 的整數 |
+| `GROUP_LOCKED` | 第 1 題開放後不能換組，你在第 m 組 | 已鎖定且這條連線已在第 m 組（m ≠ n）；離開組別時同樣訊息 |
 
 ### 組別規則（`joinGroup`）
 
 ```text
-沒有活動                         → error「目前沒有活動」
-n 不是 1..groupCount 的整數       → error「沒有第 n 組」
+沒有活動                         → error NO_ACTIVITY「目前沒有活動」
+n 不是 1..groupCount 的整數       → error NO_SUCH_GROUP「沒有第 n 組」
 這條連線已在第 n 組               → 成功，不改變人數（重新整理後選回原組）
 這條連線已在第 m 組（m ≠ n）：
     PREPARING                     → 從第 m 組移到第 n 組
-    其他階段                       → error「第 1 題開放後不能換組，你在第 m 組」
+    其他階段                       → error GROUP_LOCKED「第 1 題開放後不能換組，你在第 m 組」
 這條連線還沒加入                  → 加入第 n 組（任何階段都可以）
 ```
 

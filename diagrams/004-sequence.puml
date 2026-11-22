@@ -110,22 +110,33 @@ GW -> AM : joinGroup(socket, 3)
 AM -> GM : 同一個 studentToken 已在第 3 組 → 不重複計算
 AM --> GW : GroupAck { snapshot }
 GW --> HS : ack
-HS --> SP : Activity(OPEN, n) → S-Answer
+HS --> SP : Activity(OPEN, n)
+SP -> SP : 依 001 RD-14：再呼叫 005 getGroupSubmission\n→ S-Answer 或 S-Submitted
 note right of SP
   第 1 題開放後選第 5 組：
-  GroupAck.error = ValidationError
-  「第 1 題開放後不能換組，你在第 3 組」
-  （需請 001 修改 C2）
+  GroupAck.error = { GROUP_LOCKED,
+  「第 1 題開放後不能換組，你在第 3 組」 }
+  → joinGroup 以 UnexpectedError reject，
+  顯示在共通錯誤訊息區，停留在 S-Join
 end note
 
 == 6. 老師重新整理後重新登入（D21） ==
-T -> TP : 重新整理 → 首頁 →「我是老師」→ 用 Google 登入（002）
-note over GW : 002 換發老師憑證：\nio.in(TEACHER_ROOM).disconnectSockets(true)\n中斷所有舊老師連線
-TP -> HS : getCurrentActivity()
-HS -> HS : TeacherCredentialStore.get() ≠ connectedTeacherToken\n→ RealtimeClient.reconnect()
-HS -> GW : 連線 handshake auth { teacherToken（新） }
-GW -> GW : 002 驗證 → TEACHER_ROOM，isTeacher = true
-GW -->> HS : activity:snapshot（TEACHER）
-HS --> TP : Activity(OPEN, n)
-TP -> TP : 直接進入 T-Live（第 n 題）（需請 001 修改 C1）
+T -> TP : 重新整理 → 首頁 →「我是老師」→ 以 Google 登入（002）
+note over GW : 002：任何人登入都取代前一位老師，\n換發老師憑證並 io.in(TEACHER_ROOM).disconnectSockets(true)\n中斷所有舊老師連線；活動不變
+alt 001 C1 完成前（暫時限制）
+  TP -> TP : 依 001 現況進入 T-Pick，回不到控制台
+  TP -> HS : （走到 T-Setup）createActivity(settings)
+  HS -> HS : 憑證已換 → RealtimeClient.reconnect()（加入 TEACHER_ROOM）
+  HS -> RT : POST /api/activity
+  RT --> HS : 409 ACTIVITY_EXISTS\n「已經有進行中的活動，不能再建立；\n要重新開始請重新啟動伺服器」
+  HS --> TP : reject UnexpectedError → 共通錯誤訊息區
+else 001 C1 完成後
+  TP -> HS : getCurrentActivity()
+  HS -> HS : TeacherCredentialStore.get() ≠ connectedTeacherToken\n→ RealtimeClient.reconnect()
+  HS -> GW : 連線 handshake auth { teacherToken（新） }
+  GW -> GW : 002 驗證 → TEACHER_ROOM，isTeacher = true
+  GW -->> HS : activity:snapshot（TEACHER）
+  HS --> TP : Activity(OPEN, n)
+  TP -> TP : 直接進入 T-Live（第 n 題）
+end
 @enduml
