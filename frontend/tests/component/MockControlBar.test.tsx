@@ -1,10 +1,11 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PageId } from '../../src/app/AppRouter';
 import { MockControlBar } from '../../src/components/MockControlBar';
 import { MockModeBadge } from '../../src/components/MockModeBadge';
 import type { ChoiceRequest } from '../../src/services/interfaces';
+import { ServiceRegistryProvider } from '../../src/services/ServiceRegistryContext';
 import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeRegistry';
 
 const ALL_PAGES: PageId[] = [
@@ -109,6 +110,58 @@ describe('MockControlBar (FR-061)', () => {
     await userEvent.click(screen.getByRole('button', { name: '模擬：驗證失敗' }));
     expect(controls.submissionValidationControl.failNextValidation).toHaveBeenCalledTimes(1);
     expect(controls.activityValidationControl.failNextValidation).not.toHaveBeenCalled();
+  });
+
+  describe('armed hint (FR-061, US5 AC-11)', () => {
+    const VALIDATION_HINT = '已設定：下一次送出會回傳驗證錯誤';
+    const UNEXPECTED_HINT = '已設定：下一次介面呼叫會回傳非預期錯誤';
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function renderBar(page: PageId) {
+      const registry = createFakeRegistry(fullControls());
+      const result = renderWithRegistry(<MockControlBar page={page} awaitingJudgement />, registry);
+      const rerenderPage = (next: PageId) =>
+        result.rerender(
+          <ServiceRegistryProvider registry={registry}>
+            <MockControlBar page={next} awaitingJudgement />
+          </ServiceRegistryProvider>,
+        );
+      return { rerenderPage };
+    }
+
+    it.each([
+      ['模擬：驗證失敗', VALIDATION_HINT],
+      ['模擬：非預期錯誤', UNEXPECTED_HINT],
+    ])('shows a hint after clicking %s and hides it after a few seconds', (label, hint) => {
+      vi.useFakeTimers();
+      renderBar('S-Answer');
+      expect(screen.queryByText(hint)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: label }));
+      expect(screen.getByRole('status')).toHaveTextContent(hint);
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    });
+
+    it('hides the hint immediately when the page changes (edge)', async () => {
+      const { rerenderPage } = renderBar('T-Setup');
+      await userEvent.click(screen.getByRole('button', { name: '模擬：非預期錯誤' }));
+      expect(screen.getByText(UNEXPECTED_HINT)).toBeInTheDocument();
+      rerenderPage('T-Lobby');
+      expect(screen.queryByText(UNEXPECTED_HINT)).not.toBeInTheDocument();
+      rerenderPage('T-Setup');
+      expect(screen.queryByText(UNEXPECTED_HINT)).not.toBeInTheDocument();
+    });
+
+    it('shows no hint for advance, accept or reject (edge)', async () => {
+      renderBar('S-Submitted');
+      for (const label of ['模擬：推進到下一個階段', '模擬：接受', '模擬：不接受']) {
+        await userEvent.click(screen.getByRole('button', { name: label }));
+      }
+      expect(screen.queryByText(/^已設定/)).not.toBeInTheDocument();
+    });
   });
 
   it('hides controls whose registry field is undefined (edge)', () => {
