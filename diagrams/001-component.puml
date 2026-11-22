@@ -46,6 +46,7 @@ package "介面層（Service Interfaces）" {
   component "ResultService" <<interface>> as IResult
   component "PhaseMockControl" <<interface>> as IPhaseCtl
   component "JudgementMockControl" <<interface>> as IJudgeCtl
+  component "TeammateMockControl" <<interface>> as ITeamCtl
   component "ValidationMockControl" <<interface>> as IValidCtl
   component "UnexpectedErrorMockControl" <<interface>> as IErrCtl
   component "MockChoicePrompt" <<interface>> as IChoice
@@ -97,7 +98,7 @@ StudentPages --> CError
 
 Badge ..> Registry : isMockMode()
 Badge --> Bar
-Bar ..> Registry : phaseControl / judgementControl /\nvalidation / unexpectedError controls /\nchoicePrompt
+Bar ..> Registry : phaseControl / judgementControl /\nteammateControl / validation /\nunexpectedError controls / choicePrompt
 Bar --> CDialog : 顯示模擬選擇器（M1、M2）
 Registry --> IAuth
 Registry --> INotes
@@ -106,6 +107,7 @@ Registry --> ISub
 Registry --> IResult
 Registry --> IPhaseCtl
 Registry --> IJudgeCtl
+Registry --> ITeamCtl
 Registry --> IValidCtl
 Registry --> IErrCtl
 Registry --> IChoice
@@ -117,6 +119,7 @@ MSub -up-|> ISub
 MResult -up-|> IResult
 MActivity -up-|> IPhaseCtl
 MSub -up-|> IJudgeCtl
+MSub -up-|> ITeamCtl
 MActivity -up-|> IValidCtl
 MSub -up-|> IValidCtl
 Session -up-|> IErrCtl
