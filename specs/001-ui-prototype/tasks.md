@@ -73,7 +73,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T013 [P] 在 `shared/src/guards.ts` 實作型別判斷函式 `isValidationError`、`isImportError`、`isImportSuccess`、`isUnexpectedError`，並在 `frontend/tests/unit/guards.test.ts` 測試每個函式對正反兩種輸入的結果
 - [X] T014 在 `frontend/src/services/interfaces.ts` 依類別圖 Service Interfaces 宣告 `Unsubscribe`（`() => void`）、`AuthService`、`GuidedNotesService`、`ActivityService`（9 個方法，`leaveGroup()` 不帶參數）、`SubmissionService`（`submitAnswer(questionNumber, answers)` 不帶組別；`onJudgement(listener)` 不帶組別）、`ResultService`，以及 mock only 的 `PhaseMockControl`、`JudgementMockControl`、`ValidationMockControl`、`UnexpectedErrorMockControl`、`MockChoicePrompt`、`ChoiceRequest`（`title: string`、`options: ChoiceOption[]`）、`ChoiceOption`（`id: string`、`label: string`）。簽章逐字依 `diagrams/001-class.puml`
 - [X] T015 在 `frontend/src/services/ServiceRegistry.ts` 定義 `ServiceRegistry` 型別：`auth`、`guidedNotes`、`activity`、`submission`、`result` 必有；`phaseControl?`、`judgementControl?`、`activityValidationControl?`、`submissionValidationControl?`、`unexpectedErrorControl?`、`choicePrompt?`；`isMockMode(): boolean`（data-model 第 2 節）
-- [ ] T016 [P] 在 `frontend/src/services/ServiceRegistryContext.tsx` 建立 React context、`ServiceRegistryProvider` 與 `useServiceRegistry()`（沒有 provider 時丟出錯誤）
+- [X] T016 [P] 在 `frontend/src/services/ServiceRegistryContext.tsx` 建立 React context、`ServiceRegistryProvider` 與 `useServiceRegistry()`（沒有 provider 時丟出錯誤）
 
 ### 模擬實作的測試（先寫，確認失敗）
 
