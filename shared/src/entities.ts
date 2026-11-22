@@ -15,7 +15,6 @@ export interface TeacherAccount {
 
 export const SignInFailure = {
   CANCELLED: 'CANCELLED',
-  NOT_TEACHER: 'NOT_TEACHER',
 } as const;
 export type SignInFailure = (typeof SignInFailure)[keyof typeof SignInFailure];
 
