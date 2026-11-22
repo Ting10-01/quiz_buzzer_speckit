@@ -1,0 +1,34 @@
+/* Dark theme tokens copied verbatim from docs/design/dark/*.html (:root). Dark theme only (research RD-09). */
+:root {
+  --ground:#0a0d0c;
+  --surface:#121715;
+  --sheet:#0e1211;
+  --raised:#1e2522;
+  --active:#232b28;
+  --divider:#2a3330;
+  --rule:#19201d;
+  --grid:#222a27;
+  --control:#3d4743;
+  --chart3:#6c7470;
+  --text:#f3f5f4;
+  --text2:#e6eae8;
+  --muted:#b3bab6;
+  --faint:#959c98;
+  --accent:#f2d45c;
+  --accent-text:#f2d45c;
+  --accent-stroke:#f2d45c;
+  --accent-hover:#f6e08a;
+  --on-accent:#1b1700;
+  --accent-soft:#2a2614;
+  --pos:#5fd394;
+  --pos-bg:#14281c;
+  --pos-ink:#6ad99c;
+  --neg:#f0788c;
+  --neg-bg:#2c1a20;
+  --neg-ink:#f2879a;
+  --on-neg:#1a0a0e;
+  --warn:#e9b65a;
+  --warn-bg:#2b2414;
+  --warn-ink:#ecbd66;
+  --scrim:rgba(5, 7, 6, 0.74);
+}

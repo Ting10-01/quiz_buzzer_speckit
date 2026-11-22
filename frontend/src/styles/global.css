@@ -1,0 +1,78 @@
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: Inter, 'Noto Sans TC', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* Pill buttons shared by every page (design: .btn in docs/design/dark). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.btn-primary {
+  background: var(--text);
+  color: var(--ground);
+}
+
+.btn-secondary {
+  border-color: var(--control);
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.btn-ghost {
+  padding: 0 8px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
