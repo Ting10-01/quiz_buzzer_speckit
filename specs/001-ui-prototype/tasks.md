@@ -94,8 +94,8 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T028 [P] 在 `frontend/src/services/mock/MockActivityService.ts` 實作 `ActivityService`、`PhaseMockControl`、`ValidationMockControl`（M3、M7；依賴 T025）。老師端狀態寫在 `teacherActivity`；首頁與學生端只依 `viewerPhaseIndex` 由 `MockFixtures.activity` 組出 `Activity`；`advancePhase()` 通知所有 `onPhaseChange` listener。除訂閱與模擬控制外，每個方法開頭呼叫 `consumeUnexpectedError()`
 - [X] T029 [P] 在 `frontend/src/services/mock/MockSubmissionService.ts` 實作 `SubmissionService`、`JudgementMockControl`、`ValidationMockControl`（M4、M5、M6；依賴 T025）。老師端列表由 `submissionsByQuestion` 初始化後存入 `MockSession.submissions`；學生端送出以 `joinedGroup` 為組別，`rank` 為本分頁該題已記錄送出數 + 1；不提供學生取得其他組別送出的方法（FR-054）
 - [X] T030 [P] 在 `frontend/src/services/mock/MockResultService.ts` 實作 M8（依賴 T025），由 `MockSession.submissions` 與 `teacherActivity`（沒有時用 `MockFixtures.activity`）組出 `QuestionResult`，並以最早送出（`rank` 1）的 `elapsedMs` 為基準計算 `behindFirstMs`（spec M4、D23）
-- [ ] T031 在 `frontend/src/services/createServiceRegistry.ts` 實作組合根 `createServiceRegistry()`：建立一份 `MockSession` 與五個模擬服務，填入 `ServiceRegistry` 的所有欄位；記錄哪些介面綁定模擬實作，`isMockMode()` 依此回傳（plan「替換模擬實作的方式」）。這是唯一允許引用 `services/mock/` 的檔案（依賴 T026–T030）
-- [ ] T032 執行 `npm test`，確認 T017–T023 全部通過
+- [X] T031 在 `frontend/src/services/createServiceRegistry.ts` 實作組合根 `createServiceRegistry()`：建立一份 `MockSession` 與五個模擬服務，填入 `ServiceRegistry` 的所有欄位；記錄哪些介面綁定模擬實作，`isMockMode()` 依此回傳（plan「替換模擬實作的方式」）。這是唯一允許引用 `services/mock/` 的檔案（依賴 T026–T030）
+- [X] T032 執行 `npm test`，確認 T017–T023 全部通過
 
 ### 測試替身與 App 骨架
 
