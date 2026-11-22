@@ -7,6 +7,8 @@ describe('createServiceRegistry', () => {
     expect(registry.isMockMode()).toBe(true);
     expect(registry.phaseControl).toBeDefined();
     expect(registry.judgementControl).toBeDefined();
+    expect(registry.teammateControl).toBeDefined();
+    expect(registry.teammateControl).toBe(registry.submission);
     expect(registry.activityValidationControl).toBeDefined();
     expect(registry.submissionValidationControl).toBeDefined();
     expect(registry.unexpectedErrorControl).toBeDefined();
@@ -18,7 +20,8 @@ describe('createServiceRegistry', () => {
     const registry = createServiceRegistry();
     await registry.phaseControl!.advancePhase();
     await registry.activity.joinGroup(2);
-    const sent = await registry.submission.submitAnswer(1, ['a']);
+    await registry.phaseControl!.advancePhase();
+    const sent = await registry.submission.submitAnswer(1, ['a', 'b']);
     expect(sent).toMatchObject({ groupNumber: 2 });
     registry.unexpectedErrorControl!.failNextCall();
     await expect(registry.result.getAllResults()).rejects.toEqual({
