@@ -70,7 +70,7 @@
 | QuestionScanner、ScannedQuestion | `server/src/guided-notes/QuestionScanner.ts` | component、class、sequence |
 | importErrors | `server/src/guided-notes/importErrors.ts` | component、class |
 | ImportStore | `server/src/guided-notes/ImportStore.ts`；契約見 [contracts/import-store.md](contracts/import-store.md) | component、class、sequence |
-| Entities（含 `SubQuestion.marker`） | `shared/src/entities.ts`（001 擁有，`marker` 由 001 加入） | class |
+| Entities | `shared/src/entities.ts`（001 擁有，003 不修改；小題標記不在實體中） | class |
 
 ## 替換模擬實作
 
@@ -102,7 +102,7 @@ specs/003-guided-notes-import/
 ### Source Code (repository root)
 
 ```text
-shared/src/entities.ts                       # 001 擁有；SubQuestion.marker 由 001 加入
+shared/src/entities.ts                       # 001 擁有；003 不修改
 server/
 ├── package.json                             # 003 新增 @googleapis/sheets、@googleapis/drive
 ├── src/

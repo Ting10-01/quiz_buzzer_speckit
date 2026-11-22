@@ -25,7 +25,6 @@ package "Entities（001 shared 實體）" #F4F4F4 {
   class SubQuestion {
     index: number
     blankCell: string
-    marker: string <<需請 001 新增>>
   }
   class ImportSuccess {
     spreadsheet: Spreadsheet
@@ -100,6 +99,7 @@ package "server/src/guided-notes（003）" {
     colCount: number
     +{static} fromApi(sheet: ApiSheet): SheetGrid
     +text(row: number, col: number): string
+    +textA1(a1: string): string
     +number(row: number, col: number): number [0..1]
     +mergeAt(row: number, col: number): CellRange [0..1]
     +toA1(row: number, col: number): string
@@ -119,6 +119,7 @@ package "server/src/guided-notes（003）" {
   }
   class GuidedNotesParser {
     +parse(grid: SheetGrid, spreadsheet: Spreadsheet): ImportSuccess | ImportError
+    +markersOf(grid: SheetGrid, result: ImportSuccess): BlankMarkers
   }
   class HeaderLocator {
     +NUMBER_HEADERS = 題號、編號、題次
@@ -135,6 +136,7 @@ package "server/src/guided-notes（003）" {
   }
   class QuestionScanner {
     +scan(grid: SheetGrid, header: HeaderMatch): ScannedQuestion[] | ImportError
+    +{static} extractMarker(text: string): string
   }
   class ScannedQuestion {
     row: number
@@ -149,10 +151,15 @@ package "server/src/guided-notes（003）" {
     +noAccess(): ImportError
     +noWorksheet(worksheet): ImportError
   }
+  class BlankMarkers <<type>> {
+    Readonly<Record<blankCell, marker>>
+  }
   class ImportStore {
     -latestResult: ImportSuccess [0..1]
-    +save(result: ImportSuccess): void
+    -latestBlankMarkers: BlankMarkers [0..1]
+    +save(result: ImportSuccess, markers: BlankMarkers): void
     +latest(): ImportSuccess [0..1]
+    +latestMarkers(): BlankMarkers [0..1]
   }
   class guidedNotesRoutes <<Fastify plugin>> {
     GET /api/guided-notes/spreadsheets/:spreadsheetId
@@ -177,6 +184,8 @@ package "server/src/guided-notes（003）" {
   QuestionScanner ..> ScannedQuestion : creates
   ScannedQuestion --> Question
   ImportStore o-- "0..1" ImportSuccess
+  ImportStore o-- "0..1" BlankMarkers
+  GuidedNotesParser ..> BlankMarkers : creates
   guidedNotesRoutes --> GuidedNotesImporter
 }
 
@@ -221,14 +230,17 @@ GoogleSheetsReader --> GoogleClientProvider
 guidedNotesRoutes ..> requireTeacher
 
 note right of ImportStore
-  004 建立活動時、006 寫回時呼叫 latest()（唯讀）。
-  只有 read() 成功時 save()；失敗不變（D2）。
+  004 建立活動時呼叫 latest()；006 寫回時呼叫
+  latest() 與 latestMarkers()（唯讀）。
+  只有 read() 成功時 save(result, markers)，
+  兩者一起取代；失敗不變（D2）。
 end note
 
 note right of SubQuestion
-  blankCell：A1，合併範圍取左上角
-  marker：填空格開頭的「（n）」「(n)」，原樣保留；
-  沒有時為空字串。006 寫回時放在答案前面
+  001 的實體不變，003 不加欄位。
+  blankCell：A1，合併範圍取左上角。
+  小題標記不在這裡，存在伺服器的
+  ImportStore.latestMarkers()
 end note
 
 note right of SheetsReadError

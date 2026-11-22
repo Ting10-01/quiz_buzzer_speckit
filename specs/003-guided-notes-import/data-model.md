@@ -2,7 +2,7 @@
 
 **Feature**: `003-guided-notes-import` | **Date**: 2026-11-21 | **Blueprint**: [`diagrams/003-class.puml`](../../diagrams/003-class.puml)
 
-本文件與 003 類別圖一一對應：類別名稱、欄位、方法與關聯相同。實體沿用 001 的 [data-model.md](../001-ui-prototype/data-model.md)（`shared/src/entities.ts`），本文件只定義 003 填入的值與規則；唯一新增的欄位 `SubQuestion.marker` 需由 001 先加入（spec「需請 001 修改」#1）。
+本文件與 003 類別圖一一對應：類別名稱、欄位、方法與關聯相同。實體沿用 001 的 [data-model.md](../001-ui-prototype/data-model.md)（`shared/src/entities.ts`），本文件只定義 003 填入的值與規則，不新增或修改 001 的實體欄位。小題標記只存在伺服器的 `ImportStore`（§3、[contracts/import-store.md](contracts/import-store.md)）。
 
 ## 1. 實體（001，003 定義欄位的值）
 
@@ -31,7 +31,6 @@
 | --- | --- | --- |
 | `index` | number | 從 1 起算，依列序 |
 | `blankCell` | string | A1 表示法（例如 `G5`）；合併範圍取左上角（REQ-IMP-10） |
-| `marker` | string | **需請 001 新增**。填空格開頭的「（n）」「(n)」原樣保留；沒有時為 `""`（REQ-IMP-09） |
 
 ### ImportSuccess
 
@@ -84,17 +83,18 @@
 | `GuidedNotesImporter` | `describe(spreadsheetId): Promise<Spreadsheet>`、`read(spreadsheetId, worksheet): Promise<ImportSuccess \| ImportError>` | `read` 成功時呼叫 `ImportStore.save()`；失敗不呼叫 |
 | `SpreadsheetReader`（介面） | `load(spreadsheetId): Promise<LoadedSpreadsheet>` | 讓測試用假物件（原則 III、VIII） |
 | `LoadedSpreadsheet` | `id`、`title`、`editable`、`sheets: SheetGrid[]`（1..*） | 一份試算表的完整內容 |
-| `SheetGrid` | `sheetId`、`name`、`rowCount`、`colCount`、`fromApi(sheet)`（static）、`text(row, col)`、`number(row, col)`、`mergeAt(row, col)`、`toA1(row, col)` | `fromApi` 由 `spreadsheets.get` 的一個 `sheets[]`（`ApiSheet`，即 `@googleapis/sheets` 的 `sheets_v4.Schema$Sheet`）建立；`toA1(5, 7)` 為 `G5`；列欄從 1 起算；`text` 用 `formattedValue`；`number` 用 `effectiveValue.numberValue` |
+| `SheetGrid` | `sheetId`、`name`、`rowCount`、`colCount`、`fromApi(sheet)`（static）、`text(row, col)`、`textA1(a1)`、`number(row, col)`、`mergeAt(row, col)`、`toA1(row, col)` | `textA1('G5')` 等於 `text(5, 7)`；`fromApi` 由 `spreadsheets.get` 的一個 `sheets[]`（`ApiSheet`，即 `@googleapis/sheets` 的 `sheets_v4.Schema$Sheet`）建立；`toA1(5, 7)` 為 `G5`；列欄從 1 起算；`text` 用 `formattedValue`；`number` 用 `effectiveValue.numberValue` |
 | `CellRange` | `startRow`、`endRow`、`startCol`、`endCol` | 合併範圍，從 1 起算、含結尾（API 的 GridRange 是 0 起算、結尾不含） |
 | `SheetsReadError` | `kind: 'NO_ACCESS' \| 'UNAVAILABLE' \| 'AUTH_EXPIRED'` | `GoogleSheetsReader` 丟出（research R1）；`AUTH_EXPIRED` 依 002 的 `isGoogleAuthExpired` |
-| `GoogleSheetsReader` | `-clients: GoogleClientProvider`、`load(spreadsheetId)` | 實作 `SpreadsheetReader`；`buildApp` 以 `app.googleClients` 建立，提供為 `app.spreadsheetReader` |
-| `GuidedNotesParser` | `parse(grid, spreadsheet): ImportSuccess \| ImportError` | 不碰網路 |
+| `GoogleSheetsReader` | `-clients: GoogleClientProvider`、`load(spreadsheetId)` | 實作 `SpreadsheetReader`；`buildApp` 以 `app.googleClients` 建立，提供為 `app.spreadsheetReader`。每次 `load` 都重新呼叫 `authorizedClient()`，不保存 client：任何人登入都會換成新帳號的授權（002 REQ-AUTH-03），新帳號沒有權限時回 `NO_ACCESS` |
+| `GuidedNotesParser` | `parse(grid, spreadsheet): ImportSuccess \| ImportError`、`markersOf(grid, result): BlankMarkers` | 不碰網路，不讀寫 `ImportStore`；`markersOf` 對 `result` 的每個 `blankCell` 以 `QuestionScanner.extractMarker(grid.textA1(blankCell))` 取得標記 |
 | `HeaderLocator` | `NUMBER_HEADERS`、`ANSWER_HEADERS`、`QUESTION_HEADERS`、`locate(grid): HeaderMatch \| null`、`currentHeaderTexts(grid): string[]` | research R3 |
 | `HeaderMatch` | `row`、`numberCol`、`answerCol`、`questionCol?` | 欄號從 1 起算 |
-| `QuestionScanner` | `scan(grid, header): ScannedQuestion[] \| ImportError` | research R4；只會回傳 `NO_BLANK` |
+| `QuestionScanner` | `scan(grid, header): ScannedQuestion[] \| ImportError`、`extractMarker(text): string`（static） | research R4；`scan` 只會回傳 `NO_BLANK`；`extractMarker` 回傳開頭的「（n）」「(n)」或 `""` |
 | `ScannedQuestion` | `row`、`question: Question` | `row` 是題號所在列，供錯誤訊息使用 |
 | `importErrors`（模組） | `noHeader`、`noQuestions`、`invalidNumbering`、`tooManyQuestions`、`noBlank`、`noAccess`、`noWorksheet` | 產生 `ImportError`（research R5） |
-| `ImportStore` | `-latestResult: ImportSuccess \| null`、`save(result)`、`latest(): ImportSuccess \| null` | 伺服器記憶體；`buildApp` 建立一個，提供為 `app.importStore`；004、006 只呼叫 `latest()` |
+| `ImportStore` | `-latestResult: ImportSuccess \| null`、`-latestBlankMarkers: BlankMarkers \| null`、`save(result, markers)`、`latest(): ImportSuccess \| null`、`latestMarkers(): BlankMarkers \| null` | 伺服器記憶體；`buildApp` 建立一個，提供為 `app.importStore`；004 只呼叫 `latest()`，006 呼叫 `latest()`、`latestMarkers()` |
+| `BlankMarkers` | `Readonly<Record<string, string>>` | 鍵為 `blankCell`（A1），值為填空格開頭原有的小題標記或 `""`；`latest()` 的每個 `blankCell` 恰好一筆（REQ-IMP-09） |
 
 002 提供、003 只引用（`specs/002-teacher-login/contracts/server-extension.md`）：`buildApp(config, deps)`、`app.requireTeacher`、`app.googleClients`（`GoogleClientProvider.authorizedClient()`）、`isGoogleAuthExpired(error)`、`TeacherNotSignedInError`、`ErrorBody`、`loggerOptions`、`GET /api/auth/picker-token`（`{ accessToken, apiKey, appId }`）、前端的 `ApiClient.request(method, path, body?)` 與 `ApiError`。
 

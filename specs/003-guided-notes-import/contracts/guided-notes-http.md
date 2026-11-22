@@ -57,14 +57,14 @@
   "headerColumns": ["B", "C", "G"],
   "questions": [
     { "number": 1, "type": "GROUP", "text": "（1）根據文章第一段，…其英文簡稱是什麼？\n（2）而他安裝的 Windows …統稱為什麼？",
-      "subQuestions": [ { "index": 1, "blankCell": "G5", "marker": "（1）" }, { "index": 2, "blankCell": "G6", "marker": "（2）" } ] },
+      "subQuestions": [ { "index": 1, "blankCell": "G5" }, { "index": 2, "blankCell": "G6" } ] },
     { "number": 3, "type": "SINGLE", "text": "無論小明寫的高階語言多麼複雜，…二進位訊號？",
-      "subQuestions": [ { "index": 1, "blankCell": "G11", "marker": "" } ] }
+      "subQuestions": [ { "index": 1, "blankCell": "G11" } ] }
   ]
 }
 ```
 
-（範例省略第 2、4 題）
+（範例省略第 2、4 題。小題標記不在回應中，只存在伺服器的 `ImportStore`，見 [import-store.md](import-store.md)。）
 
 **200 ImportError**
 
@@ -78,7 +78,7 @@
 }
 ```
 
-其他 `code`（`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`、`NO_BLANK`、`NO_ACCESS`、`NO_WORKSHEET`）格式相同，`foundHeaders`、`acceptedHeaders` 為 `[]`。各 code 的 `reason` 範例：
+其他 `code`（`NO_QUESTIONS`、`INVALID_NUMBERING`、`TOO_MANY_QUESTIONS`、`NO_BLANK`、`NO_ACCESS`、`NO_WORKSHEET`）格式相同，`foundHeaders`、`acceptedHeaders` 為 `[]`，前端一樣顯示在 001 的找不到表頭頁（T-ImportError）。各 code 的 `reason` 範例：
 
 | `code` | `reason` 範例 | `fixSteps` 範例 |
 | --- | --- | --- |

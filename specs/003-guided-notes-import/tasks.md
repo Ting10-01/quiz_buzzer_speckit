@@ -22,7 +22,7 @@ description: "Task list for 003 匯入學習單"
 
 ## Phase 1: Setup
 
-- [ ] T001 確認 `shared/src/entities.ts` 的 `SubQuestion` 已有 `marker: string`（spec「需請 001 修改」#1）；沒有時停下來，請 001 先修改 spec、類別圖與實體，不要自己改 001 的檔案
+- [ ] T001 確認 `shared/src/entities.ts` 的 `Spreadsheet`、`Question`、`SubQuestion`（只有 `index`、`blankCell`）、`ImportSuccess`、`ImportError` 與 `shared/src/guards.ts` 的 `isImportError` 和 001 data-model 一致；003 不修改這兩個檔案（小題標記只存在伺服器，REQ-IMP-09）
 - [ ] T002 [P] 在 `server/package.json` 加入 `@googleapis/sheets`、`@googleapis/drive`，執行 `npm install`
 
 ---
@@ -32,12 +32,12 @@ description: "Task list for 003 匯入學習單"
 **Purpose**: 所有 Story 共用的資料結構；完成前不開始任何 Story
 
 - [ ] T003 [P] 建立 `gn/SpreadsheetReader.ts`：`SpreadsheetReader` 介面（`load(spreadsheetId): Promise<LoadedSpreadsheet>`）、`LoadedSpreadsheet`（`id`、`title`、`editable`、`sheets: SheetGrid[]`）、`SheetsReadError`（`kind: 'NO_ACCESS' | 'UNAVAILABLE' | 'AUTH_EXPIRED'`）
-- [ ] T004 [P] 建立 `gn/SheetGrid.ts`：`SheetGrid`（`sheetId`、`name`、`rowCount`、`colCount`、`text(row, col)` 用 `formattedValue`、`number(row, col)` 用 `effectiveValue.numberValue`、`mergeAt(row, col): CellRange | null`）與 `CellRange`；以 `SheetGrid.fromApi(sheet)` 由 `spreadsheets.get` 的一個 `sheets[]` 建立，GridRange（0 起算、結尾不含）轉成「從 1 起算、含結尾」；另提供 `toA1(row, col)`
-- [ ] T005 [P] 建立 `gn/ImportStore.ts`：`save(result)` 以 `structuredClone` 存入、`latest(): Readonly<ImportSuccess> | null`（contracts/import-store.md）
+- [ ] T004 [P] 建立 `gn/SheetGrid.ts`：`SheetGrid`（`sheetId`、`name`、`rowCount`、`colCount`、`text(row, col)` 用 `formattedValue`、`number(row, col)` 用 `effectiveValue.numberValue`、`mergeAt(row, col): CellRange | null`）與 `CellRange`；以 `SheetGrid.fromApi(sheet)` 由 `spreadsheets.get` 的一個 `sheets[]` 建立，GridRange（0 起算、結尾不含）轉成「從 1 起算、含結尾」；另提供 `toA1(row, col)` 與 `textA1(a1)`
+- [ ] T005 [P] 建立 `gn/ImportStore.ts`：`BlankMarkers` 型別、`save(result, markers)` 以 `structuredClone` 一起存入、`latest(): Readonly<ImportSuccess> | null`、`latestMarkers(): BlankMarkers | null`（contracts/import-store.md）
 - [ ] T006 [P] 建立 `gn/importErrors.ts`：`noHeader`、`noQuestions`、`invalidNumbering`、`tooManyQuestions`、`noBlank`、`noAccess`、`noWorksheet`，`reason` 與 `fixSteps` 依 contracts/guided-notes-http.md 的範例；只有 `noHeader` 的 `foundHeaders`、`acceptedHeaders` 有值，`acceptedHeaders` 為 `["題號欄：題號、編號、題次", "作答欄：作答、答案、回答", "題目欄（可以沒有）：題目、問題、題幹"]`
 - [ ] T007 [P] 建立 `gnt/helpers/gridBuilder.ts`：以二維字串陣列（數字以 number 表示）與 A1 合併範圍（例如 `"B5:B6"`）產生 `spreadsheets.get` 回應格式的 sheet 物件與 `SheetGrid`
 - [ ] T008 [P] 撰寫 `gnt/SheetGrid.test.ts`：合併範圍轉換、`number()` 讀數字與文字題號的差別、`toA1`
-- [ ] T009 [P] 撰寫 `gnt/ImportStore.test.ts`：初始 `latest()` 為 `null`；`save` 後取得相同內容；再次 `save` 取代；修改存入前的物件不影響 `latest()`
+- [ ] T009 [P] 撰寫 `gnt/ImportStore.test.ts`：初始 `latest()`、`latestMarkers()` 都為 `null`；`save` 後兩者取得相同內容；再次 `save` 兩者一起取代；修改存入前的物件不影響 `latest()`、`latestMarkers()`
 
 **Checkpoint**: 基礎型別與測試輔助完成
 
@@ -56,7 +56,7 @@ description: "Task list for 003 匯入學習單"
 - [ ] T012 [P] [US1] 撰寫 `gnt/QuestionScanner.test.ts`（單題）：題號接受數字 1、1.0、文字「1」與全形「１」；0、負數、1.5、文字列略過；作答欄 G5:H5 合併時填空格為 `G5`；單題只有 1 個小題、`index` 為 1；有題目欄時 `text` 為該列文字、沒有題目欄時沒有 `text`（AC-04）
 - [ ] T013 [US1] 撰寫 `gnt/GuidedNotesParser.test.ts`（成功）：單題範本 → 6 題、填空格 G5、G7…G15、`headerRow` 4、`headerColumns` `["B","C","G"]`（AC-01、REQ-IMP-16）；沒有題目欄時 `headerColumns` 只有兩欄；3 份變形全部正確（AC-03、SC-002）；題號 1、2、4 → 3 題（AC-09）；`questions` 依題號遞增，依 T010
 - [ ] T014 [P] [US1] 撰寫 `gnt/GoogleSheetsReader.test.ts`（`vi.mock` 取代 `@googleapis/sheets`、`@googleapis/drive`）：`spreadsheets.get` 帶 `includeGridData=true` 與 research R1 的 `fields`；`files.get` 只取 `capabilities/canEdit`；工作表依 `index` 排序；`authorizedClient()` 的結果傳給兩個 API
-- [ ] T015 [P] [US1] 撰寫 `gnt/GuidedNotesImporter.test.ts`（成功）：`describe` 的 `selectedWorksheet` 是第一個有表頭的工作表、都沒有時為第一個（AC-05）；`describe` 不改變 `ImportStore`；`read` 成功時 `ImportStore.latest()` 等於回傳值（AC-02）；讀另一個工作表時取代（AC-06）；`canEdit=false` 時 `editable` 為 false、仍成功（AC-07）
+- [ ] T015 [P] [US1] 撰寫 `gnt/GuidedNotesImporter.test.ts`（成功）：`describe` 的 `selectedWorksheet` 是第一個有表頭的工作表、都沒有時為第一個（AC-05）；`describe` 不改變 `ImportStore`；`read` 成功時 `ImportStore.latest()` 等於回傳值、`latestMarkers()` 為同一次的標記（AC-02、AC-12）；讀另一個工作表時取代（AC-06）；`canEdit=false` 時 `editable` 為 false、仍成功（AC-07）
 - [ ] T016 [P] [US1] 撰寫 `gnt/guidedNotesRoutes.test.ts`（成功）：以 002 的 `buildApp` + Fastify `inject()`、`deps.spreadsheetReader` 注入假 `SpreadsheetReader`、002 的測試用老師憑證，`GET /api/guided-notes/spreadsheets/:id` 回 200 `Spreadsheet`、`POST /api/guided-notes/read` 回 200 `ImportSuccess`；`spreadsheetId` 不符 `^[A-Za-z0-9_-]{10,200}$`、`worksheet` 空字串或超過 100 字、多餘欄位 → `400 BAD_REQUEST`（`ErrorBody` `{ code, message }`）
 - [ ] T017 [P] [US1] 撰寫 `frontend/tests/unit/HttpGuidedNotesService.test.ts`（成功）：假的 `GooglePickerLauncher` 回傳 id 時呼叫 `GET /api/guided-notes/spreadsheets/:id` 並回傳 `Spreadsheet`；`readWorksheet` 200 時把內容原樣回傳（`ImportSuccess`）；所有請求都經過假的 `ApiClient.request(method, path, body?)`，路徑與 body 符合 contracts/guided-notes-http.md
 - [ ] T018 [US1] 在 `gnt/GoogleSheetsReader.test.ts` 確認 `load()` 只呼叫 `spreadsheets.get` 與 `files.get`，沒有呼叫任何寫入方法（`batchUpdate`、`values.update` 等）；在 `gnt/GuidedNotesImporter.test.ts` 確認 `describe`、`read` 對假 `SpreadsheetReader` 只呼叫 `load()`（AC-10、REQ-IMP-17）
@@ -67,7 +67,7 @@ description: "Task list for 003 匯入學習單"
 - [ ] T020 [US1] 實作 `gn/QuestionScanner.ts` 單題路徑：逐列讀題號、跳過合併範圍的非第一列、填空格取合併左上角並轉 A1、題目欄文字（research R4），回傳 `ScannedQuestion[]`
 - [ ] T021 [US1] 實作 `gn/GuidedNotesParser.ts`：`parse(grid, spreadsheet)` 組出 `ImportSuccess`（`headerRow`、依「題號欄、題目欄（有才列）、作答欄」順序的 `headerColumns`、`questions`），依 T019、T020
 - [ ] T022 [P] [US1] 實作 `gn/GoogleSheetsReader.ts`：以 `GoogleClientProvider.authorizedClient()` 同時送出 `spreadsheets.get` 與 `files.get`，轉成 `LoadedSpreadsheet`（research R1）
-- [ ] T023 [US1] 實作 `gn/GuidedNotesImporter.ts`：`describe`（預設工作表，research R6）與 `read`（找工作表 → `parse` → 成功時 `ImportStore.save`），依 T005、T021
+- [ ] T023 [US1] 實作 `gn/GuidedNotesImporter.ts`：`describe`（預設工作表，research R6）與 `read`（找工作表 → `parse` → 成功時 `ImportStore.save(result, parser.markersOf(grid, result))`），依 T005、T021
 - [ ] T024 [US1] 實作 `gn/guidedNotesRoutes.ts`：兩支 API、JSON schema 驗證、掛 `requireTeacher`，回應依 contracts/guided-notes-http.md，依 T023
 - [ ] T025 [US1] 在 002 的 `server/src/app.ts` `buildApp(config, deps)` 建立一個 `ImportStore` 與 `deps.spreadsheetReader ?? new GoogleSheetsReader(app.googleClients)`，以 `app.decorate` 提供為 `app.importStore`、`app.spreadsheetReader`，再 `app.register(guidedNotesRoutes)`；`deps` 型別加上可省略的 `spreadsheetReader`（research R8、contracts/import-store.md）
 - [ ] T026 [P] [US1] 實作 `frontend/src/services/google/GooglePickerLauncher.ts`：經 `ApiClient.request('GET', '/api/auth/picker-token')` 取得 `{ accessToken, apiKey, appId }`，動態載入 `https://apis.google.com/js/api.js`、`gapi.load('picker')`，以 `DocsView(ViewId.SPREADSHEETS)` 加 `setMimeTypes('application/vnd.google-apps.spreadsheet')`、`setOAuthToken`、`setDeveloperKey`、`setAppId` 開啟；`picked` 回傳 `docs[0].id`，`cancel` 回傳 `null`；腳本載入失敗或 15 秒內沒載入完成時丟出 `UnexpectedError`「無法載入 Google 檔案選擇器，請確認網路連線」（research R2、AC-25）
@@ -87,13 +87,13 @@ description: "Task list for 003 匯入學習單"
 ### Tests for User Story 2 ⚠️
 
 - [ ] T029 [P] [US2] 建立 `gnt/fixtures/group.json`（依 `docs/templates/guided-notes-group.xlsx`：B5:B6、B8:B9 合併，G5、G6、G8、G9 為「（1）」「（2）」，C5:F5 等合併）
-- [ ] T030 [P] [US2] 在 `gnt/QuestionScanner.test.ts` 加入題組案例：題號跨 2 列 → `GROUP` 2 小題（AC-11）；跨 3 列 → 3 小題（AC-13）；單題填空格有「（1）」仍為 `SINGLE`（AC-14）；標記「（1）」「(1)」「（1)」原樣記為 `marker`，「（2）堆疊」的 `marker` 為「（2）」，沒有標記時為 `""`（AC-12）；題組 `text` 每行為「標記＋題目欄文字」，標記空白時用「（n）」，沒有文字的列不列（AC-15）；題組中作答欄被合併進上一列的那一列不算小題
-- [ ] T031 [US2] 在 `gnt/GuidedNotesParser.test.ts` 加入題組範本：4 題、2 題組、6 個填空格 G5、G6、G8、G9、G11、G13（AC-11、SC-001），依 T029
+- [ ] T030 [P] [US2] 在 `gnt/QuestionScanner.test.ts` 加入題組案例：題號跨 2 列 → `GROUP` 2 小題（AC-11）；跨 3 列 → 3 小題（AC-13）；單題填空格有「（1）」仍為 `SINGLE`（AC-14）；`QuestionScanner.extractMarker` 對「（1）」「(1)」「（1)」原樣回傳，「（2）堆疊」回傳「（2）」，沒有標記時回傳 `""`（AC-12）；題組 `text` 每行為「標記＋題目欄文字」，標記空白時用「（n）」，沒有文字的列不列（AC-15）；題組中作答欄被合併進上一列的那一列不算小題
+- [ ] T031 [US2] 在 `gnt/GuidedNotesParser.test.ts` 加入題組範本：4 題、2 題組、6 個填空格 G5、G6、G8、G9、G11、G13（AC-11、SC-001）；`markersOf` 回傳 G5、G8→「（1）」，G6、G9→「（2）」，G11、G13→`""`，每個 `blankCell` 恰好一筆；`parse` 回傳的 `SubQuestion` 只有 `index`、`blankCell`（AC-12），依 T029
 
 ### Implementation for User Story 2
 
 - [ ] T032 [US2] 在 `gn/QuestionScanner.ts` 實作題組判斷：題號儲存格合併範圍跨多列 → `GROUP`，範圍內每列一個候選小題，`index` 依列序（REQ-IMP-08）
-- [ ] T033 [US2] 在 `gn/QuestionScanner.ts` 實作標記擷取（`^\s*([（(]\s*\d+\s*[)）])`）與題組 `text` 組合（REQ-IMP-07、REQ-IMP-09）
+- [ ] T033 [US2] 在 `gn/QuestionScanner.ts` 實作 `extractMarker`（`^\s*([（(]\s*\d+\s*[)）])`）與題組 `text` 組合，在 `gn/GuidedNotesParser.ts` 實作 `markersOf(grid, result)`（REQ-IMP-07、REQ-IMP-09）
 
 **Checkpoint**: 單題與題組範本都能正確匯入
 
@@ -148,7 +148,7 @@ description: "Task list for 003 匯入學習單"
 | REQ-IMP-06 | AC-01、AC-09、AC-19–21 | T012、T013、T020、T021、T034、T040 |
 | REQ-IMP-07 | AC-04、AC-15 | T012、T020、T030、T033 |
 | REQ-IMP-08 | AC-11、AC-13、AC-14 | T030、T031、T032 |
-| REQ-IMP-09 | AC-12 | T001、T030、T033 |
+| REQ-IMP-09 | AC-12 | T001、T005、T009、T023、T030、T031、T033 |
 | REQ-IMP-10 | AC-01、AC-11、AC-22 | T004、T012、T020、T034、T040 |
 | REQ-IMP-11 | AC-07 | T014、T015、T022 |
 | REQ-IMP-12 | AC-19–24 | T006、T034、T035、T037、T040、T042 |

@@ -82,4 +82,52 @@
 ## Next Actions
 
 - 沒有 CRITICAL、HIGH、MEDIUM，可以進入人工審查（原則 X）後再 `/speckit-implement`。
-- 實作前先確認 001 已完成「需請 001 修改」#1、#2（T001）。
+- 第 4 次分析後已不需要 001 修改（見下節）。
+
+---
+
+## 第 4 次分析（配合 001 最終版，2026-11-22）
+
+依 001 最終版（PR #10 合併後的 `specs/001-ui-prototype/`、`diagrams/001-*`）、`docs/feature-split.md` 最新版，以及使用者 2026-11-22 的決定（不再請 001 修改）重新比對 spec、plan、tasks、research、data-model、contracts、quickstart 與三張圖。
+
+### Findings
+
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
+|----|----------|----------|-------------|---------|----------------|
+| N1 | Inconsistency | ~~HIGH~~ 已修正 | spec REQ-IMP-09、Key Entities；data-model；contracts；類別圖；tasks T001、T030、T031、T033 | 小題標記依賴 001 新增 `SubQuestion.marker`，但 001 最終版沒有這個欄位，使用者也決定不再請 001 修改 | 標記改存在伺服器：`ImportStore.save(result, markers)`、`latestMarkers(): BlankMarkers \| null`（`blankCell` → 標記）；新增 `GuidedNotesParser.markersOf`、`QuestionScanner.extractMarker`、`SheetGrid.textA1`；HTTP 回應與前端實體不含標記 |
+| N2 | Inconsistency | ~~MEDIUM~~ 已修正 | spec「需請 001 修改」#2、REQ-IMP-12；quickstart #8 | 其他匯入錯誤依賴 001 把 T-ImportError 改成通用頁 | 照 001 現況顯示在找不到表頭頁：`reason` 寫實際原因、表頭兩區為空、`fixSteps` 寫修正方式；標題不準確列為 Assumptions 的已知限制 |
+| N3 | Inconsistency | ~~MEDIUM~~ 已修正 | spec Clarifications、Assumptions | 原本假設活動中老師到不了 T-Pick（D21），但 001 修改 D21 之前，老師重新登入會進入 T-Pick，可能重新匯入 | 寫明 003 不檢查活動階段；活動用建立時的題目（004），寫回目標不一致由 006 的 `IMPORT_CHANGED` 拒絕 |
+| N4 | Inconsistency | ~~LOW~~ 已修正 | spec「需請 001 修改」#3 | 請 001 確認 `headerColumns`、`blankCell` 格式；001 最終版只定義型別，沒有規定格式 | 格式由 003 定義（REQ-IMP-10、REQ-IMP-16），從「需請 001 修改」移除；該節改為「無」 |
+| N5 | Underspecification | ~~LOW~~ 已修正 | tasks T030、T031 | `markersOf` 的測試寫在 `QuestionScanner.test.ts`，但它是 `GuidedNotesParser` 的方法 | 移到 T031（`GuidedNotesParser.test.ts`） |
+| L1 | Inconsistency | LOW | contracts/import-store.md；類別圖 | 同第 3 次：`Readonly<…>` 與類別圖的寫法不同 | 意義相同 |
+| L2 | Coverage | LOW | spec REQ-IMP-02 | 同第 3 次 | 由 AC-26 間接涵蓋 |
+| L4 | Coverage | LOW | spec SC-004 | 同第 3 次 | 端對端只能人工計時 |
+| L5 | Known limitation | LOW | spec Assumptions | T-ImportError 標題「找不到表頭」與其他錯誤原因不符 | 使用者 2026-11-22 決定接受；老師以 `reason`、`fixSteps` 為準 |
+
+第 3 次的 L3（依賴 001 修改）已不存在：003 不再需要 001 修改任何頁面或實體；T001 只確認 001 的實體與 003 的假設一致。
+
+### 與 001 最終版的其他比對（沒有問題）
+
+- `GuidedNotesService` 的兩個方法簽章、`Spreadsheet`、`Question`、`SubQuestion`、`ImportSuccess`、`ImportError` 的欄位與 001 最終版相同；003 不修改 `shared/src/entities.ts`。
+- 001 FR-021 改為「學習單預覽只依辨識結果呈現表頭列、題號、題目敘述與填空格」：003 的 `ImportSuccess` 已提供這些內容（題組的敘述是多行文字）。
+- D2、D3 的文字與歸屬沒有變。
+- 001 的 `SignInFailure`、`SubmissionService`、`QuestionResult` 等變更與 003 無關。
+
+### Metrics
+
+- Total Requirements: 17（另有 6 個 SC）
+- Total Acceptance Criteria: 26
+- Total Tasks: 49
+- Coverage: 100%
+- Ambiguity Count: 0
+- Duplication Count: 0
+- Critical Issues Count: 0（HIGH 0、MEDIUM 0、LOW 4）
+
+### 跨子功能交界（更新）
+
+| 交界 | 結果 |
+| --- | --- |
+| 001 頁面、介面、實體 | ✅ 不需要 001 修改；「需請 001 修改」為「無」 |
+| 003 → 004 `app.importStore.latest()` | ✅ 型別不變（`Readonly<ImportSuccess> \| null`） |
+| 003 → 006 `app.importStore.latestMarkers()` | 新增：`BlankMarkers \| null`（`Readonly<Record<blankCell, marker>>`），取代原本的 `SubQuestion.marker`；006 需改用它 |
+| 003 → 006 `app.spreadsheetReader.load()`、`GuidedNotesParser.parse()` | ✅ 名稱與簽章不變；`parse` 回傳的 `SubQuestion` 不含標記 |
