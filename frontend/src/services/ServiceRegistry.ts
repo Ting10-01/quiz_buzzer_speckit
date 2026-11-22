@@ -9,6 +9,7 @@ import type {
   PhaseMockControl,
   ResultService,
   SubmissionService,
+  TeammateMockControl,
   UnexpectedErrorMockControl,
   ValidationMockControl,
 } from './interfaces';
@@ -23,6 +24,8 @@ export interface ServiceRegistry {
   phaseControl?: PhaseMockControl;
   /** Present while `submission` is a mock implementation. */
   judgementControl?: JudgementMockControl;
+  /** Present while `submission` is a mock implementation. */
+  teammateControl?: TeammateMockControl;
   /** Present while `activity` is a mock implementation. */
   activityValidationControl?: ValidationMockControl;
   /** Present while `submission` is a mock implementation. */

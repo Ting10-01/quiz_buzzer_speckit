@@ -199,7 +199,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 - [X] T120 在 `shared/src/entities.ts` 新增 `JudgeOutcome`（`submissions: Submission[]`、`activity: Activity`）（data-model 第 1 節、類別圖）
 - [X] T121 在 `frontend/src/services/interfaces.ts` 依類別圖修改 `SubmissionService`：`judge(questionNumber, groupNumber, judgement): Promise<JudgeOutcome>`；新增 `getGroupSubmission(questionNumber: number): Promise<Submission | null>` 與 `onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe`（兩者都不帶組別，原則 VI）；新增 mock only 的 `TeammateMockControl`（`simulateTeammateSubmission(): Promise<Submission>`）（依賴 T120）
-- [ ] T122 在 `frontend/src/services/ServiceRegistry.ts` 新增 `teammateControl?: TeammateMockControl`（data-model 第 2 節；依賴 T121）
+- [X] T122 在 `frontend/src/services/ServiceRegistry.ts` 新增 `teammateControl?: TeammateMockControl`（data-model 第 2 節；依賴 T121）
 - [ ] T123 在 `frontend/src/services/mock/MockFixtures.ts` 把沒有送出的題目從第 4 題改為第 3 題，第 1、2、4 題各 ≥ 2 筆（M4；兩份可辨識的學習單都要調整）；新增同組組員的模擬答案（每題一組，答案數等於該題小題數，M5）
 - [ ] T124 在 `frontend/src/services/mock/MockSession.ts` 新增只供模擬服務使用的學生端階段推進管道：`setViewerPhaseAdvancer(fn)`（由 MockActivityService 註冊）與 `advanceViewerPhase()`（由 MockSubmissionService 在模擬接受時呼叫），讓 M6 的推進與 `advancePhase()` 走同一段程式並通知 `onPhaseChange`（見 C-3；時序圖第 3 段）
 - [ ] T125 在 `frontend/src/services/mock/MockActivityService.ts` 依 M7 修改學生端序列，最後一題由 `OPEN` 直接到 `FINISHED`；在建構時向 `MockSession` 註冊 `setViewerPhaseAdvancer`（依賴 T124）
