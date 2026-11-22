@@ -192,7 +192,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T115 [P] 修改 `frontend/tests/unit/createServiceRegistry.test.ts`：七個模擬控制欄位都存在，新增 `teammateControl` 且與 `submission` 為同一個模擬實作
 - [X] T116 [P] 擴充 `frontend/tests/component/MockControlBar.test.tsx`（FR-061、US5 AC-7）：「模擬：同組組員送出」只在 `S-Answer` 出現，點擊呼叫 `teammateControl.simulateTeammateSubmission()`；`teammateControl` 為 `undefined` 時不顯示（邊界）
 - [X] T117 [P] 擴充 `frontend/tests/component/TeacherLoginPage.test.tsx` 與 `frontend/tests/component/JoinPage.test.tsx`（FR-007、US1 AC-6）：兩頁都有「返回首頁」，點擊 → `Main`，且不呼叫任何介面方法；S-Join 沒有活動時也有「返回首頁」（邊界，H4）
-- [ ] T118 [P] 新增 `frontend/tests/component/AppRouter.history.test.tsx`（FR-014、US1 AC-7）：每次切換頁面都 `pushState` 一筆不改網址的紀錄；在 `T-Login`、`S-Join` 觸發 `popstate` → `Main`；在 `T-Pick` → `Main`（「取消」）；在 `Main` 觸發 `popstate` 停留且再補一筆紀錄（邊界）；模擬帳號選擇（`ConfirmDialog`）開啟時觸發 `popstate` 只關閉選擇器並呼叫 `choicePrompt.answer(null)`，頁面不切換（邊界）
+- [X] T118 [P] 新增 `frontend/tests/component/AppRouter.history.test.tsx`（FR-014、US1 AC-7）：每次切換頁面都 `pushState` 一筆不改網址的紀錄；在 `T-Login`、`S-Join` 觸發 `popstate` → `Main`；在 `T-Pick` → `Main`（「取消」）；在 `Main` 觸發 `popstate` 停留且再補一筆紀錄（邊界）；模擬帳號選擇（`ConfirmDialog`）開啟時觸發 `popstate` 只關閉選擇器並呼叫 `choicePrompt.answer(null)`，頁面不切換（邊界）
 - [ ] T119 [P] 擴充 `frontend/tests/e2e/us1-entry.spec.ts`：quickstart Q14 中 T-Login、S-Join 的部分（「返回首頁」與 `page.goBack()` 都回到首頁；模擬選擇器開啟時 `goBack()` 只關閉選擇器）
 
 ### Implementation
