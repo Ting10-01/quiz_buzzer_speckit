@@ -38,7 +38,7 @@
 
 **Constraints**: 本機執行；金鑰不得進入 repo（001 不使用任何金鑰）；頁面不得直接引用模擬實作（原則 III，以 ESLint 規則強制）；只做深色主題
 
-**Scale/Scope**: 16 個頁面與 2 個確認視窗、5 個服務介面、5 個模擬控制介面（含模擬選擇器）、7 個共用介面元件
+**Scale/Scope**: 16 個頁面與 2 個確認視窗、5 個服務介面、6 個模擬控制介面（含模擬選擇器）、7 個共用介面元件
 
 ## Constitution Check
 
@@ -70,7 +70,9 @@
 | G-2 | M3、M4、M8：控制台的題目、最後一題沒有送出、寫回成功或失敗，都取決於老師匯入了哪一份模擬學習單 | 模擬實作之間只畫了 `MockResultService → MockSubmissionService`，其他模擬實作無從得知匯入了哪份學習單 | 類別圖與組件圖新增 `MockSession`（每個分頁一份的模擬狀態），所有 `Mock*Service` 共用它，取代 `MockResultService → MockSubmissionService` 的關聯；`MockFixtures` 維持只放固定資料。時序圖第 2 段補上寫入 `lastImport` |
 | G-3 | FR-009、M9：每頁的共通錯誤訊息區與「模擬：非預期錯誤」（spec 於規劃期間新增，commit `spec(001): clarify spec and diagrams`） | 沒有錯誤訊息區、非預期錯誤的型別與觸發它的模擬控制 | 組件圖新增共用元件 `ErrorArea`，所有頁面使用；類別圖新增實體 `UnexpectedError` 與 mock only 介面 `UnexpectedErrorMockControl`（`failNextCall`），由 `MockSession` 實作，`ServiceRegistry` 增加 `unexpectedErrorControl [0..1]`；時序圖新增第 6 段；畫面流程圖以註記說明每頁都可能停留在原頁顯示錯誤 |
 | G-4 | R4：T-Lobby、T-Live 在學生加入、送出時即時更新；原則 VI：前端不得指定組別（plan 審查後新增，spec commit `spec(001): clarify spec and diagrams`） | 老師端只有載入時呼叫的方法；`submitAnswer`、`onJudgement`、`leaveGroup` 由頁面傳入組別 | 類別圖新增 `onActivityChange`、`onSubmissionsChange`；`submitAnswer`、`onJudgement`、`leaveGroup` 移除組別參數，`MockSession` 新增 `joinedGroup`；時序圖第 2–4 段補上訂閱與「服務記住本分頁的組別」（commit `spec(001): clarify spec and diagrams`） |
-| G-5 | FR-040：比第一名慢的秒數由結果介面提供，頁面不自行計算（analyze 後修改，spec commit `spec(001): revise spec for analyze findings and teacher sign-in`） | `QuestionResult` 沒有這個值，原本由頁面以 `elapsedMs` 相減，與 FR-003 衝突 | 類別圖 `QuestionResult` 新增 `behindFirstMs: number[]`（與 `submissions` 同順序）；data-model、contract 同步 |
+| G-5 | FR-040：比第一名慢的秒數由結果介面提供，頁面不自行計算（analyze 後修改，spec commit `spec(001): revise spec for analyze and teacher sign-in`） | `QuestionResult` 沒有這個值，原本由頁面以 `elapsedMs` 相減，與 FR-003 衝突 | 類別圖 `QuestionResult` 新增 `behindFirstMs: number[]`（與 `submissions` 同順序）；data-model、contract 同步 |
+| G-6 | FR-032a、FR-055、FR-056a、M4–M6：接受後本題結束、同組組員送出、只有最早一筆可判定（spec commit `spec(001): align ui flow with feature split`） | `judge` 只回傳送出列表，老師端無從得知接受後的階段；沒有同組組員送出的通知與觸發它的模擬控制 | 類別圖新增 `JudgeOutcome`（`submissions`、`activity`），`judge` 改回傳它；`SubmissionService` 新增 `onGroupSubmitted`；新增 mock only 介面 `TeammateMockControl`（`simulateTeammateSubmission`），由 `MockSubmissionService` 實作，`ServiceRegistry` 增加 `teammateControl [0..1]`；組件圖與時序圖同步 |
+| G-7 | FR-056a、S8–S10：加入組別時依階段與本組狀態進入對應頁（spec commit `spec(001): align ui flow with feature split`） | 頁面無法得知本組在加入前是否已送出 | `SubmissionService` 新增 `getGroupSubmission(questionNumber)`；時序圖第 3 段補上加入後依階段決定目的頁（commit `spec(001): align ui flow with feature split`）。理由見 research RD-14 |
 
 ## 替換模擬實作的方式
 

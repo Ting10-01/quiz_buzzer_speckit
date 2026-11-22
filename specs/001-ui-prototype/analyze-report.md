@@ -80,7 +80,7 @@
 
 | ID | 決定 | 修改位置 |
 | --- | --- | --- |
-| U1 | 採 (b)：結束時間不在任何需求內（R4、R8 只要求檢視搶答結果），依原則 XI 移除，列入「相對於設計稿的調整」 | spec FR-040（commit `spec(001): revise spec for analyze findings and teacher sign-in`）；tasks T070、T076、T096 |
+| U1 | 採 (b)：結束時間不在任何需求內（R4、R8 只要求檢視搶答結果），依原則 XI 移除，列入「相對於設計稿的調整」 | spec FR-040（commit `spec(001): revise spec for analyze and teacher sign-in`）；tasks T070、T076、T096 |
 | U2 | 預覽只呈現辨識結果（表頭列、題號、題目敘述、填空格位置），不呈現其他儲存格內容 | spec FR-021；tasks T061 |
 | I1 | 刪除殘留的重複列 | tasks「已解決的文件衝突」 |
 | I2 | 改為 T062、T074 | tasks T052、T065 |
@@ -92,5 +92,45 @@
 | E2 | 加入「沒有組別搶答成功」「沒有組別送出」案例 | tasks T083 |
 | A1 | S-Wait 的階段一律為準備中 | spec FR-051；tasks T080 |
 | E3 | 人工驗證紀錄加「耗時」欄位 | tasks T010 |
+
+處理後沒有未處理的 CRITICAL 或 HIGH 問題，符合 CLAUDE.md 第 2 節步驟 5 的通過條件。
+
+---
+
+# 第二次分析（2026-11-22）
+
+**Inputs**: 2026-11-22 修訂後的 spec（commit `spec(001): align ui flow with feature split`）與尚未 commit 的 tasks.md Phase 3.6、data-model.md（C-3）。
+
+## Findings
+
+| ID | Category | Severity | Location(s) | Summary |
+| --- | --- | --- | --- | --- |
+| H1 | Inconsistency | HIGH | tasks C-4、T068、T073；spec FR-032；contract L12 | C-4 讓 `SubmissionTable` 自行決定可判定的列，但 FR-032 與 contract 規定可判定與否依介面回傳、由負責子功能定義；C-4「005 若改變規則須修改 `SubmissionTable`」也與範圍原則、原則 III 衝突 |
+| M1 | Inconsistency | MEDIUM | tasks T113；spec FR-009、M9 | 模擬實作對非最早一筆的 `judge` 以 `UnexpectedError` reject，但 FR-009 規定模擬只回傳 M9 一種非預期錯誤 |
+| M2 | Inconsistency | MEDIUM | tasks T132；research RD-11 | T132 把上一頁對照集中在 AppRouter，RD-11 卻寫由各頁宣告、AppRouter 不維護清單 |
+| M3 | Underspecification | MEDIUM | tasks T124、T131；類別圖、組件圖、時序圖 | `setViewerPhaseAdvancer`、`advanceViewerPhase`、`closeTopDialog` 不在圖表中 |
+| M4 | Coverage | MEDIUM | spec Edge Cases、FR-014；tasks T070 | T-WriteBack 開啟時按上一頁只關閉視窗，沒有測試 |
+| L1 | Coverage | LOW | FR-014 | 多數「停留」頁面與「重新整理回到首頁」沒有自動化測試 |
+| L2 | Inconsistency | LOW | manual-verification.md；T010 | 紀錄樣板仍是 Q1–Q12，quickstart 已有 Q13、Q14 |
+| L3 | Coverage | LOW | spec 頁面清單 T-Live「全部不接受」；T068 | 全部不接受後的狀態沒有測試 |
+| L4 | Underspecification | LOW | M5；T113 | 已送出後再次 `submitAnswer` 時模擬實作的行為未定義 |
+| L5 | Style | LOW | spec Clarifications；tasks 需求對照表 | 問答順序錯置、FR-056a 列位置錯置 |
+
+Metrics：需求 48（FR 41、SC 7）、任務 134、覆蓋率 100%、CRITICAL 0、HIGH 1。
+
+## 處理紀錄（2026-11-22）
+
+| ID | 決定 | 修改位置 |
+| --- | --- | --- |
+| H1 | 採 (a)：feature-split 3.2 已定案「只能判定最早一筆」，FR-032 改為頁面依回傳列表套用此規則，變更須先改 feature-split 與 spec，不屬於 005 的擴充點 | spec FR-032（commit `spec(001): align ui flow with feature split`）；contract 共通規則；tasks C-4 |
+| M1 | 改丟一般的 `Error`（程式錯誤，頁面不會觸發） | tasks T113 |
+| M2 | 保留 T132 的集中對照表，改寫 RD-11 | research RD-11 |
+| M3 | 圖表補上方法並重新產生 PNG | 類別圖 `MockSession`；時序圖 M6 段；組件圖 `AppRouter ..> ConfirmDialog`；research RD-11 |
+| M4 | 加入 T-WriteBack 的 `popstate` 案例 | tasks T070 |
+| L1 | 加入停留頁面的 `goBack()` 與 `reload()` 斷言 | tasks T093 |
+| L2 | 新增 T134 修改紀錄樣板 | tasks Phase 3.6 |
+| L3 | 加入全部不接受的案例 | tasks T068 |
+| L4 | 已送出後再呼叫丟出一般的 `Error` | tasks T113 |
+| L5 | 問答依序排列；FR-056a 列移到 FR-056 之後 | spec Clarifications；tasks 需求對照表 |
 
 處理後沒有未處理的 CRITICAL 或 HIGH 問題，符合 CLAUDE.md 第 2 節步驟 5 的通過條件。

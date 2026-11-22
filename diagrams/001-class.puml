@@ -254,6 +254,8 @@ package "Mock Implementations (001)" {
     +pendingValidationFailure
     +pendingUnexpectedError: boolean
     +requestChoice(request: ChoiceRequest): Promise<string | null>
+    +setViewerPhaseAdvancer(advance: () => void): void
+    +advanceViewerPhase(): void
   }
   class MockAuthService <<M1>>
   class MockGuidedNotesService <<M2>>

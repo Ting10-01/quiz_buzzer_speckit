@@ -26,6 +26,7 @@
 | `Submission` | `questionNumber: number`、`groupNumber: number`、`answers: string[]`、`rank: number`、`elapsedMs: number`、`judgement: Judgement` | — | 送出 |
 | `QuestionResult` | `questionNumber: number`、`winner?: Submission`、`submissionCount: number`、`behindFirstMs: number[]` | `submissions: Submission[]`（0..*） | 題目結果 |
 | `WriteBackResult` | `ok: boolean`、`cellCount: number`、`failureReason?: string` | — | 寫回結果 |
+| `JudgeOutcome` | — | `submissions: Submission[]`（0..*）、`activity: Activity` | — |
 | `ValidationError` | `field: string`、`message: string` | — | — |
 | `UnexpectedError` | `message: string` | — | 非預期錯誤 |
 
@@ -47,17 +48,18 @@
 | `AuthService` | `signInWithGoogle`、`getCurrentAccount` | 002 |
 | `GuidedNotesService` | `pickSpreadsheet`、`readWorksheet` | 003 |
 | `ActivityService` | `createActivity`、`updateSettings`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange`、`onActivityChange` | 004 |
-| `SubmissionService` | `submitAnswer`、`listSubmissions`、`onSubmissionsChange`、`judge`、`onJudgement` | 005 |
+| `SubmissionService` | `submitAnswer`、`listSubmissions`、`onSubmissionsChange`、`judge`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement` | 005 |
 | `ResultService` | `getQuestionResult`、`getAllResults`、`writeBack` | 006 |
 | `PhaseMockControl`（mock only） | `advancePhase` | 隨 004 移除 |
 | `JudgementMockControl`（mock only） | `simulateJudgement` | 隨 005 移除 |
+| `TeammateMockControl`（mock only） | `simulateTeammateSubmission` | 隨 005 移除 |
 | `ValidationMockControl`（mock only） | `failNextValidation` | 活動的隨 004、送出的隨 005 移除 |
 | `UnexpectedErrorMockControl`（mock only） | `failNextCall` | 五個介面都換成真正的實作後移除 |
 | `MockChoicePrompt`（mock only） | `onRequest`、`answer` | `auth` 與 `guidedNotes` 都換成真正的實作後移除 |
 | `ChoiceRequest`（mock only） | `title: string`、`options: ChoiceOption[]`（1..*） | 同上 |
 | `ChoiceOption`（mock only） | `id: string`、`label: string` | 同上 |
 
-`joinGroup` 之後由服務記住本分頁的組別，`submitAnswer`、`onJudgement`、`leaveGroup` 不傳組別（原則 VI）；`onActivityChange`、`onSubmissionsChange` 供老師端即時更新（R4）。簽章與規則見 [contracts/service-interfaces.md](contracts/service-interfaces.md)。
+`joinGroup` 之後由服務記住本分頁的組別，`submitAnswer`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement`、`leaveGroup` 不傳組別（原則 VI）；`judge` 回傳 `JudgeOutcome`，其中的 `activity` 讓老師端在接受後依階段切換頁面（FR-032a）；`onActivityChange`、`onSubmissionsChange` 供老師端即時更新（R4）。簽章與規則見 [contracts/service-interfaces.md](contracts/service-interfaces.md)。
 
 ### `ServiceRegistry`
 
@@ -66,6 +68,7 @@
 | `auth`、`guidedNotes`、`activity`、`submission`、`result` | 對應介面 | 永遠存在 |
 | `phaseControl` | `PhaseMockControl \| undefined` | `activity` 為模擬實作時存在 |
 | `judgementControl` | `JudgementMockControl \| undefined` | `submission` 為模擬實作時存在 |
+| `teammateControl` | `TeammateMockControl \| undefined` | `submission` 為模擬實作時存在 |
 | `activityValidationControl` | `ValidationMockControl \| undefined` | `activity` 為模擬實作時存在 |
 | `submissionValidationControl` | `ValidationMockControl \| undefined` | `submission` 為模擬實作時存在 |
 | `unexpectedErrorControl` | `UnexpectedErrorMockControl \| undefined` | 任一介面為模擬實作時存在 |
@@ -85,7 +88,8 @@
 | `importResults` | 「題組＋單題範本」：4 題，其中 2 題為題組，共 6 個填空格；「單題範本」：6 題單題，6 個填空格；「表頭錯誤範例」：`ImportError` | M2；內容沿用 `docs/design/dark/T-Import.html`、`T-ImportError.html` |
 | `activity` | 首頁與學生頁面看到的固定模擬活動：4 題、6 組 | M3 |
 | `groupMembers` | 各組已加入人數，至少一組為 0 人 | M3 |
-| `submissionsByQuestion` | 每題開放時的模擬送出列表：除最後一題外每題 2 組以上；最後一題沒有送出 | M4；內容沿用 `docs/design/dark/T-Live.html` |
+| `submissionsByQuestion` | 每題開放時的模擬送出列表：除第 3 題外每題 2 組以上；第 3 題沒有送出 | M4；內容沿用 `docs/design/dark/T-Live.html` |
+| 同組組員的模擬答案 | 「模擬：同組組員送出」時使用的一組固定答案 | M5 |
 
 模擬資料只是展示用的資料，不是預設值（spec Assumptions）。
 
@@ -96,9 +100,9 @@
 | 欄位 | 說明 | 寫入者 | 讀取者 |
 | --- | --- | --- | --- |
 | `lastImport` | 最近一次辨識成功的 `ImportSuccess` | MockGuidedNotesService | MockActivityService（老師端活動的題目）、MockResultService（M8） |
-| `teacherActivity` | 老師端建立、開放、結束題目後的 `Activity` | MockActivityService | MockSubmissionService、MockResultService |
-| `joinedGroup` | 本分頁所屬的組別；`joinGroup` 設定、`leaveGroup` 清除 | MockActivityService | MockSubmissionService（`submitAnswer`、`onJudgement`、`simulateJudgement`） |
-| `viewerPhaseIndex` | 首頁與學生頁面看到的階段在 M7 序列中的位置 | MockActivityService（`advancePhase`） | MockActivityService（`getCurrentActivity`、`onPhaseChange`） |
+| `teacherActivity` | 老師端建立、開放、結束題目後的 `Activity` | MockActivityService；MockSubmissionService（`judge(ACCEPTED)` 結束本題，M4） | MockSubmissionService、MockResultService |
+| `joinedGroup` | 本分頁所屬的組別；`joinGroup` 設定、`leaveGroup` 清除 | MockActivityService | MockSubmissionService（`submitAnswer`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement`、`simulateJudgement`、`simulateTeammateSubmission`） |
+| `viewerPhaseIndex` | 首頁與學生頁面看到的階段在 M7 序列中的位置 | MockActivityService（`advancePhase`）；MockSubmissionService（`simulateJudgement(ACCEPTED)` 推進一次，M6） | MockActivityService（`getCurrentActivity`、`onPhaseChange`） |
 | `submissions` | 各題的送出與判定（老師端的判定、學生端本組的送出） | MockSubmissionService | MockResultService |
 | `pendingValidationFailure` | 活動與送出各一個旗標，由「模擬：驗證失敗」設定，下一次送出時消耗 | MockActivityService、MockSubmissionService | 同左 |
 | `pendingUnexpectedError` | 由「模擬：非預期錯誤」（`failNextCall`）設定；下一次由按鈕觸發的模擬介面呼叫讀取並清除，以 `UnexpectedError`「模擬：連不上伺服器」reject（M9） | MockSession | 所有 `Mock*Service` |
@@ -113,31 +117,33 @@
 
 依 M3 與 M7，同一個分頁中有兩條互不影響的模擬狀態：
 
-- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 改變 `teacherActivity`。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
-- **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 時改變，使用 `MockFixtures.activity`（4 題、6 組）。
+- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 與 `judge(ACCEPTED)` 改變 `teacherActivity`。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
+- **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 與 `simulateJudgement(ACCEPTED)` 時改變（兩者都經 `onPhaseChange` 通知），使用 `MockFixtures.activity`（4 題、6 組）。
 
 ### 狀態轉換
 
 **首頁與學生端看到的階段（M7）**：
 
 ```text
-NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → OPEN(2) → … → QUESTION_ENDED(4) → FINISHED
+NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → OPEN(2) → … → OPEN(4) → FINISHED
 ```
 
-`FINISHED` 之後再推進，階段不變。重新整理回到 `NO_ACTIVITY`。
+最後一題不經過 `QUESTION_ENDED`。`FINISHED` 之後再推進，階段不變。重新整理回到 `NO_ACTIVITY`。「模擬：接受」等同推進一次（M6）。
 
 **老師端的活動**：
 
 ```text
-（無）--createActivity--> PREPARING --openQuestion(1)--> OPEN(1) --endQuestion(1)--> QUESTION_ENDED(1)
-      --openQuestion(2)--> OPEN(2) … --endQuestion(最後一題)--> FINISHED
+（無）--createActivity--> PREPARING --openQuestion(1)--> OPEN(1) --endQuestion(1) 或 judge(ACCEPTED)--> QUESTION_ENDED(1)
+      --openQuestion(2)--> OPEN(2) … --endQuestion(最後一題) 或 judge(ACCEPTED)--> FINISHED
 ```
+
+`judge(ACCEPTED)` 結束本題，回傳的 `JudgeOutcome.activity` 為結束後的階段（FR-032a、M4）。
 
 **一筆送出的判定（001 的模擬實作）**：
 
 ```text
-PENDING --judge / simulateJudgement(ACCEPTED)--> ACCEPTED
-PENDING --judge / simulateJudgement(REJECTED)--> REJECTED --（學生重送）--> 新的一筆 PENDING
+PENDING --judge / simulateJudgement(ACCEPTED)--> ACCEPTED（本題結束）
+PENDING --judge / simulateJudgement(REJECTED)--> REJECTED（終止，該組本題不能再送出）
 ```
 
-哪些送出可以判定、接受後其他送出如何呈現、重送的順位，由 005 定義（D10、D11、D16）。
+老師端只有最早一筆 `PENDING` 可判定；不接受後輪到下一筆（M4）。每組每題只送出一次，本人或同組組員送出都算（M5、FR-056、FR-056a）。001 的規則不代表最終規則，005 可依 D10、D11 修改。

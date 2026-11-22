@@ -100,6 +100,7 @@ Badge ..> Registry : isMockMode()
 Badge --> Bar
 Bar ..> Registry : phaseControl / judgementControl /\nteammateControl / validation /\nunexpectedError controls / choicePrompt
 Bar --> CDialog : 顯示模擬選擇器（M1、M2）
+Router ..> CDialog : closeTopDialog()（FR-014）
 Registry --> IAuth
 Registry --> INotes
 Registry --> IActivity
