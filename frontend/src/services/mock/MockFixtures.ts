@@ -179,12 +179,12 @@ const groupAndSingleSubmissions: Record<number, FixtureSubmission[]> = {
     { groupNumber: 5, answers: ['演算法', '堆疊'], elapsedMs: 10412 },
     { groupNumber: 2, answers: ['演算法', '佇列'], elapsedMs: 13276 },
   ],
-  3: [
-    { groupNumber: 1, answers: ['0'], elapsedMs: 5381 },
-    { groupNumber: 3, answers: ['0'], elapsedMs: 7902 },
+  // Question 3 has no submissions (M4).
+  3: [],
+  4: [
+    { groupNumber: 1, answers: ['IP'], elapsedMs: 5381 },
+    { groupNumber: 3, answers: ['MAC'], elapsedMs: 7902 },
   ],
-  // The last question has no submissions (M4).
-  4: [],
 };
 
 /** Submissions shown when a question opens, by spreadsheet id then question number (M4). */
@@ -200,10 +200,8 @@ const submissionsByQuestion: Record<string, Record<number, FixtureSubmission[]>>
       { groupNumber: 1, answers: ['作業系統'], elapsedMs: 6122 },
       { groupNumber: 5, answers: ['作業系統'], elapsedMs: 9047 },
     ],
-    3: [
-      { groupNumber: 5, answers: ['演算法'], elapsedMs: 8263 },
-      { groupNumber: 3, answers: ['流程圖'], elapsedMs: 11518 },
-    ],
+    // Question 3 has no submissions (M4).
+    3: [],
     4: [
       { groupNumber: 3, answers: ['堆疊'], elapsedMs: 5934 },
       { groupNumber: 2, answers: ['堆疊'], elapsedMs: 9871 },
@@ -212,9 +210,19 @@ const submissionsByQuestion: Record<string, Record<number, FixtureSubmission[]>>
       { groupNumber: 1, answers: ['0'], elapsedMs: 3702 },
       { groupNumber: 4, answers: ['0'], elapsedMs: 6455 },
     ],
-    // The last question has no submissions (M4).
-    6: [],
+    6: [
+      { groupNumber: 5, answers: ['IP'], elapsedMs: 8263 },
+      { groupNumber: 3, answers: ['MAC'], elapsedMs: 11518 },
+    ],
   },
+};
+
+/** Answers a groupmate submits for this tab's group in the fixed activity, by question (M5). */
+const teammateAnswers: Record<number, string[]> = {
+  1: ['CPU', '作業系統'],
+  2: ['演算法', '堆疊'],
+  3: ['0'],
+  4: ['IP'],
 };
 
 export const MockFixtures = {
@@ -224,4 +232,5 @@ export const MockFixtures = {
   activity,
   groupMembers,
   submissionsByQuestion,
+  teammateAnswers,
 };
