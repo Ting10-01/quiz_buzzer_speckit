@@ -15,16 +15,12 @@ export class MockAuthService implements AuthService {
       title: '模擬帳號選擇',
       options: [
         { id: ACCOUNT_CHOICE.TEACHER, label: '模擬老師帳號' },
-        { id: ACCOUNT_CHOICE.NON_TEACHER, label: '模擬非老師帳號' },
         { id: ACCOUNT_CHOICE.CANCEL, label: '取消' },
       ],
     });
     if (choice === ACCOUNT_CHOICE.TEACHER) {
       this.account = { ...MockFixtures.teacherAccount };
       return { ok: true, account: { ...this.account } };
-    }
-    if (choice === ACCOUNT_CHOICE.NON_TEACHER) {
-      return { ok: false, failure: SignInFailure.NOT_TEACHER };
     }
     // "Cancel" and closing the chooser both count as a cancelled sign-in.
     return { ok: false, failure: SignInFailure.CANCELLED };

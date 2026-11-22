@@ -17,7 +17,6 @@ import {
 /** Option ids of the mock account chooser (M1). */
 export const ACCOUNT_CHOICE = {
   TEACHER: 'mock-teacher',
-  NON_TEACHER: 'mock-non-teacher',
   CANCEL: 'cancel',
 } as const;
 
