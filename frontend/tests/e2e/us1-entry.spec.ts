@@ -4,7 +4,7 @@ async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
 }
 
-test.describe('US1 entry (quickstart Q1, Q2)', () => {
+test.describe('US1 entry (quickstart Q1, Q2, Q14)', () => {
   test('Q1: home → student join page, then home → teacher login page', async ({ page }) => {
     await page.goto('/');
     await expectMockBadge(page);
@@ -40,5 +40,44 @@ test.describe('US1 entry (quickstart Q1, Q2)', () => {
 
     await page.getByRole('button', { name: '搶答板' }).click();
     await expect(page.getByRole('button', { name: /我是老師/ })).toBeVisible();
+  });
+
+  test('Q14: 返回首頁 and browser back on T-Login and S-Join', async ({ page }) => {
+    const home = page.getByRole('button', { name: /我是老師/ });
+    await page.goto('/');
+
+    await page.getByRole('button', { name: /我是學生/ }).click();
+    await expect(page.getByText('目前沒有活動，請等老師建立活動')).toBeVisible();
+    await page.getByRole('button', { name: '返回首頁' }).click();
+    await expect(home).toBeVisible();
+
+    await page.getByRole('button', { name: /我是學生/ }).click();
+    await expect(page.getByText('目前沒有活動，請等老師建立活動')).toBeVisible();
+    await page.goBack();
+    await expect(home).toBeVisible();
+
+    await home.click();
+    await page.getByRole('button', { name: '返回首頁' }).click();
+    await expect(home).toBeVisible();
+
+    await home.click();
+    await page.goBack();
+    await expect(home).toBeVisible();
+
+    // Back on the home page stays in the app.
+    await page.goBack();
+    await expect(home).toBeVisible();
+  });
+
+  test('Q14: browser back with the mock chooser open only closes it', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /我是老師/ }).click();
+    await page.getByRole('button', { name: '用 Google 登入' }).click();
+    const chooser = page.getByRole('dialog', { name: '模擬帳號選擇' });
+    await expect(chooser).toBeVisible();
+    await page.goBack();
+    await expect(chooser).toBeHidden();
+    await expect(page.getByText('已取消登入')).toBeVisible();
+    await expect(page.getByRole('button', { name: '用 Google 登入' })).toBeVisible();
   });
 });
