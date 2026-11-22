@@ -88,36 +88,61 @@ Page -> Act : joinGroup(n)
 note right of Act : 服務記住本分頁的組別（MockSession.joinedGroup）；\n真正的實作由伺服器依連線身分判斷
 Act --> Page : Activity(PREPARING)
 Page --> Student : 等待開放頁
+note over Page
+  加入時的目的頁依 Activity.phase：
+  PREPARING → 等待開放頁；QUESTION_ENDED → 本題結果頁（S8）；
+  FINISHED → 全部結果頁（S9）；
+  OPEN → 見下方 opt
+end note
+opt 加入時已在搶答中（S4、S10）
+  Page -> Sub : getGroupSubmission(q)
+  alt 本組這一題還沒送出
+    Sub --> Page : null（001 的模擬實作一律如此）
+    Page --> Student : 作答頁（S4）
+  else 同組組員已送出（由 005 推動）
+    Sub --> Page : Submission(PENDING 或 REJECTED)
+    Page --> Student : 等待判定頁，依 judgement 顯示等待判定或不接受（S10）
+  end
+end
 Demo -> Bar : 點「模擬：推進到下一個階段」
 Bar -> Act : advancePhase()（M7，PhaseMockControl）
 Act --> Page : 階段：搶答中（第 1 題）
 Page --> Student : 作答頁
-Student -> Page : 填寫每一格，點「整組送出」
-Page -> Sub : submitAnswer(q, answers)
-Sub --> Page : Submission(PENDING)
+Page -> Sub : onGroupSubmitted(listener)
+alt 本人送出
+  Student -> Page : 填寫每一格，點「整組送出」
+  Page -> Sub : submitAnswer(q, answers)
+  Sub --> Page : Submission(PENDING)
+else 同組組員送出（FR-056a）
+  Demo -> Bar : 點「模擬：同組組員送出」
+  Bar -> Sub : simulateTeammateSubmission()（M5，TeammateMockControl）
+  Sub --> Page : onGroupSubmitted：Submission(PENDING)
+end
 Page --> Student : 等待判定頁
 Page -> Sub : onJudgement(listener)
-alt 判定：接受
+alt 判定：接受（本題結束）
   Demo -> Bar : 點「模擬：接受」
   Bar -> Sub : simulateJudgement(ACCEPTED)（M6，JudgementMockControl）
-  Sub --> Page : Judgement.ACCEPTED
-  Page --> Student : 等待判定頁（已接受）
+  Sub -> Sess : viewerPhaseIndex 推進一次（M6）
+  Act --> Page : 階段：本題已結束（最後一題時為已結束）
 else 判定：不接受
   Demo -> Bar : 點「模擬：不接受」
   Bar -> Sub : simulateJudgement(REJECTED)（M6，JudgementMockControl）
   Sub --> Page : Judgement.REJECTED
-  Page --> Student : 作答頁（被拒絕，保留上次答案）
-  Student -> Page : 修改答案，點「整組送出」（重送，FR-056）
-  Page -> Sub : submitAnswer(q, answers)
-  Sub --> Page : Submission(PENDING)
-  Page --> Student : 等待判定頁
+  Page --> Student : 等待判定頁（不接受：老師沒有接受本組的答案，不能再送出）
+  Demo -> Bar : 點「模擬：推進到下一個階段」
+  Bar -> Act : advancePhase()（M7）
+  Act --> Page : 階段：本題已結束（最後一題時為已結束）
 end
-Demo -> Bar : 點「模擬：推進到下一個階段」
-Bar -> Act : advancePhase()
-Act --> Page : 階段：本題已結束（最後一題時為已結束 → 全部結果頁）
-Page -> Res : getQuestionResult(q)
-Res --> Page : QuestionResult
-Page --> Student : 本題結果頁
+alt 不是最後一題
+  Page -> Res : getQuestionResult(q)
+  Res --> Page : QuestionResult
+  Page --> Student : 本題結果頁
+else 最後一題（不經過本題已結束）
+  Page -> Res : getAllResults()
+  Res --> Page : QuestionResult[]
+  Page --> Student : 全部結果頁
+end
 
 == 4. 老師主持與判定（R3、R4、R10、E4） ==
 Teacher -> Page : 點「開放第 n 題」
@@ -128,17 +153,21 @@ Sub --> Page : Submission[]（M4：依送出順序）
 Page -> Sub : onSubmissionsChange(n, listener)
 note right of Sub : 學生送出時以新的列表通知（005）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・搶答中
-loop 老師判定可判定的答案（哪些可判定由 005 定義）
-  Teacher -> Page : 點「接受」或「不接受」
+loop 依送出順序判定最早一筆待判定的答案（feature-split 3.2），直到接受或沒有待判定的答案
+  Teacher -> Page : 點最早一筆的「接受」或「不接受」
   Page -> Sub : judge(n, group, judgement)
-  Sub --> Page : Submission[]（更新判定狀態）
-  Page --> Teacher : 更新答案列表
+  Sub --> Page : JudgeOutcome(submissions, activity)
+  Page --> Teacher : 不接受：更新答案列表，輪到下一筆
 end
-Teacher -> Page : 點「結束這一題」
-Page --> Teacher : 結束確認視窗
-Teacher -> Page : 點「結束並公布結果」
-Page -> Act : endQuestion(n)
-Act --> Page : Activity(QUESTION_ENDED 或 FINISHED)
+alt 某一組被接受（本題自動結束）
+  note right of Page : JudgeOutcome.activity 為\nQUESTION_ENDED（最後一題時為 FINISHED）
+else 沒有組別被接受
+  Teacher -> Page : 點「結束這一題」
+  Page --> Teacher : 結束確認視窗
+  Teacher -> Page : 點「結束並公布結果」
+  Page -> Act : endQuestion(n)
+  Act --> Page : Activity(QUESTION_ENDED 或 FINISHED)
+end
 Page -> Res : getQuestionResult(n)
 Res --> Page : QuestionResult
 alt 非最後一題

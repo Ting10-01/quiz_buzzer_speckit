@@ -99,6 +99,10 @@ package "Entities" {
     cellCount: number
     failureReason: string [0..1]
   }
+  class JudgeOutcome {
+    submissions: Submission[]
+    activity: Activity
+  }
   class ValidationError {
     field: string
     message: string
@@ -119,6 +123,8 @@ package "Entities" {
   Activity --> ActivityPhase
   Submission --> Judgement
   QuestionResult "1" o-- "0..*" Submission : submissions
+  JudgeOutcome o-- "0..*" Submission
+  JudgeOutcome --> Activity
 }
 
 package "Service Interfaces" {
@@ -145,7 +151,9 @@ package "Service Interfaces" {
     +submitAnswer(questionNumber: number, answers: string[]): Promise<Submission | ValidationError>
     +listSubmissions(questionNumber: number): Promise<Submission[]>
     +onSubmissionsChange(questionNumber: number, listener: (submissions: Submission[]) => void): Unsubscribe
-    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<Submission[]>
+    +judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<JudgeOutcome>
+    +getGroupSubmission(questionNumber: number): Promise<Submission | null>
+    +onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe
     +onJudgement(listener: (submission: Submission) => void): Unsubscribe
   }
   interface ResultService {
@@ -161,6 +169,9 @@ package "Service Interfaces" {
   }
   interface JudgementMockControl <<mock only>> {
     +simulateJudgement(judgement: Judgement): Promise<Submission>
+  }
+  interface TeammateMockControl <<mock only>> {
+    +simulateTeammateSubmission(): Promise<Submission>
   }
   interface ValidationMockControl <<mock only>> {
     +failNextValidation(): void
@@ -191,6 +202,7 @@ package "Service Interfaces" {
     +result: ResultService
     +phaseControl: PhaseMockControl [0..1]
     +judgementControl: JudgementMockControl [0..1]
+    +teammateControl: TeammateMockControl [0..1]
     +activityValidationControl: ValidationMockControl [0..1]
     +submissionValidationControl: ValidationMockControl [0..1]
     +unexpectedErrorControl: UnexpectedErrorMockControl [0..1]
@@ -204,6 +216,7 @@ package "Service Interfaces" {
   ServiceRegistry o-- ResultService
   ServiceRegistry o-- PhaseMockControl
   ServiceRegistry o-- JudgementMockControl
+  ServiceRegistry o-- TeammateMockControl
   ServiceRegistry o-- ValidationMockControl
   ServiceRegistry o-- UnexpectedErrorMockControl
   ServiceRegistry o-- MockChoicePrompt
@@ -255,6 +268,7 @@ package "Mock Implementations (001)" {
   MockResultService ..|> ResultService
   MockActivityService ..|> PhaseMockControl
   MockSubmissionService ..|> JudgementMockControl
+  MockSubmissionService ..|> TeammateMockControl
   MockActivityService ..|> ValidationMockControl
   MockSubmissionService ..|> ValidationMockControl
   MockSession ..|> UnexpectedErrorMockControl
@@ -286,14 +300,21 @@ note bottom of MockSession
 end note
 
 note right of MockSubmissionService
+  M4：只有最早一筆待判定的答案可判定；
+  接受時本題結束（最後一題時活動結束），
+  judge 回傳的 activity 反映結束後的階段
+  M5：「模擬：同組組員送出」經 onGroupSubmitted 通知；
+  每組每題只送出一次
+  getGroupSubmission 依 MockSession 回傳本組這一題的送出；
+  學生加入組別時本組一定還沒送出，所以回傳 null（S10 不觸發）
   M6：判定結果只在展示者點
-  「模擬：接受／不接受」時產生
+  「模擬：接受／不接受」時產生；接受同時推進階段
 end note
 
 note bottom of ServiceRegistry
   頁面只透過 ServiceRegistry 取得介面；
   任何一個介面為模擬實作時 isMockMode() 為 true。
-  phaseControl、judgementControl 只在對應介面
+  phaseControl、judgementControl、teammateControl 只在對應介面
   為模擬實作時存在，模擬控制列依此顯示控制。
   unexpectedErrorControl 在任一介面為模擬實作時存在；
   choicePrompt 在 auth 或 guidedNotes 為模擬實作時存在。

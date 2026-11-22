@@ -14,15 +14,19 @@ legend bottom left
   |= 線條 |= 觸發 |= 行為歸屬 |
   | <color:#1F5FAD>━━ 實線（藍）</color> | 使用者點擊 | 001 |
   | <color:#C05621>╍╍ 虛線（橘）</color> | 活動階段推動 | 004（001 只標示） |
-  | <color:#2F855A>┄┄ 點線（綠）</color> | 判定結果推動 | 005（001 只標示） |
-  箭頭上寫文字的是一位老師與一組學生走完一輪活動的路徑，以及答案被接受、不接受、重送；其他轉換以代號標示，見下表。
+  | <color:#2F855A>┄┄ 點線（綠）</color> | 判定結果、同組組員送出推動 | 005（001 只標示） |
+  箭頭上寫文字的是一位老師與一組學生走完一輪活動的路徑，以及答案被接受、不接受；其他轉換以代號標示，見下表。
+  老師接受某一組後本題自動結束；最後一題結束時活動直接結束，不經過「本題已結束」。每組每題只能送出一次，被拒絕後不能再送出。
   確認視窗（T-EndConfirm、T-WriteBack）不畫成節點，併入觸發它的轉換。
-  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）。
+  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）；S10 在 001 的模擬實作中不會發生（SC-002 除外項）。
+  學生端「判定：接受」同時結束本題（M6）。
   任何介面呼叫回傳非預期錯誤時停留在原頁面，在共通錯誤訊息區顯示（FR-009）；此自我轉換在每頁都可能發生，圖中省略，以「模擬：非預期錯誤」觸發（M9）。
 
   |= 代號 |= 類型 |= 從 → 到 |= 觸發 |
   | <color:#1F5FAD>**H1**</color> | <color:#1F5FAD>點擊</color> | Main → S-Join（沒有活動） | 我是學生（沒有活動） |
   | <color:#C05621>**H2**</color> | <color:#C05621>階段</color> | Main → Main | 目前活動資訊更新 |
+  | <color:#1F5FAD>**H3**</color> | <color:#1F5FAD>點擊</color> | T-Login → Main | 返回首頁 |
+  | <color:#1F5FAD>**H4**</color> | <color:#1F5FAD>點擊</color> | S-Join、S-Join（沒有活動）→ Main | 返回首頁 |
   | <color:#1F5FAD>**T1**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Login | 用 Google 登入（取消） |
   | <color:#1F5FAD>**T2**</color> | <color:#1F5FAD>點擊</color> | T-Pick → T-ImportError | 從雲端硬碟挑選（找不到表頭） |
   | <color:#1F5FAD>**T3**</color> | <color:#1F5FAD>點擊</color> | T-Pick → Main | 取消 |
@@ -35,14 +39,19 @@ legend bottom left
   | <color:#1F5FAD>**T10**</color> | <color:#1F5FAD>點擊</color> | T-Setup → T-Setup | 「−」「+」；建立活動／儲存設定（驗證失敗） |
   | <color:#1F5FAD>**T11**</color> | <color:#1F5FAD>點擊</color> | T-Setup → T-Lobby | 儲存設定（驗證通過）、取消（修改模式） |
   | <color:#1F5FAD>**T12**</color> | <color:#1F5FAD>點擊</color> | T-Lobby → T-Setup | 修改設定 |
-  | <color:#1F5FAD>**T13**</color> | <color:#1F5FAD>點擊</color> | T-Live → T-Live | 接受／不接受（可判定的列由 005 定義） |
+  | <color:#1F5FAD>**T13**</color> | <color:#1F5FAD>點擊</color> | T-Live → T-Live | 不接受（只能判定最早一筆待判定的答案） |
   | <color:#1F5FAD>**T14**</color> | <color:#1F5FAD>點擊</color> | T-Live → T-Live | 結束這一題，在確認視窗按「繼續作答」 |
   | <color:#1F5FAD>**T15**</color> | <color:#1F5FAD>點擊</color> | T-Results → T-Results | 寫回 Google Sheets，在確認視窗按「取消」 |
   | <color:#1F5FAD>**S1**</color> | <color:#1F5FAD>點擊</color> | S-Join → S-Join | 選擇組別 |
   | <color:#1F5FAD>**S2**</color> | <color:#1F5FAD>點擊</color> | S-Wait → S-Join | 選錯組別？重新選擇 |
   | <color:#C05621>**S3**</color> | <color:#C05621>階段</color> | S-Join（沒有活動）→ S-Join | 老師建立活動 |
-  | <color:#C05621>**S4**</color> | <color:#C05621>階段</color> | S-Join → S-Answer | 加入時已在搶答中 |
+  | <color:#C05621>**S4**</color> | <color:#C05621>階段</color> | S-Join → S-Answer | 加入時已在搶答中（本組還沒送出） |
   | <color:#1F5FAD>**S5**</color> | <color:#1F5FAD>點擊</color> | S-Answer → S-Answer | 整組送出（驗證失敗） |
+  | <color:#2F855A>**S6**</color> | <color:#2F855A>判定</color> | S-Submitted → S-Results | 判定：接受（最後一題，活動結束） |
+  | <color:#2F855A>**S7**</color> | <color:#2F855A>送出</color> | S-Answer → S-Submitted | 同組組員送出 |
+  | <color:#C05621>**S8**</color> | <color:#C05621>階段</color> | S-Join → S-QuestionDone | 加入時本題已結束（本組沒有送出） |
+  | <color:#C05621>**S9**</color> | <color:#C05621>階段</color> | S-Join → S-Results | 加入時活動已結束（本組搶到 0 題） |
+  | <color:#2F855A>**S10**</color> | <color:#2F855A>送出</color> | S-Join → S-Submitted | 加入時同組組員已送出（依本組狀態為等待判定或不接受；001 的模擬實作不觸發） |
 endlegend
 
 state "Main\n首頁：選擇身分" as Main
@@ -54,7 +63,7 @@ state "老師端" as Teacher {
   state "T-ImportError\n找不到表頭" as T_ImportError
   state "T-Setup\n活動設定\n（建立模式／修改模式）" as T_Setup
   state "T-Lobby\n控制台・準備中" as T_Lobby
-  state "T-Live\n控制台・搶答中\n（依送出順序判定）" as T_Live
+  state "T-Live\n控制台・搶答中\n（只能判定最早一筆）" as T_Live
   state "T-QuestionEnd\n控制台・本題已結束" as T_QuestionEnd
   state "T-Results\n結果與寫回" as T_Results
 }
@@ -66,8 +75,7 @@ state "學生端" as Student {
   state "本題開放中" as S_Open {
     state "S-Answer\n作答" as S_Answer
     state "S-Submitted\n等待判定" as S_Submitted
-    state "S-Answer（被拒絕）\n作答・老師沒有接受" as S_Rejected
-    state "S-Submitted（已接受）\n老師已接受本組答案" as S_Accepted
+    state "S-Submitted（不接受）\n老師沒有接受本組答案\n（不能再送出）" as S_Rejected
   }
   state "S-QuestionDone\n本題結果" as S_QuestionDone
   state "S-Results\n全部結果" as S_Results
@@ -82,9 +90,9 @@ T_Pick -[#1F5FAD]-> T_Import : <color:#1F5FAD>點擊：從雲端硬碟挑選</co
 T_Import -[#1F5FAD]-> T_Setup : <color:#1F5FAD>點擊：確認匯入，下一步</color>
 T_Setup -[#1F5FAD]-> T_Lobby : <color:#1F5FAD>點擊：建立活動（驗證通過）</color>
 T_Lobby -[#1F5FAD]-> T_Live : <color:#1F5FAD>點擊：開放第 1 題</color>
-T_Live -[#1F5FAD]-> T_QuestionEnd : <color:#1F5FAD>點擊：結束這一題</color>\n<color:#1F5FAD>（確認後，非最後一題）</color>
+T_Live -[#1F5FAD]-> T_QuestionEnd : <color:#1F5FAD>點擊：接受，或結束這一題（確認後）</color>\n<color:#1F5FAD>（非最後一題）</color>
 T_QuestionEnd -[#1F5FAD]-> T_Live : <color:#1F5FAD>點擊：開放第 n+1 題</color>
-T_Live -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：結束這一題</color>\n<color:#1F5FAD>（確認後，最後一題）</color>
+T_Live -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：接受，或結束這一題（確認後）</color>\n<color:#1F5FAD>（最後一題）</color>
 T_Results -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：寫回 Google Sheets（確認後）</color>
 
 ' ===== 寫在圖上：一組學生走一輪 =====
@@ -92,18 +100,20 @@ Main -[#1F5FAD]-> S_Join : <color:#1F5FAD>點擊：我是學生</color>
 S_Join -[#1F5FAD]-> S_Wait : <color:#1F5FAD>點擊：加入第 n 組</color>
 S_Wait -[#C05621,dashed]-> S_Answer : <color:#C05621>階段：老師開放第 1 題</color>
 S_Answer -[#1F5FAD]-> S_Submitted : <color:#1F5FAD>點擊：整組送出</color>
-S_Open -[#C05621,dashed]-> S_QuestionDone : <color:#C05621>階段：老師結束這一題</color>
+S_Open -[#C05621,dashed]-> S_QuestionDone : <color:#C05621>階段：本題結束（非最後一題）</color>
 S_QuestionDone -[#C05621,dashed]-> S_Answer : <color:#C05621>階段：老師開放下一題</color>
-S_QuestionDone -[#C05621,dashed]-> S_Results : <color:#C05621>階段：老師結束最後一題</color>
+S_Open -[#C05621,dashed]-> S_Results : <color:#C05621>階段：最後一題結束</color>
 
-' ===== 寫在圖上：E4 接受、不接受、重送 =====
-S_Submitted -[#2F855A,dotted]-> S_Accepted : <color:#2F855A>判定：接受</color>
+' ===== 寫在圖上：E4 接受、不接受 =====
+S_Submitted -[#2F855A,dotted]-> S_QuestionDone : <color:#2F855A>判定：接受（本題結束）</color>
 S_Submitted -[#2F855A,dotted]-> S_Rejected : <color:#2F855A>判定：不接受</color>
-S_Rejected -[#1F5FAD]-> S_Submitted : <color:#1F5FAD>點擊：整組送出（重送）</color>
 
 ' ===== 代號（對照表見圖下方） =====
 Main -[#1F5FAD]-> S_JoinEmpty : <color:#1F5FAD>**H1**</color>
 Main -[#C05621,dashed]-> Main : <color:#C05621>**H2**</color>
+T_Login -[#1F5FAD]-> Main : <color:#1F5FAD>**H3**</color>
+Main <-[#1F5FAD]- S_Join : <color:#1F5FAD>**H4**</color>
+Main <-[#1F5FAD]- S_JoinEmpty : <color:#1F5FAD>**H4**</color>
 T_Login -[#1F5FAD]-> T_Login : <color:#1F5FAD>**T1**</color>
 T_Pick -[#1F5FAD]-> T_ImportError : <color:#1F5FAD>**T2**</color>
 T_Pick -[#1F5FAD]-> Main : <color:#1F5FAD>**T3**</color>
@@ -124,5 +134,10 @@ S_Wait -[#1F5FAD]-> S_Join : <color:#1F5FAD>**S2**</color>
 S_JoinEmpty -[#C05621,dashed]-> S_Join : <color:#C05621>**S3**</color>
 S_Join -[#C05621,dashed]-> S_Answer : <color:#C05621>**S4**</color>
 S_Answer -[#1F5FAD]-> S_Answer : <color:#1F5FAD>**S5**</color>
+S_Submitted -[#2F855A,dotted]-> S_Results : <color:#2F855A>**S6**</color>
+S_Answer -[#2F855A,dotted]-> S_Submitted : <color:#2F855A>**S7**</color>
+S_Join -[#C05621,dashed]-> S_QuestionDone : <color:#C05621>**S8**</color>
+S_Join -[#C05621,dashed]-> S_Results : <color:#C05621>**S9**</color>
+S_Join -[#2F855A,dotted]-> S_Submitted : <color:#2F855A>**S10**</color>
 
 @enduml

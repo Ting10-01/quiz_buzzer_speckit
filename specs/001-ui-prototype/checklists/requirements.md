@@ -39,4 +39,5 @@
 - spec 中的「介面」表只以業務用語描述介面提供的行為，不指定技術；類別與方法名稱只出現在 `diagrams/001-class.puml`。
 - 圖表：`diagrams/001-component`、`001-class`、`001-sequence`（Diagram First 規定的三張）與 `001-screen-flow`（畫面流程狀態圖），`.puml` 與 PNG 皆已產生。
 - 圖表以憲法規定的 `java -jar plantuml.jar "./diagrams/*.puml"` 產生 PNG，版面引擎為 Graphviz（本機以 `brew install graphviz` 安裝 16.1.1）；重新產生圖表的組員也需要安裝 Graphviz。
-- 畫面流程圖：一位老師與一組學生走完一輪的路徑，以及答案被接受、不接受、重送，共 20 條轉換直接在箭頭上寫觸發；其他 21 條以代號（H1–H2、T1–T15、S1–S4）標示，對照表在圖的下方。確認視窗 T-EndConfirm、T-WriteBack 不畫成節點，併入觸發它的轉換。
+- 畫面流程圖：一位老師與一組學生走完一輪的路徑，以及答案被接受、不接受，共 19 條轉換直接在箭頭上寫觸發；其他 27 條以代號（H1–H4、T1–T15、S1–S7）標示，對照表在圖的下方。確認視窗 T-EndConfirm、T-WriteBack 不畫成節點，併入觸發它的轉換。
+- 2026-11-22 修訂：依 `docs/feature-split.md` 3.2、第 4 節定案的跨子功能決定修訂 spec 與四張圖：被拒絕後不能重送（停留在 S-Submitted 的不接受狀態）、只能判定最早一筆、接受後本題自動結束（拿掉學生端「已接受」狀態）、最後一題結束時直接到全部結果、同組組員送出（新增「模擬：同組組員送出」）、公布結果的範圍。決定記在 spec 的 Clarifications Session 2026-11-22。plan、tasks 與已實作的程式碼需要依此重跑與修改。
