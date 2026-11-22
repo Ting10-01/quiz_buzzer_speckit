@@ -158,7 +158,7 @@ description: "001 畫面與流程原型的實作任務"
 ### Tests（先改，確認失敗）
 
 - [X] T104 [P] 修改 `frontend/tests/unit/MockAuthService.test.ts`（M1）：模擬帳號選擇只有「模擬老師帳號」「取消」兩個選項；刪除 `NOT_TEACHER` 的案例；「取消」與關閉選擇器都回傳 `failure: CANCELLED`（邊界）
-- [ ] T105 [P] 修改 `frontend/tests/component/TeacherLoginPage.test.tsx`（FR-013）：刪除 `NOT_TEACHER` 的案例；`CANCELLED` 顯示「已取消登入」並停留（邊界）
+- [X] T105 [P] 修改 `frontend/tests/component/TeacherLoginPage.test.tsx`（FR-013）：刪除 `NOT_TEACHER` 的案例；`CANCELLED` 顯示「已取消登入」並停留（邊界）
 - [ ] T106 [P] 修改 `frontend/tests/e2e/us1-entry.spec.ts`：quickstart Q2 只走「取消」與「模擬老師帳號」兩個選項
 - [ ] T107 [P] 擴充 `frontend/tests/component/MockControlBar.test.tsx`（FR-061、US5 AC-11）：點「模擬：驗證失敗」後顯示「已設定：下一次送出會回傳驗證錯誤」，點「模擬：非預期錯誤」後顯示「已設定：下一次介面呼叫會回傳非預期錯誤」；以 fake timers 斷言數秒後提示消失；`page` 改變時提示立即消失（邊界）；其他控制（推進、接受、不接受）不顯示提示
 

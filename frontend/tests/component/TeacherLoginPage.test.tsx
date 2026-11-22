@@ -29,13 +29,10 @@ describe('TeacherLoginPage (T-Login)', () => {
     expect(navigate).toHaveBeenCalledWith({ id: 'T-Pick' });
   });
 
-  it.each([
-    ['CANCELLED', '已取消登入'],
-    ['NOT_TEACHER', '此帳號不是老師帳號'],
-  ])('stays and shows the %s failure message (edge, US1 AC-4, AC-5)', async (failure, text) => {
-    const { navigate, login } = setup(vi.fn().mockResolvedValue({ ok: false, failure }));
+  it('stays and shows "已取消登入" when sign-in is cancelled (edge, US1 AC-4, FR-013)', async () => {
+    const { navigate, login } = setup(vi.fn().mockResolvedValue({ ok: false, failure: 'CANCELLED' }));
     await login();
-    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(await screen.findByText('已取消登入')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
 
