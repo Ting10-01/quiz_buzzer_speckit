@@ -113,6 +113,12 @@ export interface Submission {
   judgement: Judgement;
 }
 
+/** Result of judging one submission: the updated list and the activity after judging (FR-032a). */
+export interface JudgeOutcome {
+  submissions: Submission[];
+  activity: Activity;
+}
+
 /** behindFirstMs is computed by the result service, in the same order as submissions. */
 export interface QuestionResult {
   questionNumber: number;

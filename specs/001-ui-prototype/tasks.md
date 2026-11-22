@@ -197,7 +197,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T120 在 `shared/src/entities.ts` 新增 `JudgeOutcome`（`submissions: Submission[]`、`activity: Activity`）（data-model 第 1 節、類別圖）
+- [X] T120 在 `shared/src/entities.ts` 新增 `JudgeOutcome`（`submissions: Submission[]`、`activity: Activity`）（data-model 第 1 節、類別圖）
 - [ ] T121 在 `frontend/src/services/interfaces.ts` 依類別圖修改 `SubmissionService`：`judge(questionNumber, groupNumber, judgement): Promise<JudgeOutcome>`；新增 `getGroupSubmission(questionNumber: number): Promise<Submission | null>` 與 `onGroupSubmitted(listener: (submission: Submission) => void): Unsubscribe`（兩者都不帶組別，原則 VI）；新增 mock only 的 `TeammateMockControl`（`simulateTeammateSubmission(): Promise<Submission>`）（依賴 T120）
 - [ ] T122 在 `frontend/src/services/ServiceRegistry.ts` 新增 `teammateControl?: TeammateMockControl`（data-model 第 2 節；依賴 T121）
 - [ ] T123 在 `frontend/src/services/mock/MockFixtures.ts` 把沒有送出的題目從第 4 題改為第 3 題，第 1、2、4 題各 ≥ 2 筆（M4；兩份可辨識的學習單都要調整）；新增同組組員的模擬答案（每題一組，答案數等於該題小題數，M5）
