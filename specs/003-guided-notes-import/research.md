@@ -41,8 +41,8 @@
   - 題號儲存格的合併範圍跨多列 → `GROUP`，範圍內每一列是一個候選小題；否則 `SINGLE`，只有該列。
   - 每個候選列：找作答欄 `(row, answerCol)` 所在的合併範圍；不在合併範圍內時填空格就是該格。合併範圍的第一列早於這一列 → 不是獨立填空格，略過；否則填空格是合併範圍左上角，轉成 A1（例如 `G5`）。
   - 一題沒有任何獨立填空格 → `NO_BLANK`。
-  - 標記：填空格文字符合 `^\s*([（(]\s*\d+\s*[)）])`，原樣保留括號內外的寫法（去掉前面的空白）作為 `marker`；不符合時 `marker = ""`。標記以外的文字忽略。
-  - 題目敘述：題目欄同一列（合併時取左上角）的文字，去除前後空白。單題直接用；題組依小題順序每行為「`marker`（空白時為「（n）」）＋文字」，用 `\n` 連接，只保留有文字的列；全部沒有文字時不設 `text`。
+  - 標記：填空格文字符合 `^\s*([（(]\s*\d+\s*[)）])`，原樣保留括號內外的寫法（去掉前面的空白）作為標記；不符合時為 `""`。標記以外的文字忽略。擷取寫成 `QuestionScanner.extractMarker(text)`。標記不放進 001 的 `SubQuestion`：`GuidedNotesParser.markersOf(grid, result)` 對每個 `blankCell` 讀出標記，`GuidedNotesImporter.read()` 成功時與 `ImportSuccess` 一起存入 `ImportStore`（`save(result, markers)`），006 以 `latestMarkers()` 取用（001 最終版沒有 `SubQuestion.marker`，2026-11-22 決定不請 001 修改）。
+  - 題目敘述：題目欄同一列（合併時取左上角）的文字，去除前後空白。單題直接用；題組依小題順序每行為「標記（空白時為「（n）」）＋文字」，用 `\n` 連接，只保留有文字的列；全部沒有文字時不設 `text`。
 - **Rationale**: 題組只依題號欄的合併範圍判定（AC-14）。填空格位置是解析結果（原則 IV），006 直接以 A1 寫回。
 - **Alternatives considered**: 依標記判定題組（範本單題也可能加標記，會誤判）。
 
@@ -69,7 +69,7 @@
 
 ## R8. ImportStore 與讀取器的位置與共用
 
-- **Decision**: `ImportStore` 是一般類別。002 的 `buildApp` 建立一個 `ImportStore` 與一個 `GoogleSheetsReader(app.googleClients)`（測試時由 `deps.spreadsheetReader` 注入替身），以 `app.decorate('importStore', …)`、`app.decorate('spreadsheetReader', …)` 提供；`guidedNotesRoutes` 用它們建立 `GuidedNotesImporter`，004、006 從 `app.importStore` 讀取，006 另用 `app.spreadsheetReader` 與 `GuidedNotesParser` 做版面檢查（[contracts/import-store.md](contracts/import-store.md)）。只有 `GuidedNotesImporter.read()` 呼叫 `save()`。
+- **Decision**: `ImportStore` 是一般類別。002 的 `buildApp` 建立一個 `ImportStore` 與一個 `GoogleSheetsReader(app.googleClients)`（測試時由 `deps.spreadsheetReader` 注入替身），以 `app.decorate('importStore', …)`、`app.decorate('spreadsheetReader', …)` 提供；`guidedNotesRoutes` 用它們建立 `GuidedNotesImporter`，004 從 `app.importStore.latest()`、006 從 `latest()` 與 `latestMarkers()` 讀取，006 另用 `app.spreadsheetReader` 與 `GuidedNotesParser` 做版面檢查（[contracts/import-store.md](contracts/import-store.md)）。只有 `GuidedNotesImporter.read()` 呼叫 `save(result, markers)`；結果與標記一起取代，不會只換其中一個。
 - **Rationale**: 與 002 提供 `app.googleClients` 的方式一致；不用模組層級的全域變數，測試可以各自建立；`ImportStore` 只有一個實作，不另設介面（原則 XI）。
 
 ## R9. 測試

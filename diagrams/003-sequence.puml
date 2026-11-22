@@ -65,7 +65,9 @@ else 找到工作表
   P --> I : ImportSuccess 或 ImportError
 end
 alt ImportSuccess
-  I -> S : save(result)
+  I -> P : markersOf(grid, result)
+  P --> I : BlankMarkers（blankCell → 標記）
+  I -> S : save(result, markers)
   I --> R : ImportSuccess
   R --> Svc : 200 ImportSuccess
   Svc --> Page : ImportSuccess
@@ -75,7 +77,7 @@ else ImportError
   I --> R : ImportError
   R --> Svc : 200 ImportError
   Svc --> Page : ImportError
-  Page --> T : 錯誤頁（T-ImportError）：原因、表頭、修正方式
+  Page --> T : 找不到表頭頁（T-ImportError；所有 ImportError 共用）：\n原因、表頭（可為空）、修正方式
 end
 
 == 3. 切換工作表、重新讀取 ==
@@ -102,8 +104,8 @@ Page --> T : 留在原頁，共通錯誤訊息區顯示（ImportStore 不變）
 
 == 5. 下游讀取 ==
 participant "004 / 006" as D
-D -> S : app.importStore.latest()
-S --> D : ImportSuccess 或 null
+D -> S : app.importStore.latest() / latestMarkers()
+S --> D : ImportSuccess 與 BlankMarkers，或 null
 opt 006 寫回前的版面檢查（不更新 ImportStore）
   D -> GR : app.spreadsheetReader.load(id)
   GR --> D : LoadedSpreadsheet
