@@ -49,7 +49,7 @@ description: "Task list for 006 結果與寫回"
 ### Tests for User Story 1 ⚠️
 
 - [X] T004 [P] [US1] `server/tests/unit/results/ResultQuery.question.test.ts`：已結束的題目回傳成功組別、各小題答案與 `submissionCount`（AC-01）；第 5 組只多拿到本組的送出、看不到其他沒有成功的組別，回傳的 `winner` 與本組送出 `rank` 為 0、`behindFirstMs` 與 `submissions` 同長度且都是 0（AC-02、REQ-RES-03）；有送出但沒有成功組別、沒有送出兩種情況（AC-03、AC-04）；`endedAt` 沒有該題時丟 `QUESTION_NOT_ENDED`（AC-05、REQ-RES-02）；`viewerGroup` 為 `null` 時 `submissions` 為空（AC-06）；沒有活動 → `NO_ACTIVITY`、題號 0、5、`1.5` → `QUESTION_NOT_FOUND`（REQ-RES-06）；活動結束後 `winner`、`submissions` 分別等於 005 替身的 `winner(n)`、`list(n)`（REQ-RES-05）
-- [ ] T005 [P] [US1] `server/tests/integration/results/resultSocketHandlers.test.ts`：以 `socket.io-client` 連上 `buildApp` 建立的測試伺服器（`app.io`），`result:question` 的 ack 格式依 contracts；組別取自 `GroupMembership.groupOf(socket)`，payload 夾帶 `groupNumber` 也不影響結果（AC-06）；未結束的題目 ack `{ ok: false, code: "QUESTION_NOT_ENDED", message: "這一題還沒結束，結果尚未公布" }`（AC-05）
+- [X] T005 [P] [US1] `server/tests/integration/results/resultSocketHandlers.test.ts`：以 `socket.io-client` 連上 `buildApp` 建立的測試伺服器（`app.io`），`result:question` 的 ack 格式依 contracts；組別取自 `GroupMembership.groupOf(socket)`，payload 夾帶 `groupNumber` 也不影響結果（AC-06）；未結束的題目 ack `{ ok: false, code: "QUESTION_NOT_ENDED", message: "這一題還沒結束，結果尚未公布" }`（AC-05）
 - [ ] T006 [P] [US1] `server/tests/integration/results/resultLoad.test.ts`：200 個連線在題目結束後同時 emit `result:question`，全部在 1 秒內收到 ack（SC-005）
 - [ ] T007 [P] [US1] `frontend/tests/unit/ServerResultService.test.ts`（getQuestionResult 部分）：以假的 `RealtimeClient` 斷言呼叫 `emitWithAck("result:question", { questionNumber })`；ack 成功回傳 `QuestionResult`；ack `ok: false` → reject `UnexpectedError(message)`；`emitWithAck` reject 時原樣往上丟
 
