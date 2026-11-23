@@ -1,9 +1,9 @@
 import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
 import { GuidedNotesParser } from './GuidedNotesParser.js';
 import { HeaderLocator } from './HeaderLocator.js';
-import { isImportError } from './importErrors.js';
+import { isImportError, noAccess, noWorksheet } from './importErrors.js';
 import type { ImportStore } from './ImportStore.js';
-import type { LoadedSpreadsheet, SpreadsheetReader } from './SpreadsheetReader.js';
+import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from './SpreadsheetReader.js';
 
 function toSpreadsheet(book: LoadedSpreadsheet, selectedWorksheet: string): Spreadsheet {
   return {
@@ -32,10 +32,18 @@ export class GuidedNotesImporter {
     return toSpreadsheet(book, selected?.name ?? '');
   }
 
+  // Every failure leaves the ImportStore unchanged (REQ-IMP-14). NO_ACCESS is an ImportError here;
+  // other SheetsReadErrors and TeacherNotSignedInError are thrown for the route to answer.
   async read(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError> {
-    const book = await this.reader.load(spreadsheetId);
+    let book: LoadedSpreadsheet;
+    try {
+      book = await this.reader.load(spreadsheetId);
+    } catch (error) {
+      if (error instanceof SheetsReadError && error.kind === 'NO_ACCESS') return noAccess();
+      throw error;
+    }
     const grid = book.sheets.find((g) => g.name === worksheet);
-    if (!grid) throw new Error(`no worksheet ${worksheet}`);
+    if (!grid) return noWorksheet(worksheet);
     const result = this.parser.parse(grid, toSpreadsheet(book, worksheet));
     if (!isImportError(result)) this.store.save(result, this.parser.markersOf(grid, result));
     return result;
