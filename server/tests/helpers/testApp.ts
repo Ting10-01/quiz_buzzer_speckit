@@ -22,6 +22,8 @@ export interface TestApp {
 export interface TestAppOptions {
   google?: GoogleConfig | null;
   gateway?: FakeGoogleGateway;
+  // Runs before app.ready(), e.g. to register a test-only route.
+  beforeReady?: (app: FastifyInstance) => void;
 }
 
 // buildApp with a fake Google gateway and captured logs; use `app.inject` for HTTP tests.
@@ -35,6 +37,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   const gateway = options.gateway ?? new FakeGoogleGateway();
   const logs = new LogCapture();
   const app = buildApp(config, { gateway, logStream: logs });
+  options.beforeReady?.(app);
   await app.ready();
   return { app, config, gateway, logs };
 }
