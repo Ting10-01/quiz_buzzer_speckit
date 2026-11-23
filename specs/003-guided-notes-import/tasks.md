@@ -37,7 +37,7 @@ description: "Task list for 003 匯入學習單"
 - [X] T006 [P] 建立 `gn/importErrors.ts`：`noHeader`、`noQuestions`、`invalidNumbering`、`tooManyQuestions`、`noBlank`、`noAccess`、`noWorksheet`，`reason` 與 `fixSteps` 依 contracts/guided-notes-http.md 的範例；只有 `noHeader` 的 `foundHeaders`、`acceptedHeaders` 有值，`acceptedHeaders` 為 `["題號欄：題號、編號、題次", "作答欄：作答、答案、回答", "題目欄（可以沒有）：題目、問題、題幹"]`
 - [ ] T007 [P] 建立 `gnt/helpers/gridBuilder.ts`：以二維字串陣列（數字以 number 表示）與 A1 合併範圍（例如 `"B5:B6"`）產生 `spreadsheets.get` 回應格式的 sheet 物件與 `SheetGrid`
 - [ ] T008 [P] 撰寫 `gnt/SheetGrid.test.ts`：合併範圍轉換、`number()` 讀數字與文字題號的差別、`toA1`
-- [ ] T009 [P] 撰寫 `gnt/ImportStore.test.ts`：初始 `latest()`、`latestMarkers()` 都為 `null`；`save` 後兩者取得相同內容；再次 `save` 兩者一起取代；修改存入前的物件不影響 `latest()`、`latestMarkers()`
+- [X] T009 [P] 撰寫 `gnt/ImportStore.test.ts`：初始 `latest()`、`latestMarkers()` 都為 `null`；`save` 後兩者取得相同內容；再次 `save` 兩者一起取代；修改存入前的物件不影響 `latest()`、`latestMarkers()`
 
 **Checkpoint**: 基礎型別與測試輔助完成
 
