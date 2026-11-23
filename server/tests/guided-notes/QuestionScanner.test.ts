@@ -80,3 +80,83 @@ describe('QuestionScanner.scan (single questions)', () => {
     expect(q?.question).toEqual({ number: 1, type: 'SINGLE', subQuestions: [{ index: 1, blankCell: 'G2' }] });
   });
 });
+
+describe('QuestionScanner.scan (question groups)', () => {
+  it('makes a GROUP with one sub-question per row of a 2-row number merge (AC-11)', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' }, 6: { G: '（2）' }, 7: { B: 2 } }, ['B5:B6']);
+    expect(q?.row).toBe(5);
+    expect(q?.question.type).toBe('GROUP');
+    expect(q?.question.subQuestions).toEqual([
+      { index: 1, blankCell: 'G5' },
+      { index: 2, blankCell: 'G6' },
+    ]);
+  });
+
+  it('makes 3 sub-questions for a 3-row number merge (AC-13)', () => {
+    const result = scanned({ 5: { B: 1 }, 8: { B: 2 } }, ['B5:B7']);
+    expect(result.map((q) => q.question.number)).toEqual([1, 2]);
+    expect(result[0]?.question.subQuestions.map((s) => s.blankCell)).toEqual(['G5', 'G6', 'G7']);
+    expect(result[1]?.question.type).toBe('SINGLE');
+  });
+
+  it('keeps a question SINGLE even with a marker in its blank cell (AC-14)', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' } });
+    expect(q?.question.type).toBe('SINGLE');
+    expect(q?.question.subQuestions).toEqual([{ index: 1, blankCell: 'G5' }]);
+  });
+
+  it('does not count a row whose answer cell is merged into the row above', () => {
+    const [q] = scanned({ 5: { B: 1 } }, ['B5:B7', 'G6:H7']);
+    expect(q?.question.subQuestions).toEqual([
+      { index: 1, blankCell: 'G5' },
+      { index: 2, blankCell: 'G6' },
+    ]);
+  });
+
+  it('writes each sub-question line as marker + question text (AC-15)', () => {
+    const [q] = scanned(
+      {
+        5: { B: 1, C: '第一小題', G: '（1）' },
+        6: { C: '第二小題', G: '(2) 舊答案' },
+        7: { C: '第三小題', G: '' },
+        8: { C: '   ', G: '（4）' },
+      },
+      ['B5:B8'],
+    );
+    expect(q?.question.text).toBe('（1）第一小題\n(2)第二小題\n（3）第三小題');
+  });
+
+  it('leaves out text when no row of the group has question text', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' }, 6: { G: '（2）' } }, ['B5:B6']);
+    expect(q?.question).not.toHaveProperty('text');
+  });
+
+  it('reads the group template', () => {
+    const result = scanner.scan(fixtureGrid('group'), { row: 4, numberCol: 2, answerCol: 7, questionCol: 3 });
+    const questions = (result as ScannedQuestion[]).map((q) => q.question);
+    expect(questions.map((q) => [q.number, q.type, q.subQuestions.map((s) => s.blankCell)])).toEqual([
+      [1, 'GROUP', ['G5', 'G6']],
+      [2, 'GROUP', ['G8', 'G9']],
+      [3, 'SINGLE', ['G11']],
+      [4, 'SINGLE', ['G13']],
+    ]);
+    expect(questions[0]?.text?.split('\n')).toHaveLength(2);
+    expect(questions[0]?.text).toMatch(/^（1）根據文章第一段.*\n（2）而他安裝的 Windows/);
+  });
+});
+
+describe('QuestionScanner.extractMarker (AC-12)', () => {
+  it.each([
+    ['（1）', '（1）'],
+    ['(1)', '(1)'],
+    ['（1)', '（1)'],
+    ['  （ 2 ）', '（ 2 ）'],
+    ['（2）堆疊', '（2）'],
+    ['', ''],
+    ['___', ''],
+    ['答案（1）', ''],
+    ['（a）', ''],
+  ])('reads %j as %j', (text, marker) => {
+    expect(QuestionScanner.extractMarker(text)).toBe(marker);
+  });
+});
