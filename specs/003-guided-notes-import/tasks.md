@@ -52,7 +52,7 @@ description: "Task list for 003 匯入學習單"
 ### Tests for User Story 1 ⚠️（先寫、先確認失敗）
 
 - [X] T010 [P] [US1] 建立 `gnt/fixtures/single.json`（依 `docs/templates/guided-notes-single.xlsx`：B2:H2 標題、第 4 列表頭「題號」「題目」「作答」、G4:H4 合併、題號 1–6 在 B5、B7…B15，C:F、G:H 合併）與 SC-002 的 3 份變形：`variant-shifted.json`（表頭第 7 列、題號 D 欄、作答 I 欄）、`variant-gaps.json`（表頭上方一段說明、題與題之間空兩列）、`variant-synonyms.json`（表頭「編號」「題幹」「答案」，題目欄在作答欄右邊），以及 `multi-sheet.json`（「說明」沒有表頭、「學習單」為單題範本）
-- [ ] T011 [P] [US1] 撰寫 `gnt/HeaderLocator.test.ts`：第一個同時有題號欄與作答欄表頭的列；三組同義詞都認得（AC-08）；去除前後空白與全形空白後完全相等才算，「學生作答」不算；表頭合併時取最左欄；題目欄可以沒有；`currentHeaderTexts` 跳過只有 1 個非空白儲存格的標題列
+- [X] T011 [P] [US1] 撰寫 `gnt/HeaderLocator.test.ts`：第一個同時有題號欄與作答欄表頭的列；三組同義詞都認得（AC-08）；去除前後空白與全形空白後完全相等才算，「學生作答」不算；表頭合併時取最左欄；題目欄可以沒有；`currentHeaderTexts` 跳過只有 1 個非空白儲存格的標題列
 - [ ] T012 [P] [US1] 撰寫 `gnt/QuestionScanner.test.ts`（單題）：題號接受數字 1、1.0、文字「1」與全形「１」；0、負數、1.5、文字列略過；作答欄 G5:H5 合併時填空格為 `G5`；單題只有 1 個小題、`index` 為 1；有題目欄時 `text` 為該列文字、沒有題目欄時沒有 `text`（AC-04）
 - [ ] T013 [US1] 撰寫 `gnt/GuidedNotesParser.test.ts`（成功）：單題範本 → 6 題、填空格 G5、G7…G15、`headerRow` 4、`headerColumns` `["B","C","G"]`（AC-01、REQ-IMP-16）；沒有題目欄時 `headerColumns` 只有兩欄；3 份變形全部正確（AC-03、SC-002）；題號 1、2、4 → 3 題（AC-09）；`questions` 依題號遞增，依 T010
 - [ ] T014 [P] [US1] 撰寫 `gnt/GoogleSheetsReader.test.ts`（`vi.mock` 取代 `@googleapis/sheets`、`@googleapis/drive`）：`spreadsheets.get` 帶 `includeGridData=true` 與 research R1 的 `fields`；`files.get` 只取 `capabilities/canEdit`；工作表依 `index` 排序；`authorizedClient()` 的結果傳給兩個 API
