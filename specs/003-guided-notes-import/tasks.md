@@ -93,7 +93,7 @@ description: "Task list for 003 匯入學習單"
 ### Implementation for User Story 2
 
 - [X] T032 [US2] 在 `gn/QuestionScanner.ts` 實作題組判斷：題號儲存格合併範圍跨多列 → `GROUP`，範圍內每列一個候選小題，`index` 依列序（REQ-IMP-08）
-- [ ] T033 [US2] 在 `gn/QuestionScanner.ts` 實作 `extractMarker`（`^\s*([（(]\s*\d+\s*[)）])`）與題組 `text` 組合，在 `gn/GuidedNotesParser.ts` 實作 `markersOf(grid, result)`（REQ-IMP-07、REQ-IMP-09）
+- [X] T033 [US2] 在 `gn/QuestionScanner.ts` 實作 `extractMarker`（`^\s*([（(]\s*\d+\s*[)）])`）與題組 `text` 組合，在 `gn/GuidedNotesParser.ts` 實作 `markersOf(grid, result)`（REQ-IMP-07、REQ-IMP-09）
 
 **Checkpoint**: 單題與題組範本都能正確匯入
 
