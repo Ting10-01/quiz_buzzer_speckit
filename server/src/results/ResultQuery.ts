@@ -43,6 +43,16 @@ export class ResultQuery {
     return this.visible(this.full(questionNumber), state.phase === 'FINISHED', viewerGroup);
   }
 
+  // Ended questions only, in question order, each filtered like questionResult.
+  allResults(viewerGroup: number | null): QuestionResult[] {
+    const state = this.activities.current();
+    if (!state) throw new ResultQueryError('NO_ACTIVITY');
+    const finished = state.phase === 'FINISHED';
+    return state.questions
+      .filter((q) => this.isEnded(state, q.number))
+      .map((q) => this.visible(this.full(q.number), finished, viewerGroup));
+  }
+
   // research RD-03: 004 finishes the activity when the last question ends or is accepted.
   private isEnded(state: ActivityState, questionNumber: number): boolean {
     return state.phase === 'FINISHED' || state.endedAt.has(questionNumber);

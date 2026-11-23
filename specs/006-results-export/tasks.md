@@ -77,7 +77,7 @@ description: "Task list for 006 結果與寫回"
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] 在 `server/src/results/ResultQuery.ts` 實作 `allResults` 與 `behindFirstMs` 的計算，在 `resultSocketHandlers.ts` 註冊 `result:all`，依 data-model 第 3 節與 research RD-12
+- [X] T014 [US2] 在 `server/src/results/ResultQuery.ts` 實作 `allResults` 與 `behindFirstMs` 的計算，在 `resultSocketHandlers.ts` 註冊 `result:all`，依 data-model 第 3 節與 research RD-12
 - [ ] T015 [US2] 在 `frontend/src/services/ServerResultService.ts` 實作 `getAllResults`
 
 **Checkpoint**: 全部結果可由伺服器取得，內容與 005 一致
