@@ -86,7 +86,7 @@ description: "Task list for 003 匯入學習單"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T029 [P] [US2] 建立 `gnt/fixtures/group.json`（依 `docs/templates/guided-notes-group.xlsx`：B5:B6、B8:B9 合併，G5、G6、G8、G9 為「（1）」「（2）」，C5:F5 等合併）
+- [X] T029 [P] [US2] 建立 `gnt/fixtures/group.json`（依 `docs/templates/guided-notes-group.xlsx`：B5:B6、B8:B9 合併，G5、G6、G8、G9 為「（1）」「（2）」，C5:F5 等合併）
 - [ ] T030 [P] [US2] 在 `gnt/QuestionScanner.test.ts` 加入題組案例：題號跨 2 列 → `GROUP` 2 小題（AC-11）；跨 3 列 → 3 小題（AC-13）；單題填空格有「（1）」仍為 `SINGLE`（AC-14）；`QuestionScanner.extractMarker` 對「（1）」「(1)」「（1)」原樣回傳，「（2）堆疊」回傳「（2）」，沒有標記時回傳 `""`（AC-12）；題組 `text` 每行為「標記＋題目欄文字」，標記空白時用「（n）」，沒有文字的列不列（AC-15）；題組中作答欄被合併進上一列的那一列不算小題
 - [ ] T031 [US2] 在 `gnt/GuidedNotesParser.test.ts` 加入題組範本：4 題、2 題組、6 個填空格 G5、G6、G8、G9、G11、G13（AC-11、SC-001）；`markersOf` 回傳 G5、G8→「（1）」，G6、G9→「（2）」，G11、G13→`""`，每個 `blankCell` 恰好一筆；`parse` 回傳的 `SubQuestion` 只有 `index`、`blankCell`（AC-12），依 T029
 
