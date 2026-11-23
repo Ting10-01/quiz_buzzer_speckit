@@ -83,7 +83,7 @@ description: "Task list for 002 老師登入"
 - [ ] T030 [US1] 實作 `frontend/src/services/http/GisGoogleIdentityClient.ts`：第一次使用時載入 `https://accounts.google.com/gsi/client`；`initCodeClient`（`scope: 'openid email https://www.googleapis.com/auth/drive.file'`、`ux_mode: 'popup'`、`prompt: 'consent select_account'`）；`access_denied`、`popup_closed` → `CANCELLED`；`popup_failed_to_open` → `POPUP_BLOCKED`；script 載入失敗 → `LOAD_FAILED`（research RD-10）；依 T029
 - [ ] T031 [US1] 實作 `frontend/src/services/http/HttpAuthService.ts`（`signInWithGoogle`、`getCurrentAccount`），依 contracts/auth-http.md「前端如何轉換」；依 T018、T029
 - [ ] T032 [US1] 修改 `frontend/src/services/createServiceRegistry.ts`：只把 `auth` 綁定改為 `HttpAuthService`（以 `GisGoogleIdentityClient`、`ApiClient`、`TeacherCredentialStore` 建立）；其他綁定、頁面、介面不改；`MockAuthService` 保留供測試（001 plan「替換模擬實作的方式」）
-- [ ] T033 [US1] 建立 `server/tests/e2e/startTestServer.ts`：以假 gateway 啟動 `buildApp`（帳號 A、B、缺權限帳號三種授權碼），供 T022 使用
+- [X] T033 [US1] 建立 `server/tests/e2e/startTestServer.ts`：以假 gateway 啟動 `buildApp`（帳號 A、B、缺權限帳號三種授權碼），供 T022 使用
 
 **Checkpoint**: US1 可單獨展示：真正的 Google 登入（人工）或替身（自動）登入成功即為老師
 
