@@ -7,10 +7,11 @@ import type { Navigate } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
+import { pickToPage } from './importNavigation';
 import styles from './PickPage.module.css';
 
 export function PickPage({ navigate }: { navigate: Navigate }) {
-  const { auth } = useServiceRegistry();
+  const { auth, guidedNotes } = useServiceRegistry();
   const [account, setAccount] = useState<TeacherAccount | null>(null);
   const [error, setError] = useState<string>();
 
@@ -28,6 +29,16 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
       active = false;
     };
   }, [auth]);
+
+  const pick = async () => {
+    try {
+      const next = await pickToPage(guidedNotes);
+      setError(undefined);
+      if (next) navigate(next);
+    } catch (reason) {
+      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -48,7 +59,7 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
               <span className={styles.accountEmail}>{account.email}</span>
             </div>
           )}
-          <button type="button" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={() => void pick()}>
             從 Google 雲端硬碟挑選
           </button>
         </section>
