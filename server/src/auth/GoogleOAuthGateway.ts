@@ -40,3 +40,9 @@ export function isInvalidGrant(error: unknown): boolean {
   const e = error as { response?: { data?: { error?: unknown } } } | null;
   return e?.response?.data?.error === 'invalid_grant';
 }
+
+// Google gave no HTTP answer (network error, timeout) or failed on its side.
+export function isGoogleUnreachable(error: unknown): boolean {
+  const status = httpStatusOf(error);
+  return error instanceof GoogleUnavailableError || status === undefined || status >= 500;
+}
