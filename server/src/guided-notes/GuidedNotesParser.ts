@@ -1,5 +1,6 @@
 import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
 import { HeaderLocator } from './HeaderLocator.js';
+import type { BlankMarkers } from './ImportStore.js';
 import { isImportError, noHeader } from './importErrors.js';
 import { QuestionScanner } from './QuestionScanner.js';
 import { columnLetters, type SheetGrid } from './SheetGrid.js';
@@ -24,5 +25,11 @@ export class GuidedNotesParser {
       headerColumns: columns.map(columnLetters),
       questions: scanned.map((s) => s.question),
     };
+  }
+
+  // The marker at the start of every blank cell of `result` (exactly one entry per blankCell).
+  markersOf(grid: SheetGrid, result: ImportSuccess): BlankMarkers {
+    const cells = result.questions.flatMap((q) => q.subQuestions.map((s) => s.blankCell));
+    return Object.fromEntries(cells.map((cell) => [cell, QuestionScanner.extractMarker(grid.textA1(cell))]));
   }
 }
