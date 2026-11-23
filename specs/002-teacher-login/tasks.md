@@ -144,7 +144,7 @@ description: "Task list for 002 老師登入"
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] 在 `server/src/auth/GoogleClientProvider.ts` 實作 `isGoogleAuthExpired(error)`（research RD-04）
+- [X] T046 [US4] 在 `server/src/auth/GoogleClientProvider.ts` 實作 `isGoogleAuthExpired(error)`（research RD-04）
 - [ ] T047 [US4] 在 `server/src/auth/authRoutes.ts` 實作 `GET /api/auth/picker-token`（`preHandler: app.requireTeacher`；`authorizedClient().getAccessToken()`；回 `PickerToken`；錯誤依 contracts/auth-http.md）
 
 **Checkpoint**: 003 可開始使用 picker-token 與 `authorizedClient()`
