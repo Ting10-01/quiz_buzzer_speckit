@@ -103,7 +103,7 @@ description: "Task list for 002 老師登入"
 
 ### Implementation for User Story 2
 
-- [ ] T037 [US2] 在 `server/src/auth/TeacherAuth.ts` 完成取代：任何帳號登入成功都取代 `TeacherBinding`、換發 `teacherToken`、`replace(tokens)`，原本有老師時通知 `onRotate`；三者在同一段同步程式中完成；不得呼叫或引用任何活動狀態（REQ-AUTH-03）
+- [X] T037 [US2] 在 `server/src/auth/TeacherAuth.ts` 完成取代：任何帳號登入成功都取代 `TeacherBinding`、換發 `teacherToken`、`replace(tokens)`，原本有老師時通知 `onRotate`；三者在同一段同步程式中完成；不得呼叫或引用任何活動狀態（REQ-AUTH-03）
 - [ ] T038 [US2] 確認 `frontend/src/services/http/HttpAuthService.ts` 在同分頁再次登入時以新憑證取代舊憑證（`TeacherCredentialStore.set`），並在 T021 補上對應案例
 
 **Checkpoint**: US2 可單獨展示：重新登入或換帳號登入後舊分頁失效，活動不變
