@@ -47,7 +47,7 @@ description: "Task list for 002 老師登入"
 - [X] T010 [P] 建立 `server/tests/helpers/fakeGoogleGateway.ts`：可設定 `code → GoogleSignIn` 的對應、指定的 `code` 延遲完成（測同時登入）、丟出 `GoogleUnavailableError` 或 `invalid_grant`；`createClient` 回傳可控制 `getAccessToken` 結果的假 client
 - [X] T011 [P] 建立 `server/tests/helpers/logCapture.ts`：以 pino 目的地串流收集 log 行，供測試搜尋字串
 - [X] T012 實作 `server/src/app.ts` 的 `buildApp(config, deps)`：建立 Fastify（`loggerOptions`）、註冊錯誤處理；預留 `authRoutes`、`requireTeacher`、`app.googleClients`、Socket.IO 的註冊位置（後續任務補上）；依 T006–T009
-- [ ] T013 實作 `server/src/main.ts`：`loadConfig(process.env)` → `buildApp` → `listen({ host: '127.0.0.1', port })`；`missingGoogleVars` 非空時以 `warn` 只列出變數名稱（REQ-AUTH-13）
+- [X] T013 實作 `server/src/main.ts`：`loadConfig(process.env)` → `buildApp` → `listen({ host: '127.0.0.1', port })`；`missingGoogleVars` 非空時以 `warn` 只列出變數名稱（REQ-AUTH-13）
 - [ ] T014 建立 `server/tests/helpers/testApp.ts`：以 `fakeGoogleGateway` 建立 `buildApp`；提供 `inject` 與 listen 隨機埠兩種用法；依 T010、T012
 - [ ] T015 [P] `frontend/tests/unit/http/TeacherCredentialStore.test.ts`：`set` 後 `get` 回同一個值；`clear` 後為 `null`；只寫入 `sessionStorage` 的 `teacherToken`，`localStorage` 與 `document.cookie` 不變；`sessionStorage` 丟例外時 `get` 回 `null`（REQ-AUTH-06）
 - [ ] T016 [P] 實作 `frontend/src/services/http/TeacherCredentialStore.ts`（research RD-10）
