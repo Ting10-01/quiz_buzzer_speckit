@@ -7,7 +7,10 @@ import { closeTopDialog } from '../components/ConfirmDialog';
 import { MockModeBadge } from '../components/MockModeBadge';
 import { HomePage } from '../pages/HomePage';
 import { JoinPage } from '../pages/student/JoinPage';
+import { ConsolePage } from '../pages/teacher/ConsolePage';
+import { ImportPage } from '../pages/teacher/ImportPage';
 import { PickPage } from '../pages/teacher/PickPage';
+import { SetupPage } from '../pages/teacher/SetupPage';
 import { TeacherLoginPage } from '../pages/teacher/TeacherLoginPage';
 import styles from './AppRouter.module.css';
 
@@ -69,10 +72,17 @@ function renderPage(page: PageState, navigate: Navigate): ReactNode {
       return <TeacherLoginPage navigate={navigate} />;
     case 'T-Pick':
       return <PickPage navigate={navigate} />;
+    case 'T-Import':
+    case 'T-ImportError':
+      return <ImportPage navigate={navigate} page={page} />;
+    case 'T-Setup':
+      return <SetupPage navigate={navigate} page={page} />;
+    case 'T-Lobby':
+      return <ConsolePage navigate={navigate} page={page} />;
     case 'S-Join':
       return <JoinPage navigate={navigate} previousGroup={page.previousGroup} />;
     default:
-      // Remaining pages are wired in by later user story phases (tasks T066, T077, T091).
+      // Remaining pages are wired in by later user story phases (tasks T077, T091).
       return null;
   }
 }
