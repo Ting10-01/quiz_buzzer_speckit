@@ -130,7 +130,7 @@ description: "Task list for 006 結果與寫回"
 
 ### Implementation for User Story 4
 
-- [ ] T029 [US4] 在 `server/src/results/WriteBackService.ts` 實作 `WriteBackFailure`、`WriteBackErrorCode`、`WriteBackStep`、`mapGoogleError`、步驟 1～5 的檢查與 `inProgress`；每次寫回以 pino 記錄結果代碼與 `cellCount`（不記錄老師憑證與 Google token），依 research RD-07、RD-08
+- [X] T029 [US4] 在 `server/src/results/WriteBackService.ts` 實作 `WriteBackFailure`、`WriteBackErrorCode`、`WriteBackStep`、`mapGoogleError`、步驟 1～5 的檢查與 `inProgress`；每次寫回以 pino 記錄結果代碼與 `cellCount`（不記錄老師憑證與 Google token），依 research RD-07、RD-08
 - [ ] T030 [US4] 在 `frontend/src/services/ServerResultService.ts` 把兩種 401 的 `ApiError` 轉成 `WriteBackResult`，其他原樣往上丟，依 contracts
 
 **Checkpoint**: 每種寫回失敗都不改動學習單
