@@ -118,7 +118,7 @@ description: "Task list for 006 結果與寫回"
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T026 [P] [US4] `server/tests/unit/results/WriteBackService.failure.test.ts`：每種情況的 `failureReason` 與 spec「寫回失敗原因」表逐字相同，且沒有呼叫 `writeTexts`（SC-007、REQ-RES-14）：
+- [X] T026 [P] [US4] `server/tests/unit/results/WriteBackService.failure.test.ts`：每種情況的 `failureReason` 與 spec「寫回失敗原因」表逐字相同，且沒有呼叫 `writeTexts`（SC-007、REQ-RES-14）：
   - 活動未結束、沒有活動 → `NOT_FINISHED`，不呼叫 `read`（AC-20、REQ-RES-16）
   - `ImportStore.latest()` 為 `null` 或試算表、工作表與活動不同 → `IMPORT_CHANGED`（AC-29、REQ-RES-17）
   - 第 3 題 `blankCell` 改變、題號清單改變、`parse` 回 `ImportError` → `LAYOUT_CHANGED` 並帶正確題號，不呼叫 `duplicateSheet`（AC-21、REQ-RES-12）；`load` 的結果沒有活動使用的工作表 → `SHEET_NOT_FOUND`
