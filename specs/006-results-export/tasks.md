@@ -56,7 +56,7 @@ description: "Task list for 006 結果與寫回"
 ### Implementation for User Story 1
 
 - [X] T008 [US1] 實作 `server/src/results/ResultQuery.ts` 的 `ResultQueryError`、`ResultQueryErrorCode`、`questionResult`、`isEnded`、`visible`，依 data-model 第 3 節與 research RD-02、RD-03
-- [ ] T009 [US1] 實作 `server/src/results/resultSocketHandlers.ts` 的 `registerResultHandlers`（`result:question`），並在 002 的 `buildApp` 以 `registerResultHandlers(app.io, query, membership)` 註冊（004 的 `createActivityModule()` 之後），依 T008
+- [X] T009 [US1] 實作 `server/src/results/resultSocketHandlers.ts` 的 `registerResultHandlers`（`result:question`），並在 002 的 `buildApp` 以 `registerResultHandlers(app.io, query, membership)` 註冊（004 的 `createActivityModule()` 之後），依 T008
 - [ ] T010 [US1] 實作 `frontend/src/services/ServerResultService.ts` 的建構子（`realtime: RealtimeClient`、`api: ApiClient`）與 `getQuestionResult`，依 research RD-10 與 contracts
 
 **Checkpoint**: 一題結束後的結果可由伺服器取得，公布範圍正確
