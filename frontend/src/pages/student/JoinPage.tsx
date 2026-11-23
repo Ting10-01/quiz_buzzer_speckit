@@ -44,10 +44,6 @@ export function JoinPage({ navigate }: JoinPageProps) {
         {activity && <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>}
       </AppHeader>
       <main className={styles.main}>
-        {/* FR-007: lets a user who picked the wrong role go back without any service call. */}
-        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
-          返回首頁
-        </button>
         <ErrorArea message={error} />
         {activity ? (
           <>
@@ -60,6 +56,11 @@ export function JoinPage({ navigate }: JoinPageProps) {
         ) : (
           <p className={styles.empty}>目前沒有活動，請等老師建立活動</p>
         )}
+        {/* FR-007: lets a user who picked the wrong role go back without any service call.
+            Sits under the main button, or under the notice when there is none. */}
+        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
+          返回首頁
+        </button>
       </main>
     </>
   );

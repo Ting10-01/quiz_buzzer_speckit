@@ -35,10 +35,6 @@ export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
     <div className={styles.page}>
       <AppHeader variant="teacher" onHome={() => navigate({ id: 'Main' })} subtitle="老師登入" />
       <main className={styles.main}>
-        {/* FR-007: lets a user who picked the wrong role go back without any service call. */}
-        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
-          返回首頁
-        </button>
         <section className={styles.card}>
           <h1 className={styles.title}>老師登入</h1>
           <p className={styles.lead}>登入後從 Google 雲端硬碟挑選學習單。</p>
@@ -51,6 +47,10 @@ export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
             </p>
           )}
         </section>
+        {/* FR-007: lets a user who picked the wrong role go back without any service call. */}
+        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
+          返回首頁
+        </button>
         <ErrorArea message={error} />
       </main>
     </div>

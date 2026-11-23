@@ -38,6 +38,7 @@
   color: var(--warn-ink);
 }
 
+/* Back-type buttons sit outside the card, centered directly below it. */
 .back {
-  align-self: flex-start;
+  align-self: center;
 }

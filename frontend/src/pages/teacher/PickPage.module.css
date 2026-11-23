@@ -2,13 +2,14 @@
   min-height: 100vh;
 }
 
+/* Same centered column as T-Login, so content does not move after signing in. */
 .main {
-  max-width: 1040px;
+  max-width: 480px;
   margin: 0 auto;
-  padding: 40px 24px 56px;
+  padding: 88px 24px 64px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
 }
 
 .intro {
@@ -24,12 +25,11 @@
 }
 
 .card {
-  max-width: 520px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
-  padding: 24px;
+  padding: 28px;
   border-radius: 20px;
   background: var(--surface);
 }
@@ -63,6 +63,7 @@
   color: var(--muted);
 }
 
-.cancel {
-  align-self: flex-start;
+/* Back-type buttons sit outside the card, centered directly below it. */
+.back {
+  align-self: center;
 }

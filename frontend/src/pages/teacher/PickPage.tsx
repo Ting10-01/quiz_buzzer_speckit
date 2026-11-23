@@ -52,12 +52,7 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
             從 Google 雲端硬碟挑選
           </button>
         </section>
-
-        <button
-          type="button"
-          className={`btn btn-ghost ${styles.cancel}`}
-          onClick={() => navigate({ id: 'Main' })}
-        >
+        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
           取消
         </button>
       </main>
