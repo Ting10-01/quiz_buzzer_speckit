@@ -4,11 +4,12 @@ import { TeacherAuth } from '../../src/auth/TeacherAuth.js';
 import { FakeGoogleGateway, signInFor } from '../helpers/fakeGoogleGateway.js';
 
 const A = 'teacher.a@example.com';
+const SIGN_IN_A = signInFor(A);
 const NO_DRIVE_SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 
 function setup() {
   const gateway = new FakeGoogleGateway()
-    .set('code-a', signInFor(A))
+    .set('code-a', SIGN_IN_A)
     .set('code-no-drive', signInFor('no.drive@example.com', NO_DRIVE_SCOPES));
   const clients = new GoogleClientProvider(gateway);
   const replace = vi.spyOn(clients, 'replace');
@@ -27,7 +28,7 @@ describe('TeacherAuth sign-in', () => {
     expect(outcome.account).toEqual({ name: 'teacher.a', email: A });
     expect(auth.currentAccount()).toEqual({ name: 'teacher.a', email: A });
     expect(auth.verify(outcome.teacherToken!)).toBe(true);
-    expect(replace).toHaveBeenCalledExactlyOnceWith(signInFor(A).tokens);
+    expect(replace).toHaveBeenCalledExactlyOnceWith(SIGN_IN_A.tokens);
   });
 
   it('rejects wrong tokens, including ones of a different length', async () => {
