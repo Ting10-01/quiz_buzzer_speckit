@@ -1,0 +1,70 @@
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.sheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--sheet);
+  font-size: 13px;
+}
+
+.sheet th,
+.sheet td {
+  padding: 8px 10px;
+  border: 1px solid var(--grid);
+  text-align: left;
+  vertical-align: top;
+}
+
+.sheet thead th {
+  color: var(--faint);
+  font-weight: 500;
+  text-align: center;
+}
+
+.rowHead {
+  width: 36px;
+  color: var(--faint);
+  font-weight: 500;
+  text-align: center;
+}
+
+.headerRow td {
+  font-weight: 600;
+  background: var(--raised);
+}
+
+.number {
+  width: 48px;
+  text-align: center;
+}
+
+.text {
+  white-space: pre-line;
+  color: var(--text2);
+}
+
+.blank {
+  width: 120px;
+  outline: 2px solid var(--accent-stroke);
+  outline-offset: -3px;
+}
+
+.cellRef {
+  color: var(--accent-text);
+  font-size: 12px;
+}
+
+.filled {
+  display: block;
+  font-weight: 600;
+}
+
+.legend {
+  color: var(--muted);
+  font-size: 13px;
+}
