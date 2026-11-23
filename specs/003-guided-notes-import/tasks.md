@@ -116,7 +116,7 @@ description: "Task list for 003 匯入學習單"
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] 在 `gn/GuidedNotesParser.ts` 接上錯誤：找不到表頭 → `importErrors.noHeader(worksheet, HeaderLocator.currentHeaderTexts(grid))`；0 題、超過 200 題、題號重複或不遞增依 research R5；`gn/QuestionScanner.ts` 一題沒有獨立填空格 → `noBlank`
+- [X] T040 [US3] 在 `gn/GuidedNotesParser.ts` 接上錯誤：找不到表頭 → `importErrors.noHeader(worksheet, HeaderLocator.currentHeaderTexts(grid))`；0 題、超過 200 題、題號重複或不遞增依 research R5；`gn/QuestionScanner.ts` 一題沒有獨立填空格 → `noBlank`
 - [ ] T041 [US3] 在 `gn/GoogleSheetsReader.ts` 加入 15 秒逾時與 research R1 的錯誤對應（含以 002 的 `isGoogleAuthExpired` 判斷 `AUTH_EXPIRED`）
 - [ ] T042 [US3] 在 `gn/GuidedNotesImporter.ts` 加入 `NO_WORKSHEET` 與 `read` 時 `NO_ACCESS` → `ImportError`；其他 `SheetsReadError` 與 `TeacherNotSignedInError` 往上丟；確認所有失敗路徑都不呼叫 `ImportStore.save`
 - [ ] T043 [US3] 在 `gn/guidedNotesRoutes.ts` 加入錯誤對應，回應為 002 的 `ErrorBody`：`403 NO_ACCESS`（只有 `describe`）、`502 GOOGLE_UNAVAILABLE`、`401 GOOGLE_AUTH_EXPIRED`、`401 NOT_SIGNED_IN`（contracts/guided-notes-http.md）
