@@ -31,7 +31,7 @@ description: "Task list for 003 匯入學習單"
 
 **Purpose**: 所有 Story 共用的資料結構；完成前不開始任何 Story
 
-- [ ] T003 [P] 建立 `gn/SpreadsheetReader.ts`：`SpreadsheetReader` 介面（`load(spreadsheetId): Promise<LoadedSpreadsheet>`）、`LoadedSpreadsheet`（`id`、`title`、`editable`、`sheets: SheetGrid[]`）、`SheetsReadError`（`kind: 'NO_ACCESS' | 'UNAVAILABLE' | 'AUTH_EXPIRED'`）
+- [X] T003 [P] 建立 `gn/SpreadsheetReader.ts`：`SpreadsheetReader` 介面（`load(spreadsheetId): Promise<LoadedSpreadsheet>`）、`LoadedSpreadsheet`（`id`、`title`、`editable`、`sheets: SheetGrid[]`）、`SheetsReadError`（`kind: 'NO_ACCESS' | 'UNAVAILABLE' | 'AUTH_EXPIRED'`）
 - [ ] T004 [P] 建立 `gn/SheetGrid.ts`：`SheetGrid`（`sheetId`、`name`、`rowCount`、`colCount`、`text(row, col)` 用 `formattedValue`、`number(row, col)` 用 `effectiveValue.numberValue`、`mergeAt(row, col): CellRange | null`）與 `CellRange`；以 `SheetGrid.fromApi(sheet)` 由 `spreadsheets.get` 的一個 `sheets[]` 建立，GridRange（0 起算、結尾不含）轉成「從 1 起算、含結尾」；另提供 `toA1(row, col)` 與 `textA1(a1)`
 - [ ] T005 [P] 建立 `gn/ImportStore.ts`：`BlankMarkers` 型別、`save(result, markers)` 以 `structuredClone` 一起存入、`latest(): Readonly<ImportSuccess> | null`、`latestMarkers(): BlankMarkers | null`（contracts/import-store.md）
 - [ ] T006 [P] 建立 `gn/importErrors.ts`：`noHeader`、`noQuestions`、`invalidNumbering`、`tooManyQuestions`、`noBlank`、`noAccess`、`noWorksheet`，`reason` 與 `fixSteps` 依 contracts/guided-notes-http.md 的範例；只有 `noHeader` 的 `foundHeaders`、`acceptedHeaders` 有值，`acceptedHeaders` 為 `["題號欄：題號、編號、題次", "作答欄：作答、答案、回答", "題目欄（可以沒有）：題目、問題、題幹"]`
