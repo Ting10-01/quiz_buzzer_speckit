@@ -46,7 +46,9 @@ export class QuestionScanner {
 
       // A number cell merged over several rows is a group: each row is a candidate sub-question.
       const lastRow = numberMerge?.endRow ?? row;
+      const isGroup = lastRow > row;
       const subQuestions: SubQuestion[] = [];
+      const lines: string[] = [];
       for (let r = row; r <= lastRow; r++) {
         const answerMerge = grid.mergeAt(r, header.answerCol);
         // An answer cell merged with the row above is not a blank cell of its own.
@@ -54,11 +56,16 @@ export class QuestionScanner {
         const blankCell = answerMerge
           ? grid.toA1(answerMerge.startRow, answerMerge.startCol)
           : grid.toA1(r, header.answerCol);
-        subQuestions.push({ index: subQuestions.length + 1, blankCell });
+        const index = subQuestions.length + 1;
+        subQuestions.push({ index, blankCell });
+        const text = questionText(grid, r, header.questionCol);
+        if (!text) continue;
+        // A group line starts with the sub-question's marker, or "（n）" when the cell has none.
+        const marker = isGroup ? QuestionScanner.extractMarker(grid.textA1(blankCell)) || `（${index}）` : '';
+        lines.push(marker + text);
       }
-      const question: Question = { number, type: lastRow > row ? 'GROUP' : 'SINGLE', subQuestions };
-      const text = questionText(grid, row, header.questionCol);
-      if (text) question.text = text;
+      const question: Question = { number, type: isGroup ? 'GROUP' : 'SINGLE', subQuestions };
+      if (lines.length > 0) question.text = lines.join('\n');
       scanned.push({ row, question });
     }
     return scanned;
