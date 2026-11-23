@@ -1,5 +1,9 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { GoogleAuthLibraryGateway } from './auth/GoogleAuthLibraryGateway.js';
+import { GoogleClientProvider } from './auth/GoogleClientProvider.js';
 import type { GoogleOAuthGateway } from './auth/GoogleOAuthGateway.js';
+import { createRequireTeacher } from './auth/requireTeacher.js';
+import { TeacherAuth } from './auth/TeacherAuth.js';
 import type { AppConfig } from './config.js';
 import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
@@ -15,8 +19,20 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   const app = Fastify({ logger: { ...loggerOptions, stream: deps.logStream } });
   app.setErrorHandler(errorHandler);
 
-  // Registered by later tasks: requireTeacher (T027), authRoutes and app.googleClients (T028),
-  // Socket.IO (T042).
+  const gateway = deps.gateway ?? (config.google ? new GoogleAuthLibraryGateway(config.google) : unconfiguredGateway);
+  const googleClients = new GoogleClientProvider(gateway);
+  const teacherAuth = new TeacherAuth(gateway, googleClients, app.log);
+  app.decorate('requireTeacher', createRequireTeacher(teacherAuth));
+
+  // Registered by later tasks: authRoutes and app.googleClients (T028), Socket.IO (T042).
 
   return app;
 }
+
+// Without Google config the auth routes answer 503 GOOGLE_NOT_CONFIGURED before reaching the gateway.
+const unconfiguredGateway: GoogleOAuthGateway = {
+  exchangeCode: () => Promise.reject(new Error('Google is not configured')),
+  createClient: () => {
+    throw new Error('Google is not configured');
+  },
+};
