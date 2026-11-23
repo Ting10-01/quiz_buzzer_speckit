@@ -101,6 +101,10 @@
 
 - **Decision**: 原生 CSS + CSS Modules。設計稿 `:root` 中深色主題的 CSS 變數原樣放進 `frontend/src/styles/tokens.css`；**只做深色主題**，不實作 `data-theme`、`prefers-color-scheme` 或淺色變數。設計稿的 inline style 整理成各元件的 CSS Module。
 - **學生頁面版面**: `AppRouter` 為學生頁面套上 390 px 寬、水平置中的欄位；不另外設計桌面版面，也不做完整的響應式設計（spec Assumptions）。
+- **按鈕位置**:
+  - 頁面只有一個返回類按鈕時（T-Login、T-Pick、S-Join），放在卡片正下方置中，使用 ghost 樣式。
+  - 頁面有返回類與前進類一組按鈕時（T-Import、T-ImportError、T-Setup、T-Lobby，以及 US3–US5 的老師頁面），放在固定於畫面底部的動作列：返回類在左，主要按鈕在右。動作列不隨內容捲動；內容底部要留出動作列的高度，避免被遮住。
+  - 只作用於某個區塊的按鈕（例如 T-Import 學習單卡片上的「重新挑選」）留在該區塊內。
 - **字型**: 沿用設計稿的 Inter 與 Noto Sans TC，以 `@fontsource/inter`、`@fontsource/noto-sans-tc` 套件從本機載入，後備字型為 `system-ui`。不使用 Google Fonts，避免自動化測試（含 Playwright）連到外部服務（原則 VIII），離線時也能正確顯示。
 - **Rationale**: 顏色變數不需改寫；CSS Modules 讓每個元件的樣式各自獨立（IX）；不需要執行期套件。只做一種主題，每頁只需人工驗證一次。
 - **Alternatives considered**: Tailwind CSS（JSX 中的 utility class 不易與設計稿對照，同樣的組合容易重複）；CSS-in-JS（執行期產生樣式，沒有額外好處）。

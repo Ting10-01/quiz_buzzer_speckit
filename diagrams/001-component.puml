@@ -35,6 +35,7 @@ package "頁面層（Presentation）" {
     component "ConfirmDialog" as CDialog
     component "SheetPreview" as CPreview
     component "ErrorArea\n共通錯誤訊息區（FR-009）" as CError
+    component "ActionBar\n底部動作列（RD-09）" as CAction
   }
 }
 
@@ -91,6 +92,10 @@ PConsole --> CDialog
 PTResults --> CDialog
 PTResults --> CPreview
 PImport --> CPreview
+PImport --> CAction
+PSetup --> CAction
+PConsole --> CAction
+PTResults --> CAction
 PPlay --> CProgress
 PJoin --> CGroups
 TeacherPages --> CError

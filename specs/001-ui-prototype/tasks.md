@@ -239,6 +239,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T064 [US2] 在 `frontend/src/pages/teacher/SetupPage.tsx`（與 `.module.css`）實作 T-Setup：組數欄位（「−」「+」只改頁面上的輸入值，組數範圍不在 001 限制，D4）、組別清單、這一輪的摘要（題數、題組題號、組數、成功規則說明與學生加入方式說明的文字位置，文字依 feature-split 3.2 撰寫，不沿用設計稿的規則說明）；建立模式「上一步」→ `T-Import`、「建立活動」→ `createActivity({ groupCount })`；修改模式「取消」→ `T-Lobby`、「儲存設定」→ `updateSettings`；`ValidationError` 顯示在組數欄位旁；不得有活動名稱、公平模式、每題限時、學生加入網址與「複製網址」（SC-004）；`ErrorArea`。依組件圖，SetupPage 不依賴 `GroupGrid`
 - [X] T065 [US2] 在 `frontend/src/pages/teacher/ConsolePage.tsx`（與 `.module.css`）建立 ConsolePage，先實作 T-Lobby 檢視：以 AppRouter 傳入的 `Activity`（`createActivity`／`updateSettings` 的回傳值，見 C-1）顯示 FR-025 項目，用 `GroupGrid` 顯示各組人數；訂閱 `onActivityChange`；「修改設定」→ `T-Setup`（`edit`）；「開放第 1 題」按鈕（行為於 T074 完成）；`ErrorArea`；不顯示連線分頁數、離線狀態、限時（SC-004）
 - [X] T066 [US2] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Import`、`T-ImportError`、`T-Setup`、`T-Lobby`
+- [ ] T066a [US2] 依 research.md RD-09 的按鈕位置規則，把 T-Import、T-ImportError、T-Setup、T-Lobby 的按鈕改用共用的底部動作列元件
 - [ ] T067 [US2] 執行 `npm test`、`npm run test:e2e`，確認 T056–T060 通過；依 quickstart Q3、Q4 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: US1、US2 都可獨立運作。
@@ -351,11 +352,11 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-007 搶答板與返回首頁 | T036、T038、T054、T117、T129、T130 |
 | FR-008 驗證錯誤顯示 | T058、T064、T081、T087、T094 |
 | FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095 |
-| FR-014 瀏覽器上一頁 | T060、T069、T080、T118、T119、T131、T132 |
+| FR-014 瀏覽器上一頁 | T060、T066a、T069、T080、T118、T119、T131、T132 |
 | FR-010–FR-013 | T044、T045、T050、T051、T105、T110 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
-| FR-023、FR-024 | T058、T064 |
+| FR-023、FR-024 | T058、T064、T066a |
 | FR-025 | T059、T065 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076 |
