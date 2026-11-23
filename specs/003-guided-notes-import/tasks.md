@@ -64,7 +64,7 @@ description: "Task list for 003 匯入學習單"
 ### Implementation for User Story 1
 
 - [X] T019 [P] [US1] 實作 `gn/HeaderLocator.ts`：`NUMBER_HEADERS`、`ANSWER_HEADERS`、`QUESTION_HEADERS`、`locate(grid)`、`currentHeaderTexts(grid)`（research R3）
-- [ ] T020 [US1] 實作 `gn/QuestionScanner.ts` 單題路徑：逐列讀題號、跳過合併範圍的非第一列、填空格取合併左上角並轉 A1、題目欄文字（research R4），回傳 `ScannedQuestion[]`
+- [X] T020 [US1] 實作 `gn/QuestionScanner.ts` 單題路徑：逐列讀題號、跳過合併範圍的非第一列、填空格取合併左上角並轉 A1、題目欄文字（research R4），回傳 `ScannedQuestion[]`
 - [ ] T021 [US1] 實作 `gn/GuidedNotesParser.ts`：`parse(grid, spreadsheet)` 組出 `ImportSuccess`（`headerRow`、依「題號欄、題目欄（有才列）、作答欄」順序的 `headerColumns`、`questions`），依 T019、T020
 - [ ] T022 [P] [US1] 實作 `gn/GoogleSheetsReader.ts`：以 `GoogleClientProvider.authorizedClient()` 同時送出 `spreadsheets.get` 與 `files.get`，轉成 `LoadedSpreadsheet`（research R1）
 - [ ] T023 [US1] 實作 `gn/GuidedNotesImporter.ts`：`describe`（預設工作表，research R6）與 `read`（找工作表 → `parse` → 成功時 `ImportStore.save(result, parser.markersOf(grid, result))`），依 T005、T021
