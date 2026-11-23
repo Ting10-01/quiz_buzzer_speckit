@@ -95,8 +95,12 @@ describe('POST /api/guided-notes/read', () => {
   });
 
   it('accepts a worksheet name of 100 characters', async () => {
+    const book = loadFixture('single');
+    book.sheets![0]!.properties!.title = '表'.repeat(100);
+    reader.set(ID, book);
     const res = await readRequest({ spreadsheetId: ID, worksheet: '表'.repeat(100) });
     expect(res.statusCode).toBe(200);
+    expect(res.json().spreadsheet.selectedWorksheet).toBe('表'.repeat(100));
   });
 
   it.each([
