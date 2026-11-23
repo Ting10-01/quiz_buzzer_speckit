@@ -27,3 +27,10 @@ export class GoogleUnavailableError extends Error {
     this.name = 'GoogleUnavailableError';
   }
 }
+
+// HTTP status of an error thrown by google-auth-library (GaxiosError), if Google answered at all.
+export function httpStatusOf(error: unknown): number | undefined {
+  const e = error as { status?: unknown; response?: { status?: unknown } } | null;
+  const status = e?.response?.status ?? e?.status;
+  return typeof status === 'number' ? status : undefined;
+}
