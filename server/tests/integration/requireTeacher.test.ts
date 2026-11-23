@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../helpers/testApp.js';
+import { FakeSpreadsheetReader } from '../guided-notes/helpers/fakeSpreadsheetReader.js';
+import { loadFixture } from '../guided-notes/helpers/gridBuilder.js';
 
 const UNAUTHORIZED = { code: 'UNAUTHORIZED', message: '需要老師登入' };
 
 let t: TestApp;
 let counter: number;
+let reader: FakeSpreadsheetReader;
 
 async function signIn(code: string): Promise<string> {
   const res = await t.app.inject({
@@ -19,7 +22,10 @@ async function signIn(code: string): Promise<string> {
 
 beforeEach(async () => {
   counter = 0;
+  // 003 routes: a rejected request must not read any spreadsheet (AC-26).
+  reader = new FakeSpreadsheetReader().set('spreadsheet-id-0001', loadFixture('single'));
   t = await createTestApp({
+    spreadsheetReader: reader,
     beforeReady: (app) => {
       // A teacher-only route that changes state, so a rejected request is observable.
       app.post('/test/teacher-only', { preHandler: app.requireTeacher }, async () => ({ counter: ++counter }));
@@ -69,6 +75,8 @@ describe('requireTeacher', () => {
 const TEACHER_ONLY_ROUTES = [
   { method: 'GET', url: '/api/auth/me' },
   { method: 'GET', url: '/api/auth/picker-token' },
+  { method: 'GET', url: '/api/guided-notes/spreadsheets/spreadsheet-id-0001' },
+  { method: 'POST', url: '/api/guided-notes/read', payload: { spreadsheetId: 'spreadsheet-id-0001', worksheet: '學習單' } },
 ] as const;
 
 describe('teacher-only route list', () => {
@@ -76,6 +84,7 @@ describe('teacher-only route list', () => {
     const res = await t.app.inject(route);
     expect(res.statusCode).toBe(401);
     expect(res.json()).toEqual(UNAUTHORIZED);
+    expect(reader.loadCalls).toEqual([]);
   });
 
   it.each(TEACHER_ONLY_ROUTES)('$method $url rejects a voided token', async (route) => {
@@ -84,5 +93,6 @@ describe('teacher-only route list', () => {
     const res = await t.app.inject({ ...route, headers: { authorization: `Bearer ${old}` } });
     expect(res.statusCode).toBe(401);
     expect(res.json()).toEqual(UNAUTHORIZED);
+    expect(reader.loadCalls).toEqual([]);
   });
 });

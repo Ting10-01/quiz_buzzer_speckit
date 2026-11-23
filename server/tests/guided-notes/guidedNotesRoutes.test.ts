@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { TeacherNotSignedInError } from '../../src/auth/GoogleClientProvider.js';
+import { SheetsReadError } from '../../src/guided-notes/SpreadsheetReader.js';
 import { signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../helpers/testApp.js';
 import { FakeSpreadsheetReader } from './helpers/fakeSpreadsheetReader.js';
-import { loadFixture } from './helpers/gridBuilder.js';
+import { buildSheet, loadFixture, rowsFrom } from './helpers/gridBuilder.js';
 
 const ID = 'spreadsheet-id-0001';
 const BAD_REQUEST = { code: 'BAD_REQUEST', message: '讀取學習單的請求格式錯誤' };
@@ -117,5 +119,61 @@ describe('POST /api/guided-notes/read', () => {
     expect(res.json()).toEqual(BAD_REQUEST);
     expect(reader.loadCalls).toEqual([]);
     expect(t.app.importStore.latest()).toBeNull();
+  });
+});
+
+describe('guided notes routes: errors (AC-25)', () => {
+  const FAILING = 'spreadsheet-id-fail1';
+
+  it('answers 200 with the whole ImportError from read', async () => {
+    reader.set(FAILING, {
+      properties: { title: '表頭錯誤' },
+      sheets: [buildSheet(rowsFrom({ 4: { B: 'No.', C: '內容', G: '學生填寫' } }))],
+    });
+    const res = await readRequest({ spreadsheetId: FAILING, worksheet: '學習單' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.code).toBe('NO_HEADER');
+    expect(body.foundHeaders).toEqual(['No.', '內容', '學生填寫']);
+    expect(body.acceptedHeaders).toHaveLength(3);
+    expect(body.fixSteps.length).toBeGreaterThanOrEqual(1);
+    expect(t.app.importStore.latest()).toBeNull();
+  });
+
+  it('answers 200 with ImportError NO_ACCESS from read (AC-23)', async () => {
+    reader.fail(FAILING, new SheetsReadError('NO_ACCESS'));
+    const res = await readRequest({ spreadsheetId: FAILING, worksheet: '學習單' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().code).toBe('NO_ACCESS');
+  });
+
+  it('answers 403 NO_ACCESS from describe', async () => {
+    reader.fail(FAILING, new SheetsReadError('NO_ACCESS'));
+    const res = await describeRequest(FAILING);
+    expect(res.statusCode).toBe(403);
+    expect(res.json()).toEqual({ code: 'NO_ACCESS', message: '無法讀取這份試算表，請用「重新挑選」再挑一次' });
+  });
+
+  describe.each([
+    ['describe', () => describeRequest(FAILING)],
+    ['read', () => readRequest({ spreadsheetId: FAILING, worksheet: '學習單' })],
+  ])('%s', (_route, request) => {
+    it.each([
+      ['UNAVAILABLE', () => new SheetsReadError('UNAVAILABLE'), 502, 'GOOGLE_UNAVAILABLE', '連不上 Google，請稍後再試'],
+      [
+        'AUTH_EXPIRED',
+        () => new SheetsReadError('AUTH_EXPIRED'),
+        401,
+        'GOOGLE_AUTH_EXPIRED',
+        'Google 授權已失效，請回首頁重新登入',
+      ],
+      ['TeacherNotSignedInError', () => new TeacherNotSignedInError(), 401, 'NOT_SIGNED_IN', '老師登入已失效，請回首頁重新登入'],
+    ])('maps %s to an ErrorBody', async (_name, makeError, status, code, message) => {
+      reader.fail(FAILING, makeError());
+      const res = await request();
+      expect(res.statusCode).toBe(status);
+      expect(res.json()).toEqual({ code, message });
+      expect(t.app.importStore.latest()).toBeNull();
+    });
   });
 });
