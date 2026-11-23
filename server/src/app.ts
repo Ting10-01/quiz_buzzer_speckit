@@ -15,6 +15,8 @@ import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
 import { attachSocketServer } from './realtime/socketServer.js';
 import { submissionRoutes } from './submission/index.js';
+import type { ActivityStore, GroupMembership } from './temp-deps/activity.js';
+import type { SubmissionStore } from './temp-deps/submission.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -32,6 +34,12 @@ export interface AppDeps {
   gateway?: GoogleOAuthGateway;
   logStream?: { write(line: string): void };
   spreadsheetReader?: SpreadsheetReader;
+  // 006 reads 004's ActivityStore / GroupMembership and 005's SubmissionStore. 004 and 005 are not
+  // implemented yet, so for now these come only from tests; once they land, buildApp creates them
+  // and these three fields go away. Without all three, 006's routes and events are not registered.
+  activityStore?: ActivityStore;
+  groupMembership?: GroupMembership;
+  submissionStore?: SubmissionStore;
 }
 
 // Server composition root. 003–006 register their routes here with `app.register(...)`.
