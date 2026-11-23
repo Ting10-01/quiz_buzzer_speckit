@@ -62,9 +62,10 @@ let gateway: FakeGoogleGateway;
 let clients: GoogleClientProvider;
 let reader: GoogleSheetsReader;
 
-function answer(book: unknown, canEdit: boolean | undefined = true): void {
+// canEdit null: Drive's answer has no capabilities at all.
+function answer(book: unknown, canEdit: boolean | null = true): void {
   api.sheetsGet.mockResolvedValue({ data: book });
-  api.filesGet.mockResolvedValue({ data: canEdit === undefined ? {} : { capabilities: { canEdit } } });
+  api.filesGet.mockResolvedValue({ data: canEdit === null ? {} : { capabilities: { canEdit } } });
 }
 
 beforeEach(() => {
@@ -102,7 +103,7 @@ describe('GoogleSheetsReader.load', () => {
 
   it.each([
     [false, false],
-    [undefined, false],
+    [null, false],
   ])('reports editable=false when canEdit is %s (AC-07)', async (canEdit, editable) => {
     answer(loadFixture('single'), canEdit);
     expect((await reader.load(ID)).editable).toBe(editable);
