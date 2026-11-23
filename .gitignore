@@ -8,6 +8,8 @@ credentials/
 
 # Claude Code personal settings (shared .claude/settings.json is committed)
 .claude/settings.local.json
+# Local preview server config for the Claude desktop app (machine-specific)
+.claude/launch.json
 
 # Editor and OS files
 .vscode/*
