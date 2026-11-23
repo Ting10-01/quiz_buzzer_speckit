@@ -34,7 +34,7 @@ description: "Task list for 006 結果與寫回"
 
 **⚠️ CRITICAL**: 這個 Phase 完成前不開始 User Story
 
-- [ ] T003 建立 `server/src/results/SpreadsheetWriter.ts`：`CellText`（`cell`、`text`）與 `SpreadsheetWriter` 介面（`duplicateSheet(spreadsheetId, sheetId, newTitle)`、`writeTexts`），依 data-model 第 4 節與類別圖
+- [X] T003 建立 `server/src/results/SpreadsheetWriter.ts`：`CellText`（`cell`、`text`）與 `SpreadsheetWriter` 介面（`duplicateSheet(spreadsheetId, sheetId, newTitle)`、`writeTexts`），依 data-model 第 4 節與類別圖
 
 **Checkpoint**: 型別就緒
 
