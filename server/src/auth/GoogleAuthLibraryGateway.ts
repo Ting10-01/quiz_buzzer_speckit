@@ -2,7 +2,7 @@ import { OAuth2Client, type OAuth2ClientOptions } from 'google-auth-library';
 import type { GoogleConfig } from '../config.js';
 import {
   GoogleUnavailableError,
-  httpStatusOf,
+  isGoogleUnreachable,
   type GoogleOAuthGateway,
   type GoogleSignIn,
   type GoogleTokens,
@@ -63,11 +63,8 @@ export class GoogleAuthLibraryGateway implements GoogleOAuthGateway {
     } catch (error) {
       // No HTTP answer (network error, abort) or a Google server error: Google is unavailable.
       // 4xx answers such as invalid_grant are passed on for the route to map.
-      const status = httpStatusOf(error);
-      if (!(error instanceof GoogleUnavailableError) && (status === undefined || status >= 500)) {
-        throw new GoogleUnavailableError();
-      }
-      throw error;
+      if (error instanceof GoogleUnavailableError) throw error;
+      throw isGoogleUnreachable(error) ? new GoogleUnavailableError() : error;
     }
   }
 }
