@@ -97,7 +97,7 @@ description: "Task list for 002 老師登入"
 
 ### Tests for User Story 2
 
-- [ ] T034 [P] [US2] `server/tests/unit/TeacherAuth.test.ts`（取代部分）：帳號 A 再次 `signIn`、以及帳號 B 在 A 之後 `signIn`，都回新的憑證，舊憑證 `verify` 為 false、新憑證為 true，`currentAccount()` 為最後登入的帳號；`GoogleClientProvider.replace` 以新 tokens 呼叫；`onRotate` 監聽者被呼叫一次；第一次登入時不呼叫 `onRotate`（AC-07、AC-08、AC-26）；A、B 同時 `signIn`（假 gateway 延遲）重複 100 次，每次結束時恰好一組憑證有效，且最後一次 `replace` 的 tokens 屬於持有有效憑證的帳號（AC-27、SC-005）；新的 `TeacherAuth`（模擬重新啟動）沒有老師
+- [X] T034 [P] [US2] `server/tests/unit/TeacherAuth.test.ts`（取代部分）：帳號 A 再次 `signIn`、以及帳號 B 在 A 之後 `signIn`，都回新的憑證，舊憑證 `verify` 為 false、新憑證為 true，`currentAccount()` 為最後登入的帳號；`GoogleClientProvider.replace` 以新 tokens 呼叫；`onRotate` 監聽者被呼叫一次；第一次登入時不呼叫 `onRotate`（AC-07、AC-08、AC-26）；A、B 同時 `signIn`（假 gateway 延遲）重複 100 次，每次結束時恰好一組憑證有效，且最後一次 `replace` 的 tokens 屬於持有有效憑證的帳號（AC-27、SC-005）；新的 `TeacherAuth`（模擬重新啟動）沒有老師
 - [ ] T035 [P] [US2] `server/tests/integration/authRoutes.test.ts`（取代部分）：帳號 A 登入後，同帳號或帳號 B 再 `POST /api/auth/google`，舊憑證呼叫 `GET /api/auth/me` 回 401、新憑證回 200 且回傳最後登入的帳號（AC-08、AC-26）
 - [ ] T036 [P] [US2] `frontend/tests/e2e/teacher-login.spec.ts`（重新登入部分）：分頁 1 登入 → 重新整理後 `sessionStorage` 仍有憑證（AC-09）→ 回首頁再登入成功並進入 T-Pick（AC-07，D21 暫時限制）；另一個 browser context 以帳號 B 登入後，分頁 1 在 T-Pick 重新呼叫 `getCurrentAccount` 時共通錯誤訊息區顯示「老師登入已失效，請回首頁重新登入」（AC-08、AC-26）
 
