@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GuidedNotesParser } from '../../src/guided-notes/GuidedNotesParser.js';
 import type { ImportError, ImportSuccess, Spreadsheet } from '../../src/temp-shared/entities.js';
-import { buildGrid, fixtureGrid, rowsFrom } from './helpers/gridBuilder.js';
+import { buildGrid, fixtureGrid, rowsFrom, type CellValue } from './helpers/gridBuilder.js';
 
 const SPREADSHEET: Spreadsheet = {
   id: 'spreadsheet-id-0001',
@@ -16,6 +16,16 @@ const parser = new GuidedNotesParser();
 function success(result: ImportSuccess | ImportError): ImportSuccess {
   if ('code' in result) throw new Error(`unexpected ImportError ${result.code}: ${result.reason}`);
   return result;
+}
+
+function failure(result: ImportSuccess | ImportError): ImportError {
+  if (!('code' in result)) throw new Error('expected an ImportError');
+  return result;
+}
+
+// A sheet with the header on row 1 (A 題號, B 作答) and `numbers` from row 2 down.
+function numbered(numbers: CellValue[], merges: string[] = []) {
+  return buildGrid([['題號', '作答'], ...numbers.map((n) => [n])], merges, { name: '學習單' });
 }
 
 function blanks(result: ImportSuccess): string[] {
@@ -102,5 +112,59 @@ describe('GuidedNotesParser (question groups)', () => {
       G11: '',
       G13: '',
     });
+  });
+});
+
+describe('GuidedNotesParser.parse (errors)', () => {
+  it('returns NO_HEADER with the current header texts (AC-17)', () => {
+    const grid = buildGrid(rowsFrom({ 2: { B: '計算機概論基礎 學習單' }, 4: { B: 'No.', C: '內容', G: '學生填寫' }, 5: { B: 1 } }), [
+      'B2:H2',
+    ]);
+    const error = failure(parser.parse(grid, SPREADSHEET));
+    expect(error.code).toBe('NO_HEADER');
+    expect(error.reason).toContain('「學習單」');
+    expect(error.foundHeaders).toEqual(['No.', '內容', '學生填寫']);
+    expect(error.acceptedHeaders).toEqual([
+      '題號欄：題號、編號、題次',
+      '作答欄：作答、答案、回答',
+      '題目欄（可以沒有）：題目、問題、題幹',
+    ]);
+    expect(error.fixSteps.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('returns NO_QUESTIONS when no row below the header has a number (AC-20)', () => {
+    const error = failure(parser.parse(numbered(['第一部分', null, '說明文字']), SPREADSHEET));
+    expect(error.code).toBe('NO_QUESTIONS');
+    expect(error.reason).toContain('第 1 列');
+    expect(error.foundHeaders).toEqual([]);
+  });
+
+  it('returns INVALID_NUMBERING for a repeated number with both rows (AC-19)', () => {
+    const error = failure(parser.parse(numbered([1, 2, 2]), SPREADSHEET));
+    expect(error.code).toBe('INVALID_NUMBERING');
+    expect(error.reason).toBe('第 4 列的題號 2 和第 3 列重複。');
+  });
+
+  it('returns INVALID_NUMBERING when 3 is above 2 (AC-19)', () => {
+    const error = failure(parser.parse(numbered([1, 3, 2]), SPREADSHEET));
+    expect(error.code).toBe('INVALID_NUMBERING');
+    expect(error.reason).toContain('第 4 列的題號 2');
+    expect(error.reason).toContain('第 3 列的題號 3');
+  });
+
+  it('accepts 200 questions and rejects 201 (AC-21)', () => {
+    const numbers = (count: number) => Array.from({ length: count }, (_, i) => i + 1);
+    expect(success(parser.parse(numbered(numbers(200)), SPREADSHEET)).questions).toHaveLength(200);
+    const error = failure(parser.parse(numbered(numbers(201)), SPREADSHEET));
+    expect(error.code).toBe('TOO_MANY_QUESTIONS');
+    expect(error.reason).toContain('201');
+    expect(error.reason).toContain('200');
+  });
+
+  it('returns NO_BLANK when an answer cell is merged into the previous question (AC-22)', () => {
+    const error = failure(parser.parse(numbered([1, 2, 3], ['B3:B4']), SPREADSHEET));
+    expect(error.code).toBe('NO_BLANK');
+    expect(error.reason).toContain('第 3 題');
+    expect(error.reason).toContain('第 4 列');
   });
 });

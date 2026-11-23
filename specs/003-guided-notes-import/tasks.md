@@ -107,7 +107,7 @@ description: "Task list for 003 匯入學習單"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T034 [P] [US3] 在 `gnt/GuidedNotesParser.test.ts` 加入錯誤案例：表頭「No.」「內容」「學生填寫」→ `NO_HEADER`，`foundHeaders` 為這三個文字、`acceptedHeaders` 三條、`fixSteps` 至少一條（AC-17）；表頭以下沒有題號 → `NO_QUESTIONS`（AC-20）；題號重複、題號 3 在 2 上方 → `INVALID_NUMBERING`，`reason` 含兩題的題號與列（AC-19）；以 gridBuilder 產生 201 題 → `TOO_MANY_QUESTIONS`，200 題成功（AC-21）；作答欄被合併進上一題 → `NO_BLANK`，`reason` 含題號與列（AC-22）
+- [X] T034 [P] [US3] 在 `gnt/GuidedNotesParser.test.ts` 加入錯誤案例：表頭「No.」「內容」「學生填寫」→ `NO_HEADER`，`foundHeaders` 為這三個文字、`acceptedHeaders` 三條、`fixSteps` 至少一條（AC-17）；表頭以下沒有題號 → `NO_QUESTIONS`（AC-20）；題號重複、題號 3 在 2 上方 → `INVALID_NUMBERING`，`reason` 含兩題的題號與列（AC-19）；以 gridBuilder 產生 201 題 → `TOO_MANY_QUESTIONS`，200 題成功（AC-21）；作答欄被合併進上一題 → `NO_BLANK`，`reason` 含題號與列（AC-22）
 - [ ] T035 [P] [US3] 撰寫 `gnt/importErrors.test.ts`：7 個函式的 `code` 正確、`reason` 非空、`fixSteps` 至少一條；非 `NO_HEADER` 的 `foundHeaders`、`acceptedHeaders` 為 `[]`（SC-003）
 - [ ] T036 [P] [US3] 在 `gnt/GoogleSheetsReader.test.ts` 加入錯誤對應：403、404 → `SheetsReadError('NO_ACCESS')`；逾時 15 秒、網路錯誤、5xx → `SheetsReadError('UNAVAILABLE')`（以假計時器驗證逾時）；002 的 `isGoogleAuthExpired(error)` 為 true → `SheetsReadError('AUTH_EXPIRED')`；`authorizedClient()` 丟出的 `TeacherNotSignedInError` 照原樣往上丟
 - [ ] T037 [P] [US3] 在 `gnt/GuidedNotesImporter.test.ts` 加入：先成功一次，之後每一種 `ImportError`、`SheetsReadError`、`describe` 都不改變 `latest()`（AC-18、SC-005）；`read` 遇到 `NO_ACCESS` → `ImportError` `NO_ACCESS`（AC-23）；工作表名稱不存在 → `NO_WORKSHEET`（AC-24）；`SheetsReadError`（`UNAVAILABLE`、`AUTH_EXPIRED`）與 `TeacherNotSignedInError` 照原樣丟出
