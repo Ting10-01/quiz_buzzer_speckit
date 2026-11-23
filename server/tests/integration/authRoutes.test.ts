@@ -4,6 +4,7 @@ import { signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, TEST_GOOGLE_CONFIG, type TestApp } from '../helpers/testApp.js';
 
 const A = 'teacher.a@example.com';
+const B = 'teacher.b@example.com';
 const NO_DRIVE_SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 const XRW = { 'x-requested-with': 'XmlHttpRequest' };
 
@@ -23,7 +24,7 @@ let t: TestApp;
 
 beforeEach(async () => {
   t = await createTestApp();
-  t.gateway.set('code-a', signInFor(A)).set('code-no-drive', signInFor('no.drive@example.com', NO_DRIVE_SCOPES));
+  t.gateway.set('code-a', signInFor(A)).set('code-b', signInFor(B)).set('code-no-drive', signInFor('no.drive@example.com', NO_DRIVE_SCOPES));
 });
 
 afterEach(async () => {
@@ -96,5 +97,23 @@ describe('authRoutes sign-in', () => {
       (await postGoogle(t.app, 'code-google-rejects')).body,
     ];
     expect(bodies.join()).not.toContain('NOT_TEACHER');
+  });
+});
+
+describe('authRoutes replacing the teacher', () => {
+  it.each([
+    ['the same account', 'code-a', { name: 'teacher.a', email: A }],
+    ['another account', 'code-b', { name: 'teacher.b', email: B }],
+  ])('voids the old token when %s signs in again', async (_name, code, account) => {
+    const oldToken = (await postGoogle(t.app, 'code-a')).json().teacherToken;
+    const newToken = (await postGoogle(t.app, code)).json().teacherToken;
+
+    const oldRes = await getMe(t.app, oldToken);
+    expect(oldRes.statusCode).toBe(401);
+    expect(oldRes.json()).toEqual({ code: 'UNAUTHORIZED', message: '需要老師登入' });
+
+    const newRes = await getMe(t.app, newToken);
+    expect(newRes.statusCode).toBe(200);
+    expect(newRes.json()).toEqual(account);
   });
 });
