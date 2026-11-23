@@ -26,8 +26,16 @@ function questionText(grid: SheetGrid, row: number, col: number | undefined): st
   return grid.text(row, merge?.startCol ?? col).trim();
 }
 
+// A sub-question marker at the start of a blank cell: "（1）", "(1)" or mixed "（1)".
+const MARKER = /^\s*([（(]\s*\d+\s*[)）])/;
+
 // Reads the questions below the header row (research R4).
 export class QuestionScanner {
+  // The marker kept as written (without leading spaces), or "" when there is none.
+  static extractMarker(text: string): string {
+    return MARKER.exec(text)?.[1] ?? '';
+  }
+
   scan(grid: SheetGrid, header: HeaderMatch): ScannedQuestion[] | ImportError {
     const scanned: ScannedQuestion[] = [];
     for (let row = header.row + 1; row <= grid.rowCount; row++) {
