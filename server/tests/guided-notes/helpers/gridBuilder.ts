@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { sheets_v4 } from '@googleapis/sheets';
 import { SheetGrid } from '../../../src/guided-notes/SheetGrid.js';
 
@@ -59,4 +60,15 @@ export function rowsFrom(cells: Record<number, Record<string, CellValue>>): Cell
     for (const [letters, value] of Object.entries(columns)) line[columnIndex(letters) - 1] = value;
   }
   return Array.from(rows, (row) => Array.from(row ?? [], (v) => v ?? null));
+}
+
+// A spreadsheets.get response stored in tests/guided-notes/fixtures/<name>.json.
+export function loadFixture(name: string): sheets_v4.Schema$Spreadsheet {
+  return JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf8')) as sheets_v4.Schema$Spreadsheet;
+}
+
+export function fixtureGrid(name: string, worksheet = '學習單'): SheetGrid {
+  const sheet = loadFixture(name).sheets?.find((s) => s.properties?.title === worksheet);
+  if (!sheet) throw new Error(`fixture ${name} has no worksheet ${worksheet}`);
+  return SheetGrid.fromApi(sheet);
 }
