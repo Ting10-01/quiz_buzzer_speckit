@@ -4,12 +4,15 @@ import { TeacherAuth } from '../../src/auth/TeacherAuth.js';
 import { FakeGoogleGateway, signInFor } from '../helpers/fakeGoogleGateway.js';
 
 const A = 'teacher.a@example.com';
+const B = 'teacher.b@example.com';
 const SIGN_IN_A = signInFor(A);
+const SIGN_IN_B = signInFor(B);
 const NO_DRIVE_SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 
 function setup() {
   const gateway = new FakeGoogleGateway()
     .set('code-a', SIGN_IN_A)
+    .set('code-b', SIGN_IN_B)
     .set('code-no-drive', signInFor('no.drive@example.com', NO_DRIVE_SCOPES));
   const clients = new GoogleClientProvider(gateway);
   const replace = vi.spyOn(clients, 'replace');
@@ -90,5 +93,78 @@ describe('TeacherAuth sign-in', () => {
 
     await expect(auth.signIn('unknown-code')).rejects.toThrow('invalid_grant');
     expect(auth.verify(first.teacherToken!)).toBe(true);
+  });
+});
+
+describe('TeacherAuth replacing the teacher', () => {
+  it.each([
+    ['the same account signs in again', 'code-a', A, SIGN_IN_A],
+    ['another account signs in', 'code-b', B, SIGN_IN_B],
+  ])('when %s, issues a new token and voids the old one', async (_name, code, email, signIn) => {
+    const { auth, replace } = setup();
+    const rotate = vi.fn();
+    auth.onRotate(rotate);
+    const first = await auth.signIn('code-a');
+    expect(rotate).not.toHaveBeenCalled();
+    replace.mockClear();
+
+    const second = await auth.signIn(code);
+
+    expect(second.ok).toBe(true);
+    expect(second.teacherToken).not.toBe(first.teacherToken);
+    expect(auth.verify(first.teacherToken!)).toBe(false);
+    expect(auth.verify(second.teacherToken!)).toBe(true);
+    expect(auth.currentAccount()?.email).toBe(email);
+    expect(replace).toHaveBeenCalledExactlyOnceWith(signIn.tokens);
+    expect(rotate).toHaveBeenCalledOnce();
+  });
+
+  it('logs that the previous teacher was replaced', async () => {
+    const { auth, log } = setup();
+    await auth.signIn('code-a');
+    await auth.signIn('code-b');
+    expect(log.info).toHaveBeenLastCalledWith(
+      { event: 'auth.signIn', result: 'OK', email: B, replaced: true },
+      expect.any(String),
+    );
+  });
+
+  it('does not notify onRotate for SCOPE_DENIED', async () => {
+    const { auth } = setup();
+    const rotate = vi.fn();
+    auth.onRotate(rotate);
+    await auth.signIn('code-a');
+    await auth.signIn('code-no-drive');
+    expect(rotate).not.toHaveBeenCalled();
+  });
+
+  it('keeps exactly one valid token, matching the last authorization, under concurrent sign-ins', async () => {
+    const { auth, gateway, replace } = setup();
+    for (let i = 0; i < 100; i++) {
+      const releaseA = gateway.hold('code-a');
+      const releaseB = gateway.hold('code-b');
+      const pendingA = auth.signIn('code-a');
+      const pendingB = auth.signIn('code-b');
+      const [first, second] = Math.random() < 0.5 ? [releaseA, releaseB] : [releaseB, releaseA];
+      first();
+      if (Math.random() < 0.5) await new Promise((resolve) => setImmediate(resolve));
+      second();
+      const [a, b] = await Promise.all([pendingA, pendingB]);
+
+      const validA = auth.verify(a.teacherToken!);
+      const validB = auth.verify(b.teacherToken!);
+      expect(Number(validA) + Number(validB)).toBe(1);
+      const holder = validA ? A : B;
+      expect(auth.currentAccount()?.email).toBe(holder);
+      expect(replace.mock.lastCall?.[0].refreshToken).toBe(signInFor(holder).tokens.refreshToken);
+    }
+  });
+
+  it('has no teacher in a new instance (server restart)', async () => {
+    const { auth, gateway, clients } = setup();
+    const { teacherToken } = await auth.signIn('code-a');
+    const restarted = new TeacherAuth(gateway, clients, { info: vi.fn() });
+    expect(restarted.currentAccount()).toBeNull();
+    expect(restarted.verify(teacherToken!)).toBe(false);
   });
 });
