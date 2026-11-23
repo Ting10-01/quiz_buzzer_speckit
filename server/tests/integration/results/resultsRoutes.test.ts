@@ -72,3 +72,23 @@ describe('POST /api/results/write-back', () => {
     expect(res.json()).toEqual({ code: 'INTERNAL', message: '伺服器發生錯誤，請稍後再試' });
   });
 });
+
+describe('POST /api/results/write-back without a valid teacher token (AC-27, REQ-RES-15)', () => {
+  it.each([
+    ['no Authorization header', async () => ({})],
+    ['a wrong token', async () => ({ authorization: `Bearer ${'x'.repeat(43)}` })],
+    [
+      'a token voided by a newer sign-in',
+      async () => {
+        const old = await signIn('code-a');
+        await signIn('code-b');
+        return { authorization: `Bearer ${old}` };
+      },
+    ],
+  ])('answers 401 UNAUTHORIZED for %s and does not write back', async (_name, headers) => {
+    const res = await t.app.inject({ method: 'POST', url: URL, headers: await headers() });
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual({ code: 'UNAUTHORIZED', message: '需要老師登入' });
+    expect(writeBack).not.toHaveBeenCalled();
+  });
+});

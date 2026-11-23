@@ -3,6 +3,7 @@ import { signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../helpers/testApp.js';
 import { FakeSpreadsheetReader } from '../guided-notes/helpers/fakeSpreadsheetReader.js';
 import { loadFixture } from '../guided-notes/helpers/gridBuilder.js';
+import { FakeGroupMembership, finishedActivityScenario } from '../results/helpers/resultFakes.js';
 
 const UNAUTHORIZED = { code: 'UNAUTHORIZED', message: '需要老師登入' };
 
@@ -24,8 +25,13 @@ beforeEach(async () => {
   counter = 0;
   // 003 routes: a rejected request must not read any spreadsheet (AC-26).
   reader = new FakeSpreadsheetReader().set('spreadsheet-id-0001', loadFixture('single'));
+  // 006 routes are registered only with 004 / 005 stores; substitutes until those exist.
+  const results = finishedActivityScenario();
   t = await createTestApp({
     spreadsheetReader: reader,
+    activityStore: results.activities,
+    submissionStore: results.submissions,
+    groupMembership: new FakeGroupMembership(),
     beforeReady: (app) => {
       // A teacher-only route that changes state, so a rejected request is observable.
       app.post('/test/teacher-only', { preHandler: app.requireTeacher }, async () => ({ counter: ++counter }));
@@ -88,6 +94,8 @@ const TEACHER_ONLY_ROUTES = [
   { method: 'GET', url: '/api/questions/1/submissions' },
   // 005 (T022)
   { method: 'POST', url: '/api/questions/1/judgements', payload: { groupNumber: 1, judgement: 'ACCEPTED' } },
+  // 006
+  { method: 'POST', url: '/api/results/write-back' },
 ] as const;
 
 describe('teacher-only route list', () => {

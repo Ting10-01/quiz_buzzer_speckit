@@ -125,7 +125,7 @@ description: "Task list for 006 結果與寫回"
   - `load` 回傳 `editable: false` → `NO_EDIT_PERMISSION`，不呼叫 `duplicateSheet`（AC-22）
   - research RD-07 對應表的每一格（`READ`：`TeacherNotSignedInError`、`SheetsReadError` 的 `AUTH_EXPIRED`、`NO_ACCESS`、`UNAVAILABLE`；`BACKUP`／`WRITE`：401／403／404／逾時／500）（AC-23～AC-26）；`duplicateSheet` 失敗時不呼叫 `writeTexts`（REQ-RES-13）
   - 第一個寫回尚未完成時第二個 → `IN_PROGRESS`，`duplicateSheet` 只被呼叫一次；任何失敗後 `inProgress` 恢復為 false，可再寫回（AC-28、REQ-RES-18）
-- [ ] T027 [P] [US4] 在 `server/tests/integration/results/resultsRoutes.test.ts` 加入：沒有 `Authorization`、憑證錯誤、舊的老師憑證（重新登入後作廢）→ `401 UNAUTHORIZED`，`WriteBackService.writeBack` 沒有被呼叫（AC-27、REQ-RES-15）；並把 `POST /api/results/write-back` 加入 002 `server/tests/integration/requireTeacher.test.ts` 的老師專用路由清單（002 T043）
+- [X] T027 [P] [US4] 在 `server/tests/integration/results/resultsRoutes.test.ts` 加入：沒有 `Authorization`、憑證錯誤、舊的老師憑證（重新登入後作廢）→ `401 UNAUTHORIZED`，`WriteBackService.writeBack` 沒有被呼叫（AC-27、REQ-RES-15）；並把 `POST /api/results/write-back` 加入 002 `server/tests/integration/requireTeacher.test.ts` 的老師專用路由清單（002 T043）
 - [ ] T028 [P] [US4] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入：`200` 且 `ok: false` → 原樣回傳；`ApiError` `401 GOOGLE_AUTH_EXPIRED` → `{ ok: false, cellCount: 0, failureReason: message }`；`401 UNAUTHORIZED` → `{ ok: false, cellCount: 0, failureReason: "老師登入已失效，請回首頁重新登入。沒有寫入任何格子。" }`；`NETWORK` 與 500 → 原樣 reject `ApiError`
 
 ### Implementation for User Story 4
