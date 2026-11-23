@@ -1,0 +1,23 @@
+{
+  "name": "@quiz-buzzer/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "start": "tsx --env-file-if-exists=.env src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^5.0.0",
+    "google-auth-library": "^10.0.0",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "socket.io-client": "^4.8.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}
