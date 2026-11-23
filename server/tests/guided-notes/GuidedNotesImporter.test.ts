@@ -1,7 +1,9 @@
 import type { sheets_v4 } from '@googleapis/sheets';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { TeacherNotSignedInError } from '../../src/auth/GoogleClientProvider.js';
 import { GuidedNotesImporter } from '../../src/guided-notes/GuidedNotesImporter.js';
 import { ImportStore } from '../../src/guided-notes/ImportStore.js';
+import { SheetsReadError } from '../../src/guided-notes/SpreadsheetReader.js';
 import type { ImportError, ImportSuccess } from '../../src/temp-shared/entities.js';
 import { FakeSpreadsheetReader } from './helpers/fakeSpreadsheetReader.js';
 import { buildSheet, loadFixture, rowsFrom } from './helpers/gridBuilder.js';
@@ -123,5 +125,77 @@ describe('GuidedNotesImporter only reads the spreadsheet (AC-10)', () => {
     await watchedImporter.read(ID, '學習單');
     expect(new Set(used)).toEqual(new Set(['load']));
     expect(reader.loadCalls).toEqual([ID, ID]);
+  });
+});
+
+describe('GuidedNotesImporter failures leave the ImportStore unchanged (AC-18, SC-005)', () => {
+  const BAD_SHEET = 'spreadsheet-id-bad01';
+  const GONE = 'spreadsheet-id-gone1';
+
+  let first: ImportSuccess;
+  let firstMarkers: unknown;
+
+  beforeEach(async () => {
+    reader.set(ID, loadFixture('single'));
+    reader.set(BAD_SHEET, {
+      properties: { title: '表頭錯誤' },
+      sheets: [buildSheet(rowsFrom({ 4: { B: 'No.', C: '內容', G: '學生填寫' }, 5: { B: 1 } }))],
+    });
+    first = success(await importer.read(ID, '學習單'));
+    firstMarkers = store.latestMarkers();
+  });
+
+  function expectUnchanged(): void {
+    expect(store.latest()).toEqual(first);
+    expect(store.latestMarkers()).toEqual(firstMarkers);
+  }
+
+  it('after an ImportError from the worksheet content', async () => {
+    const result = await importer.read(BAD_SHEET, '學習單');
+    expect((result as ImportError).code).toBe('NO_HEADER');
+    expectUnchanged();
+  });
+
+  it('returns NO_WORKSHEET for an unknown worksheet name (AC-24)', async () => {
+    const result = (await importer.read(ID, '改名後的工作表')) as ImportError;
+    expect(result.code).toBe('NO_WORKSHEET');
+    expect(result.reason).toContain('「改名後的工作表」');
+    expectUnchanged();
+  });
+
+  it('returns NO_ACCESS when Google refuses the spreadsheet (AC-23)', async () => {
+    reader.fail(GONE, new SheetsReadError('NO_ACCESS'));
+    const result = (await importer.read(GONE, '學習單')) as ImportError;
+    expect(result.code).toBe('NO_ACCESS');
+    expect(result.fixSteps.join('')).toContain('重新挑選');
+    expectUnchanged();
+  });
+
+  it.each([
+    ['SheetsReadError UNAVAILABLE', () => new SheetsReadError('UNAVAILABLE')],
+    ['SheetsReadError AUTH_EXPIRED', () => new SheetsReadError('AUTH_EXPIRED')],
+    ['TeacherNotSignedInError', () => new TeacherNotSignedInError()],
+  ])('rethrows %s from read()', async (_name, makeError) => {
+    const error = makeError();
+    reader.fail(GONE, error);
+    await expect(importer.read(GONE, '學習單')).rejects.toBe(error);
+    expectUnchanged();
+  });
+
+  it.each([
+    ['SheetsReadError NO_ACCESS', () => new SheetsReadError('NO_ACCESS')],
+    ['SheetsReadError UNAVAILABLE', () => new SheetsReadError('UNAVAILABLE')],
+    ['TeacherNotSignedInError', () => new TeacherNotSignedInError()],
+  ])('rethrows %s from describe()', async (_name, makeError) => {
+    const error = makeError();
+    reader.fail(GONE, error);
+    await expect(importer.describe(GONE)).rejects.toBe(error);
+    expectUnchanged();
+  });
+
+  it('after describe() of another spreadsheet', async () => {
+    reader.set(GONE, loadFixture('multi-sheet'));
+    await importer.describe(GONE);
+    expectUnchanged();
   });
 });
