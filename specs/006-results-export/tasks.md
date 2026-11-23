@@ -72,7 +72,7 @@ description: "Task list for 006 結果與寫回"
 ### Tests for User Story 2 ⚠️
 
 - [X] T011 [P] [US2] `server/tests/unit/results/ResultQuery.all.test.ts`：`FINISHED` 時每題所有送出依 `rank` 排序，學生、老師、未加入組別的連線拿到相同內容（AC-07、AC-08、REQ-RES-04）；結束時待判定的送出為 `UNJUDGED` 且不是 `winner`（AC-09）；`behindFirstMs` 以順位 1 的 `elapsedMs` 為基準，`elapsedMs` 3200、5000、5000 且第 2 名被接受時為 `[0, 1800, 1800]`，沒有送出時為 `[]`（AC-30、REQ-RES-21）；最後一題沒有 `endedAt` 但 `phase` 為 `FINISHED` 時仍算已結束；活動進行中只回第 1、2 題，每題只含呼叫者本組的送出且 `rank`、`behindFirstMs` 為 0（AC-10）；窮舉「題目未結束／已結束 × 活動未結束／已結束 × 6 組與 `null`」，未結束的題目送出出現 0 次、活動結束前他組未成功的送出出現 0 次（SC-006）
-- [ ] T012 [P] [US2] 在 `server/tests/integration/results/resultSocketHandlers.test.ts` 加入 `result:all`：ack 格式、只含已結束的題目、沒有活動 → `NO_ACTIVITY`
+- [X] T012 [P] [US2] 在 `server/tests/integration/results/resultSocketHandlers.test.ts` 加入 `result:all`：ack 格式、只含已結束的題目、沒有活動 → `NO_ACTIVITY`
 - [ ] T013 [P] [US2] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `getAllResults`：成功、`ok: false`、逾時
 
 ### Implementation for User Story 2

@@ -83,3 +83,26 @@ describe('result:question', () => {
     expect(ack).toEqual({ ok: false, code: 'NO_ACTIVITY', message: '目前沒有活動' });
   });
 });
+
+describe('result:all', () => {
+  it('acks { ok: true, results } with only the ended questions', async () => {
+    const socket = await student(5);
+    const ack = await socket.timeout(2000).emitWithAck('result:all', {});
+    expect(ack.ok).toBe(true);
+    expect(ack.results.map((r: { questionNumber: number }) => r.questionNumber)).toEqual([1, 2]);
+    expect(ack.results[1]).toEqual({
+      questionNumber: 2,
+      winner: submission(2, 2, 0, 5000, 'ACCEPTED', ['演算法', '堆疊']),
+      submissionCount: 3,
+      submissions: [submission(2, 5, 0, 4100, 'REJECTED', ['演算法', '佇列'])],
+      behindFirstMs: [0],
+    });
+  });
+
+  it('acks NO_ACTIVITY without an activity', async () => {
+    scenario.activities.set(null);
+    const socket = await student(5);
+    const ack = await socket.timeout(2000).emitWithAck('result:all', {});
+    expect(ack).toEqual({ ok: false, code: 'NO_ACTIVITY', message: '目前沒有活動' });
+  });
+});
