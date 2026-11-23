@@ -69,3 +69,38 @@ describe('GuidedNotesParser.parse (success)', () => {
     expect(result.spreadsheet).toEqual(SPREADSHEET);
   });
 });
+
+describe('GuidedNotesParser (question groups)', () => {
+  it('parses the group template (AC-11, SC-001)', () => {
+    const result = success(parser.parse(fixtureGrid('group'), SPREADSHEET));
+    expect(result.headerRow).toBe(4);
+    expect(result.headerColumns).toEqual(['B', 'C', 'G']);
+    expect(result.questions.map((q) => [q.number, q.type])).toEqual([
+      [1, 'GROUP'],
+      [2, 'GROUP'],
+      [3, 'SINGLE'],
+      [4, 'SINGLE'],
+    ]);
+    expect(blanks(result)).toEqual(['G5', 'G6', 'G8', 'G9', 'G11', 'G13']);
+  });
+
+  it('keeps markers out of the SubQuestions (AC-12)', () => {
+    const result = success(parser.parse(fixtureGrid('group'), SPREADSHEET));
+    for (const sub of result.questions.flatMap((q) => q.subQuestions)) {
+      expect(Object.keys(sub).sort()).toEqual(['blankCell', 'index']);
+    }
+  });
+
+  it('returns one marker per blank cell (AC-12)', () => {
+    const grid = fixtureGrid('group');
+    const result = success(parser.parse(grid, SPREADSHEET));
+    expect(parser.markersOf(grid, result)).toEqual({
+      G5: '（1）',
+      G6: '（2）',
+      G8: '（1）',
+      G9: '（2）',
+      G11: '',
+      G13: '',
+    });
+  });
+});
