@@ -52,7 +52,7 @@ function sendReadFailure(reply: FastifyReply, error: unknown): FastifyReply {
 
 // /api/guided-notes/* (contracts/guided-notes-http.md). Teacher only.
 export const guidedNotesRoutes: FastifyPluginAsync = async (app) => {
-  const importer = new GuidedNotesImporter(app.spreadsheetReader, app.importStore);
+  const importer = new GuidedNotesImporter(app.spreadsheetReader, app.importStore, app.log);
 
   app.get<{ Params: { spreadsheetId: string } }>(
     '/api/guided-notes/spreadsheets/:spreadsheetId',

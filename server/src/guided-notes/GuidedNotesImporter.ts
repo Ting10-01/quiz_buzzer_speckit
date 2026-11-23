@@ -1,3 +1,4 @@
+import type { FastifyBaseLogger } from 'fastify';
 import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
 import { GuidedNotesParser } from './GuidedNotesParser.js';
 import { HeaderLocator } from './HeaderLocator.js';
@@ -22,6 +23,7 @@ export class GuidedNotesImporter {
   constructor(
     private readonly reader: SpreadsheetReader,
     private readonly store: ImportStore,
+    private readonly log: FastifyBaseLogger,
   ) {}
 
   // The spreadsheet after picking: the first worksheet with a header is selected, or the
@@ -34,7 +36,22 @@ export class GuidedNotesImporter {
 
   // Every failure leaves the ImportStore unchanged (REQ-IMP-14). NO_ACCESS is an ImportError here;
   // other SheetsReadErrors and TeacherNotSignedInError are thrown for the route to answer.
+  // Logs only ids, the worksheet name and the outcome: never cell contents or tokens (constitution VI).
   async read(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError> {
+    const context = { spreadsheetId, worksheet };
+    try {
+      const result = await this.readWorksheet(spreadsheetId, worksheet);
+      const outcome = isImportError(result) ? { code: result.code } : { questionCount: result.questions.length };
+      this.log.info({ ...context, ...outcome }, 'guided notes read');
+      return result;
+    } catch (error) {
+      const code = error instanceof SheetsReadError ? error.kind : (error as { code?: unknown } | null)?.code;
+      this.log.warn({ ...context, code }, 'guided notes read failed');
+      throw error;
+    }
+  }
+
+  private async readWorksheet(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError> {
     let book: LoadedSpreadsheet;
     try {
       book = await this.reader.load(spreadsheetId);

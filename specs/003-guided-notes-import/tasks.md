@@ -128,7 +128,7 @@ description: "Task list for 003 匯入學習單"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T045 [P] 在 `gn/GuidedNotesImporter.ts` 以 002 的 pino logger 記錄每次讀取的 `spreadsheetId`、工作表、題數或 `code`；在 `gnt/GuidedNotesImporter.test.ts` 確認 log 不含儲存格內容與任何 `Authorization` 值（原則 VI）；不另設 logger（002 的 `loggerOptions`）
+- [X] T045 [P] 在 `gn/GuidedNotesImporter.ts` 以 002 的 pino logger 記錄每次讀取的 `spreadsheetId`、工作表、題數或 `code`；在 `gnt/GuidedNotesImporter.test.ts` 確認 log 不含儲存格內容與任何 `Authorization` 值（原則 VI）；不另設 logger（002 的 `loggerOptions`）
 - [ ] T046 [P] 在 `gnt/GuidedNotesParser.test.ts` 加入 200 題（含題組）的解析在 1 秒內完成，作為 SC-004 伺服器端的下限檢查
 - [ ] T047 執行 `npm run typecheck`、`npm test -w server -- guided-notes`、`npm test -w frontend -- HttpGuidedNotesService`，回報指令與結果（原則 VIII）
 - [ ] T048 依 quickstart.md 的 15 個人工情境以真實 Google 試算表驗證（含 SC-004 計時、SC-006 斷網），結果寫入 `specs/003-guided-notes-import/manual-verification.md`
