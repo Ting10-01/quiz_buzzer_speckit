@@ -76,3 +76,8 @@ p {
     transition: none;
   }
 }
+
+/* Height of the fixed bottom action bar (research RD-09); pages pad their content by it. */
+:root {
+  --action-bar-height: 72px;
+}

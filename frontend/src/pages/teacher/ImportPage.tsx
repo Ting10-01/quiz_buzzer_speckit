@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { QuestionType, type ImportError, type ImportSuccess, type Spreadsheet } from '@quiz-buzzer/shared/entities';
 import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
+import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { blankCellsLabel, questionTypeLabel } from '../../components/questionLabels';
@@ -163,14 +164,18 @@ function ImportResult({ result, onSelectWorksheet, onRepick, onCancel, onConfirm
         </section>
       </div>
 
-      <div className={styles.actions}>
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>
-          取消
-        </button>
-        <button type="button" className="btn btn-primary" onClick={onConfirm}>
-          確認匯入，下一步
-        </button>
-      </div>
+      <ActionBar
+        back={
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>
+            取消
+          </button>
+        }
+        primary={
+          <button type="button" className="btn btn-primary" onClick={onConfirm}>
+            確認匯入，下一步
+          </button>
+        }
+      />
     </>
   );
 }
@@ -220,14 +225,18 @@ function ImportFailure({ spreadsheet, error, onRepick, onReread }: ImportFailure
         </section>
       </div>
 
-      <div className={styles.actions}>
-        <button type="button" className="btn btn-secondary" onClick={onRepick}>
-          重新挑選
-        </button>
-        <button type="button" className="btn btn-primary" onClick={onReread}>
-          重新讀取
-        </button>
-      </div>
+      <ActionBar
+        back={
+          <button type="button" className="btn btn-secondary" onClick={onRepick}>
+            重新挑選
+          </button>
+        }
+        primary={
+          <button type="button" className="btn btn-primary" onClick={onReread}>
+            重新讀取
+          </button>
+        }
+      />
     </>
   );
 }

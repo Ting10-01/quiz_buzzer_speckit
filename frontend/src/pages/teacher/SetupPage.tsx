@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { QuestionType, type ActivitySettings } from '@quiz-buzzer/shared/entities';
 import { isUnexpectedError, isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
+import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
@@ -122,9 +123,9 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
           </section>
         </div>
 
-        <div className={styles.actions}>
-          {page.mode === 'create' ? (
-            <>
+        <ActionBar
+          back={
+            page.mode === 'create' ? (
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -132,12 +133,7 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
               >
                 上一步
               </button>
-              <button type="button" className="btn btn-primary" onClick={() => void save()}>
-                建立活動
-              </button>
-            </>
-          ) : (
-            <>
+            ) : (
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -145,12 +141,14 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
               >
                 取消
               </button>
-              <button type="button" className="btn btn-primary" onClick={() => void save()}>
-                儲存設定
-              </button>
-            </>
-          )}
-        </div>
+            )
+          }
+          primary={
+            <button type="button" className="btn btn-primary" onClick={() => void save()}>
+              {page.mode === 'create' ? '建立活動' : '儲存設定'}
+            </button>
+          }
+        />
       </main>
     </div>
   );

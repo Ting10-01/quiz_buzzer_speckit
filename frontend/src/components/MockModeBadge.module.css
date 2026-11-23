@@ -22,3 +22,8 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* When the page has a bottom action bar, the dock sits above it so it never covers the main button. */
+:global(body:has([data-action-bar])) .dock {
+  bottom: calc(var(--action-bar-height) + 16px);
+}

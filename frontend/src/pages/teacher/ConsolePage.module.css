@@ -5,19 +5,13 @@
 .main {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 88px 24px 120px;
+  /* Keep the content clear of the fixed action bar (RD-09). */
+  padding: 88px 24px calc(var(--action-bar-height) + 40px);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
 
 .intro {
   display: flex;
@@ -44,10 +38,6 @@
   color: var(--muted);
 }
 
-.actions {
-  display: flex;
-  gap: 12px;
-}
 
 .columns {
   display: grid;

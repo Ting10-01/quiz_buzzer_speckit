@@ -1,0 +1,29 @@
+/* Fixed to the bottom of the viewport; pages reserve var(--action-bar-height) below their content. */
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  height: var(--action-bar-height);
+  box-sizing: border-box;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+.inner {
+  max-width: 1080px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.side {
+  display: flex;
+  gap: 12px;
+}

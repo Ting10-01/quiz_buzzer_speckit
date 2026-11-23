@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import type { Activity } from '@quiz-buzzer/shared/entities';
 import type { Navigate, PageState } from '../../app/AppRouter';
+import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { GroupGrid } from '../../components/GroupGrid';
@@ -34,25 +35,10 @@ export function ConsolePage({ navigate, page }: { navigate: Navigate; page: Cons
     <div className={styles.page}>
       <AppHeader variant="teacher" onHome={() => navigate({ id: 'Main' })} subtitle="控制台" />
       <main className={styles.main}>
-        <div className={styles.head}>
-          <div className={styles.intro}>
-            <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>
-            <h1 className={styles.title}>等學生加入</h1>
-            <p className={styles.lead}>{emptyGroupsText(activity)}</p>
-          </div>
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => navigate({ id: 'T-Setup', mode: 'edit', activity })}
-            >
-              修改設定
-            </button>
-            {/* Opening question 1 is wired in by US3 (T074). */}
-            <button type="button" className="btn btn-primary">
-              開放第 1 題
-            </button>
-          </div>
+        <div className={styles.intro}>
+          <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>
+          <h1 className={styles.title}>等學生加入</h1>
+          <p className={styles.lead}>{emptyGroupsText(activity)}</p>
         </div>
 
         {/* Gets a message once the console calls services (T074); T-Lobby itself only switches pages. */}
@@ -78,6 +64,24 @@ export function ConsolePage({ navigate, page }: { navigate: Navigate; page: Cons
             </ul>
           </section>
         </div>
+
+        <ActionBar
+          back={
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate({ id: 'T-Setup', mode: 'edit', activity })}
+            >
+              修改設定
+            </button>
+          }
+          primary={
+            // Opening question 1 is wired in by US3 (T074).
+            <button type="button" className="btn btn-primary">
+              開放第 1 題
+            </button>
+          }
+        />
       </main>
     </div>
   );
