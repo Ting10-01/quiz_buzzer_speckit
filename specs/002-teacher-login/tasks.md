@@ -140,7 +140,7 @@ description: "Task list for 002 老師登入"
 ### Tests for User Story 4
 
 - [X] T044 [P] [US4] `server/tests/unit/GoogleClientProvider.test.ts`：未 `replace` 時 `authorizedClient()` 丟 `TeacherNotSignedInError`（AC-18）；`replace` 後回傳的 client 帶 refresh token，`expiryDate` 已過時 `getAccessToken()` 會更新（以假 client 驗證被呼叫，AC-17）；`isGoogleAuthExpired` 對 `invalid_grant` 與 401 回 true、對逾時回 false
-- [ ] T045 [P] [US4] `server/tests/integration/authRoutes.test.ts`（picker-token 部分）：沒有憑證回 401；有效憑證回 `{ accessToken, apiKey, appId }` 且回應中沒有 refresh token 與 client secret（AC-16）；假 client 丟 `invalid_grant` 回 `401 GOOGLE_AUTH_EXPIRED`「Google 授權已失效，請回首頁重新登入」（AC-19）；丟 `GoogleUnavailableError` 回 `502 GOOGLE_UNAVAILABLE`
+- [X] T045 [P] [US4] `server/tests/integration/authRoutes.test.ts`（picker-token 部分）：沒有憑證回 401；有效憑證回 `{ accessToken, apiKey, appId }` 且回應中沒有 refresh token 與 client secret（AC-16）；假 client 丟 `invalid_grant` 回 `401 GOOGLE_AUTH_EXPIRED`「Google 授權已失效，請回首頁重新登入」（AC-19）；丟 `GoogleUnavailableError` 回 `502 GOOGLE_UNAVAILABLE`
 
 ### Implementation for User Story 4
 

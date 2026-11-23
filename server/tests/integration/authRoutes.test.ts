@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { signInFor } from '../helpers/fakeGoogleGateway.js';
+import { GoogleUnavailableError } from '../../src/auth/GoogleOAuthGateway.js';
+import { invalidGrantError, signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, TEST_GOOGLE_CONFIG, type TestApp } from '../helpers/testApp.js';
 
 const A = 'teacher.a@example.com';
@@ -16,6 +17,14 @@ function getMe(app: FastifyInstance, token?: string) {
   return app.inject({
     method: 'GET',
     url: '/api/auth/me',
+    headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+  });
+}
+
+function getPickerToken(app: FastifyInstance, token?: string) {
+  return app.inject({
+    method: 'GET',
+    url: '/api/auth/picker-token',
     headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
   });
 }
@@ -115,5 +124,42 @@ describe('authRoutes replacing the teacher', () => {
     const newRes = await getMe(t.app, newToken);
     expect(newRes.statusCode).toBe(200);
     expect(newRes.json()).toEqual(account);
+  });
+});
+
+describe('GET /api/auth/picker-token', () => {
+  it('rejects a request without a teacher token', async () => {
+    const res = await getPickerToken(t.app);
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual({ code: 'UNAUTHORIZED', message: '需要老師登入' });
+  });
+
+  it('returns the access token, API key and app id, and nothing long-lived', async () => {
+    const { teacherToken } = (await postGoogle(t.app, 'code-a')).json();
+    const res = await getPickerToken(t.app, teacherToken);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      accessToken: signInFor(A).tokens.accessToken,
+      apiKey: TEST_GOOGLE_CONFIG.apiKey,
+      appId: TEST_GOOGLE_CONFIG.appId,
+    });
+    expect(res.body).not.toContain(signInFor(A).tokens.refreshToken);
+    expect(res.body).not.toContain(TEST_GOOGLE_CONFIG.clientSecret);
+  });
+
+  it('returns 401 GOOGLE_AUTH_EXPIRED when the authorization was revoked', async () => {
+    const { teacherToken } = (await postGoogle(t.app, 'code-a')).json();
+    t.gateway.lastClient!.failWith(invalidGrantError());
+    const res = await getPickerToken(t.app, teacherToken);
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual({ code: 'GOOGLE_AUTH_EXPIRED', message: 'Google 授權已失效，請回首頁重新登入' });
+  });
+
+  it('returns 502 GOOGLE_UNAVAILABLE when Google cannot be reached', async () => {
+    const { teacherToken } = (await postGoogle(t.app, 'code-a')).json();
+    t.gateway.lastClient!.failWith(new GoogleUnavailableError());
+    const res = await getPickerToken(t.app, teacherToken);
+    expect(res.statusCode).toBe(502);
+    expect(res.json()).toEqual({ code: 'GOOGLE_UNAVAILABLE', message: '連不上 Google，請稍後再試' });
   });
 });
