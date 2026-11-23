@@ -8,6 +8,7 @@ import { TeacherAuth } from './auth/TeacherAuth.js';
 import type { AppConfig } from './config.js';
 import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
+import { attachSocketServer } from './realtime/socketServer.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -34,7 +35,7 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   app.decorate('googleClients', googleClients);
 
   app.register(authRoutes, { config, teacherAuth, googleClients });
-  // Registered by a later task: Socket.IO (T042).
+  attachSocketServer(app, teacherAuth);
 
   return app;
 }

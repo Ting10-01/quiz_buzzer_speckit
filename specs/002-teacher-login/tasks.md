@@ -124,7 +124,7 @@ description: "Task list for 002 老師登入"
 
 ### Implementation for User Story 3
 
-- [ ] T042 [US3] 實作 `server/src/realtime/socketServer.ts`：`attachSocketServer(app, teacherAuth)` 以 `new Server(app.server, { transports: ['websocket'] })` 建立並存為 `app.io`；`io.use` 依 contracts/socket-handshake.md 處理三種 handshake；匯出 `TEACHER_ROOM = 'teacher'`；`teacherAuth.onRotate` → `io.in(TEACHER_ROOM).disconnectSockets(true)`；在 `server/src/app.ts` 呼叫
+- [X] T042 [US3] 實作 `server/src/realtime/socketServer.ts`：`attachSocketServer(app, teacherAuth)` 以 `new Server(app.server, { transports: ['websocket'] })` 建立並存為 `app.io`；`io.use` 依 contracts/socket-handshake.md 處理三種 handshake；匯出 `TEACHER_ROOM = 'teacher'`；`teacherAuth.onRotate` → `io.in(TEACHER_ROOM).disconnectSockets(true)`；在 `server/src/app.ts` 呼叫
 - [ ] T043 [US3] 在 `server/tests/integration/requireTeacher.test.ts` 維護一份「老師專用路由清單」（目前為 `GET /api/auth/me`、`GET /api/auth/picker-token`），逐一以沒有憑證、作廢憑證的請求驗證回 `401 UNAUTHORIZED`；003–006 新增老師路由時必須加入這份清單（contracts/server-extension.md；SC-002）
 
 **Checkpoint**: US3 可單獨展示：學生分頁與偽造憑證都被伺服器拒絕
