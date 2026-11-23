@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../../src/app.js';
 import type { AppConfig, GoogleConfig } from '../../src/config.js';
+import type { SpreadsheetReader } from '../../src/guided-notes/SpreadsheetReader.js';
 import { FakeGoogleGateway } from './fakeGoogleGateway.js';
 import { LogCapture } from './logCapture.js';
 
@@ -22,6 +23,8 @@ export interface TestApp {
 export interface TestAppOptions {
   google?: GoogleConfig | null;
   gateway?: FakeGoogleGateway;
+  // 003: replaces GoogleSheetsReader (e.g. tests/guided-notes/helpers/fakeSpreadsheetReader.ts).
+  spreadsheetReader?: SpreadsheetReader;
   // Runs before app.ready(), e.g. to register a test-only route.
   beforeReady?: (app: FastifyInstance) => void;
 }
@@ -36,7 +39,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   };
   const gateway = options.gateway ?? new FakeGoogleGateway();
   const logs = new LogCapture();
-  const app = buildApp(config, { gateway, logStream: logs });
+  const app = buildApp(config, { gateway, logStream: logs, spreadsheetReader: options.spreadsheetReader });
   options.beforeReady?.(app);
   await app.ready();
   return { app, config, gateway, logs };
