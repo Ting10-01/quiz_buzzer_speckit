@@ -103,7 +103,7 @@ description: "Task list for 006 結果與寫回"
 - [X] T021 [P] [US3] 實作 `server/src/results/cellText.ts`（`composeCellText`、`backupName`），依 data-model 第 4 節
 - [X] T022 [P] [US3] 實作 `server/src/results/GoogleSheetsWriter.ts`，依 research RD-05、RD-06 與 data-model 第 4 節，依 T003
 - [X] T023 [US3] 實作 `server/src/results/WriteBackService.ts` 的寫回步驟 1～8 的成功路徑與 `planCells`、`firstLayoutMismatch`，依 T008、T014、T021
-- [ ] T024 [US3] 實作 `server/src/results/resultsRoutes.ts`（`preHandler: requireTeacher`），`WriteBackFailure` 依 data-model 第 4 節轉成 `200 WriteBackResult(ok=false)` 或 `401 ErrorBody`；在 002 的 `buildApp` 以 `GoogleSheetsWriter`（`app.googleClients`）、003、004、005 的實例建立 `WriteBackService`，以 `app.register(resultsRoutes, { writeBack })` 註冊，依 T022、T023
+- [X] T024 [US3] 實作 `server/src/results/resultsRoutes.ts`（`preHandler: requireTeacher`），`WriteBackFailure` 依 data-model 第 4 節轉成 `200 WriteBackResult(ok=false)` 或 `401 ErrorBody`；在 002 的 `buildApp` 以 `GoogleSheetsWriter`（`app.googleClients`）、003、004、005 的實例建立 `WriteBackService`，以 `app.register(resultsRoutes, { writeBack })` 註冊，依 T022、T023
 - [ ] T025 [US3] 在 `frontend/src/services/ServerResultService.ts` 實作 `writeBack`，依 contracts
 
 **Checkpoint**: 寫回的成功路徑可用替身完整跑過

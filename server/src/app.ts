@@ -15,8 +15,11 @@ import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
 import { attachSocketServer } from './realtime/socketServer.js';
 import { submissionRoutes } from './submission/index.js';
+import { GoogleSheetsWriter } from './results/GoogleSheetsWriter.js';
 import { ResultQuery } from './results/ResultQuery.js';
 import { registerResultHandlers } from './results/resultSocketHandlers.js';
+import { resultsRoutes } from './results/resultsRoutes.js';
+import { WriteBackService } from './results/WriteBackService.js';
 import type { ActivityStore, GroupMembership } from './temp-deps/activity.js';
 import type { SubmissionStore } from './temp-deps/submission.js';
 
@@ -72,11 +75,20 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   app.register(submissionRoutes);
 
   // 006. TEMPORARY: until 004 and 005 exist the stores only come from deps (tests), and without
-  // them the result events are not registered.
+  // them the result events and the write-back route are not registered.
   const { activityStore, submissionStore, groupMembership } = deps;
   if (activityStore && submissionStore && groupMembership) {
     const resultQuery = new ResultQuery(activityStore, submissionStore);
     registerResultHandlers(io, resultQuery, groupMembership);
+    const writeBack = new WriteBackService({
+      activities: activityStore,
+      imports: app.importStore,
+      reader: app.spreadsheetReader,
+      query: resultQuery,
+      writer: new GoogleSheetsWriter(googleClients),
+      log: app.log,
+    });
+    app.register(resultsRoutes, { writeBack });
   }
 
   return app;
