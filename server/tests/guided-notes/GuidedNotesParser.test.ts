@@ -168,3 +168,29 @@ describe('GuidedNotesParser.parse (errors)', () => {
     expect(error.reason).toContain('第 4 列');
   });
 });
+
+describe('GuidedNotesParser performance (SC-004)', () => {
+  it('parses 200 questions, half of them groups, within 1 second', () => {
+    const rows: CellValue[][] = [['題號', '題目', '作答']];
+    const merges: string[] = [];
+    for (let n = 1; n <= 200; n++) {
+      const row = rows.length + 1;
+      if (n % 2 === 0) {
+        rows.push([n, `題組 ${n} 第一小題`, '（1）'], [null, `題組 ${n} 第二小題`, '（2）']);
+        merges.push(`A${row}:A${row + 1}`);
+      } else {
+        rows.push([n, `第 ${n} 題`, '']);
+      }
+    }
+    const grid = buildGrid(rows, merges);
+
+    const started = performance.now();
+    const result = success(parser.parse(grid, SPREADSHEET));
+    parser.markersOf(grid, result);
+    const elapsed = performance.now() - started;
+
+    expect(result.questions).toHaveLength(200);
+    expect(result.questions.filter((q) => q.type === 'GROUP')).toHaveLength(100);
+    expect(elapsed).toBeLessThan(1000);
+  });
+});
