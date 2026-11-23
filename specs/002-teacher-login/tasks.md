@@ -40,7 +40,7 @@ description: "Task list for 002 老師登入"
 **⚠️ CRITICAL**: 這個 Phase 完成前不開始任何 User Story
 
 - [X] T005 [P] `server/tests/unit/config.test.ts`：四個 Google 變數都有值時 `google` 為 `GoogleConfig`；缺一個或只有空白時 `google = null` 且 `missingGoogleVars` 列出缺少的名稱；`PORT` 未設時為 3000；`PORT` 不是 1–65535 的整數時丟出說明哪個變數有誤的錯誤（REQ-AUTH-12、REQ-AUTH-13、AC-21）
-- [ ] T006 [P] 實作 `server/src/config.ts`：`loadConfig(env): AppConfig`、`AppConfig { port, google: GoogleConfig | null, missingGoogleVars }`、`GoogleConfig { clientId, clientSecret, apiKey, appId }`；整個伺服器只有這裡讀 `process.env`（data-model 3）
+- [X] T006 [P] 實作 `server/src/config.ts`：`loadConfig(env): AppConfig`、`AppConfig { port, google: GoogleConfig | null, missingGoogleVars }`、`GoogleConfig { clientId, clientSecret, apiKey, appId }`；整個伺服器只有這裡讀 `process.env`（data-model 3）
 - [ ] T007 [P] 實作 `server/src/logger.ts`：`loggerOptions`，`redact.paths` 為 `req.headers.authorization`、`req.headers.cookie`、`*.teacherToken`、`*.accessToken`、`*.refreshToken`、`*.access_token`、`*.refresh_token`、`*.id_token`、`*.code`、`*.clientSecret`、`*.apiKey`，`censor: '[Redacted]'`（research RD-07）
 - [ ] T008 [P] 實作 `server/src/http/errors.ts`：`ErrorBody { code, message }`、`sendError(reply, status, code, message)`、Fastify `setErrorHandler`（未預期錯誤回 `500 INTERNAL`「伺服器發生錯誤，請稍後再試」，不回傳堆疊；log 只記 `code` 與 `message`）
 - [ ] T009 [P] 實作 `server/src/auth/GoogleOAuthGateway.ts`：介面 `GoogleOAuthGateway { exchangeCode(code): Promise<GoogleSignIn>; createClient(tokens): OAuth2Client }`、`GoogleSignIn { email, grantedScopes, tokens }`、`GoogleTokens { accessToken, refreshToken, expiryDate }`、`GoogleUnavailableError { code = 'GOOGLE_UNAVAILABLE' }`（data-model 3）
