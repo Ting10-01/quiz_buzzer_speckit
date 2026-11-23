@@ -28,7 +28,7 @@ description: "Task list for 002 老師登入"
 
 - [ ] T001 在根目錄 `package.json` 的 `workspaces` 加入 `server`，新增 `dev:server`、`test:server` scripts（依 plan「Project Structure」）
 - [X] T002 建立 `server/package.json` 與 `server/tsconfig.json`：dependencies `fastify`（5.x）、`socket.io`（4.x）、`google-auth-library`；devDependencies `typescript`、`tsx`、`vitest`、`socket.io-client`；scripts `dev`：`tsx watch --env-file-if-exists=.env src/main.ts`、`test`：`vitest run`（research RD-06）；tsconfig 延伸根目錄的 strict 設定
-- [ ] T003 [P] 建立 `server/.env.example`：只列 `GOOGLE_CLIENT_ID=`、`GOOGLE_CLIENT_SECRET=`、`GOOGLE_API_KEY=`、`GOOGLE_APP_ID=`、`PORT=3000`，不得有任何值（REQ-AUTH-12、AC-25）
+- [X] T003 [P] 建立 `server/.env.example`：只列 `GOOGLE_CLIENT_ID=`、`GOOGLE_CLIENT_SECRET=`、`GOOGLE_API_KEY=`、`GOOGLE_APP_ID=`、`PORT=3000`，不得有任何值（REQ-AUTH-12、AC-25）
 - [ ] T004 [P] 在 `frontend/vite.config.ts` 加入 `server.proxy`：`/api` → `http://127.0.0.1:3000`、`/socket.io` → `http://127.0.0.1:3000`（`ws: true`）（research RD-06）
 
 ---
