@@ -16,7 +16,7 @@ async function signIn(page: Page) {
 /** Clicks a pick button and chooses a sheet in the mock file chooser (M2). */
 async function pick(page: Page, button: string, sheet: string) {
   await page.getByRole('button', { name: button }).click();
-  await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: sheet }).click();
+  await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: sheet, exact: true }).click();
 }
 
 function statValue(page: Page, label: string) {
