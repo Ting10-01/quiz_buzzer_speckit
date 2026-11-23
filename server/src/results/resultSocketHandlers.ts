@@ -24,5 +24,8 @@ export function registerResultHandlers(io: Server, query: ResultQuery, members: 
       const questionNumber = (payload as { questionNumber?: unknown } | null)?.questionNumber;
       answer(ack, () => ({ result: query.questionResult(questionNumber as number, members.groupOf(socket)) }));
     });
+    socket.on('result:all', (_payload: unknown, ack: unknown) => {
+      answer(ack, () => ({ results: query.allResults(members.groupOf(socket)) }));
+    });
   });
 }
