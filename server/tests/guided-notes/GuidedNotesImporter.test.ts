@@ -106,3 +106,22 @@ describe('GuidedNotesImporter.read (success)', () => {
     expect(store.latest()?.spreadsheet.editable).toBe(false);
   });
 });
+
+describe('GuidedNotesImporter only reads the spreadsheet (AC-10)', () => {
+  it('uses nothing but SpreadsheetReader.load()', async () => {
+    reader.set(ID, loadFixture('multi-sheet'));
+    const used: (string | symbol)[] = [];
+    const watched = new Proxy(reader, {
+      get(target, property, receiver) {
+        used.push(property);
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const watchedImporter = new GuidedNotesImporter(watched, store);
+    await watchedImporter.describe(ID);
+    await watchedImporter.read(ID, '學習單');
+    expect(new Set(used)).toEqual(new Set(['load']));
+    expect(reader.loadCalls).toEqual([ID, ID]);
+  });
+});
