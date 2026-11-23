@@ -11,8 +11,8 @@ export function signInFor(email: string, grantedScopes: string[] = ALL_SCOPES): 
     email,
     grantedScopes,
     tokens: {
-      accessToken: `ya29.fake-access-${email}`,
-      refreshToken: `1//fake-refresh-${email}`,
+      accessToken: `fake-access-token-${email}`,
+      refreshToken: `fake-refresh-token-${email}`,
       expiryDate: Date.now() + 3600_000,
     },
   };
@@ -44,7 +44,7 @@ export class FakeOAuthClient {
     if (this.failure) throw this.failure;
     if (this.tokens.expiryDate <= Date.now()) {
       this.refreshCount++;
-      this.tokens.accessToken = `ya29.fake-refreshed-${this.refreshCount}`;
+      this.tokens.accessToken = `fake-refreshed-access-token-${this.refreshCount}`;
       this.tokens.expiryDate = Date.now() + 3600_000;
     }
     return { token: this.tokens.accessToken };
