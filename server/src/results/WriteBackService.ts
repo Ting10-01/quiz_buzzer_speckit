@@ -1,8 +1,10 @@
 import type { FastifyBaseLogger } from 'fastify';
+import { isGoogleAuthExpired, TeacherNotSignedInError } from '../auth/GoogleClientProvider.js';
+import { httpStatusOf } from '../auth/GoogleOAuthGateway.js';
 import { GuidedNotesParser } from '../guided-notes/GuidedNotesParser.js';
 import type { BlankMarkers, ImportStore } from '../guided-notes/ImportStore.js';
 import { isImportError } from '../guided-notes/importErrors.js';
-import type { SpreadsheetReader } from '../guided-notes/SpreadsheetReader.js';
+import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from '../guided-notes/SpreadsheetReader.js';
 import type { ActivityStore } from '../temp-deps/activity.js';
 import type { ImportError, ImportSuccess, QuestionResult, WriteBackResult } from '../temp-shared/entities.js';
 import { backupName, composeCellText } from './cellText.js';
@@ -53,6 +55,14 @@ export class WriteBackFailure extends Error {
   }
 }
 
+// Which Google call failed: the same error means something else in each (research RD-07).
+export const WriteBackStep = {
+  READ: 'READ',
+  BACKUP: 'BACKUP',
+  WRITE: 'WRITE',
+} as const;
+export type WriteBackStep = (typeof WriteBackStep)[keyof typeof WriteBackStep];
+
 export interface WriteBackDeps {
   activities: ActivityStore;
   imports: Pick<ImportStore, 'latest' | 'latestMarkers'>;
@@ -66,6 +76,8 @@ export interface WriteBackDeps {
 // Writes the winning answers back into the Guided Notes: layout check, backup, then a single
 // write (data-model section 4, sequence diagram part 3).
 export class WriteBackService {
+  // research RD-08: one write-back at a time (a single Node process).
+  private inProgress = false;
   private readonly activities: ActivityStore;
   private readonly imports: Pick<ImportStore, 'latest' | 'latestMarkers'>;
   private readonly reader: SpreadsheetReader;
@@ -85,21 +97,89 @@ export class WriteBackService {
     this.now = deps.now ?? (() => new Date());
   }
 
+  // Logs only the result code and cell count: never tokens or cell contents (constitution VI).
   async writeBack(): Promise<WriteBackResult> {
-    const stored = this.imports.latest()!;
+    try {
+      const result = await this.runExclusively();
+      this.log.info({ code: 'OK', cellCount: result.cellCount }, 'write back');
+      return result;
+    } catch (error) {
+      if (error instanceof WriteBackFailure) this.log.warn({ code: error.code, cellCount: 0 }, 'write back failed');
+      throw error;
+    }
+  }
+
+  // The check and the flag are set before the first await, so a concurrent call sees it.
+  private async runExclusively(): Promise<WriteBackResult> {
+    if (this.inProgress) throw new WriteBackFailure('IN_PROGRESS');
+    this.inProgress = true;
+    try {
+      return await this.run();
+    } finally {
+      this.inProgress = false;
+    }
+  }
+
+  // Steps 2-8 of data-model section 4. Any failure leaves every blank cell untouched.
+  private async run(): Promise<WriteBackResult> {
+    const state = this.activities.current();
+    if (!state || state.phase !== 'FINISHED') throw new WriteBackFailure('NOT_FINISHED');
+
+    const stored = this.imports.latest();
+    if (
+      !stored ||
+      stored.spreadsheet.id !== state.spreadsheet.id ||
+      stored.spreadsheet.selectedWorksheet !== state.spreadsheet.selectedWorksheet
+    ) {
+      throw new WriteBackFailure('IMPORT_CHANGED');
+    }
     const { id, selectedWorksheet } = stored.spreadsheet;
     const cells = this.planCells(stored, this.imports.latestMarkers(), this.query.allResults(null));
     if (cells.length === 0) return { ok: true, cellCount: 0 };
 
-    const loaded = await this.reader.load(id);
-    const grid = loaded.sheets.find((s) => s.name === selectedWorksheet)!;
+    let loaded: LoadedSpreadsheet;
+    try {
+      loaded = await this.reader.load(id);
+    } catch (error) {
+      throw this.mapGoogleError(error, 'READ');
+    }
+    const grid = loaded.sheets.find((s) => s.name === selectedWorksheet);
+    if (!grid) throw new WriteBackFailure('SHEET_NOT_FOUND');
+    if (!loaded.editable) throw new WriteBackFailure('NO_EDIT_PERMISSION');
     const mismatch = this.firstLayoutMismatch(stored, this.parser.parse(grid, stored.spreadsheet));
     if (mismatch !== null) throw new WriteBackFailure('LAYOUT_CHANGED', mismatch);
 
     const names = loaded.sheets.map((s) => s.name);
-    await this.writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, this.now(), names));
-    await this.writer.writeTexts(id, selectedWorksheet, cells);
+    try {
+      await this.writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, this.now(), names));
+    } catch (error) {
+      throw this.mapGoogleError(error, 'BACKUP');
+    }
+    try {
+      await this.writer.writeTexts(id, selectedWorksheet, cells);
+    } catch (error) {
+      throw this.mapGoogleError(error, 'WRITE');
+    }
     return { ok: true, cellCount: cells.length };
+  }
+
+  // research RD-07. An unclassified READ error is rethrown as is and becomes a 500.
+  private mapGoogleError(error: unknown, step: WriteBackStep): WriteBackFailure {
+    if (error instanceof TeacherNotSignedInError || isGoogleAuthExpired(error)) {
+      return new WriteBackFailure('GOOGLE_AUTH_EXPIRED');
+    }
+    if (step === 'READ') {
+      if (!(error instanceof SheetsReadError)) throw error;
+      const byKind = { AUTH_EXPIRED: 'GOOGLE_AUTH_EXPIRED', NO_ACCESS: 'SHEET_NOT_FOUND', UNAVAILABLE: 'GOOGLE_UNAVAILABLE' } as const;
+      return new WriteBackFailure(byKind[error.kind]);
+    }
+    const status = httpStatusOf(error);
+    if (status === 403) return new WriteBackFailure('NO_EDIT_PERMISSION');
+    if (status === 404) return new WriteBackFailure('SHEET_NOT_FOUND');
+    // No HTTP answer: a timeout or a dropped connection. A write may or may not have been applied.
+    if (status === undefined) return new WriteBackFailure(step === 'BACKUP' ? 'GOOGLE_UNAVAILABLE' : 'WRITE_UNCONFIRMED');
+    // Google answered with a failure (e.g. 5xx), so nothing was applied.
+    return new WriteBackFailure(step === 'BACKUP' ? 'BACKUP_FAILED' : 'GOOGLE_UNAVAILABLE');
   }
 
   // research RD-04: the first question whose number or blank cells differ from the import; an
