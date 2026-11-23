@@ -1,4 +1,4 @@
-import type { ImportError, Question } from '../temp-shared/entities.js';
+import type { ImportError, Question, SubQuestion } from '../temp-shared/entities.js';
 import type { HeaderMatch } from './HeaderLocator.js';
 import type { SheetGrid } from './SheetGrid.js';
 
@@ -44,11 +44,19 @@ export class QuestionScanner {
       const number = questionNumber(grid, row, header.numberCol);
       if (number === null) continue;
 
-      const answerMerge = grid.mergeAt(row, header.answerCol);
-      const blankCell = answerMerge
-        ? grid.toA1(answerMerge.startRow, answerMerge.startCol)
-        : grid.toA1(row, header.answerCol);
-      const question: Question = { number, type: 'SINGLE', subQuestions: [{ index: 1, blankCell }] };
+      // A number cell merged over several rows is a group: each row is a candidate sub-question.
+      const lastRow = numberMerge?.endRow ?? row;
+      const subQuestions: SubQuestion[] = [];
+      for (let r = row; r <= lastRow; r++) {
+        const answerMerge = grid.mergeAt(r, header.answerCol);
+        // An answer cell merged with the row above is not a blank cell of its own.
+        if (answerMerge && answerMerge.startRow < r) continue;
+        const blankCell = answerMerge
+          ? grid.toA1(answerMerge.startRow, answerMerge.startCol)
+          : grid.toA1(r, header.answerCol);
+        subQuestions.push({ index: subQuestions.length + 1, blankCell });
+      }
+      const question: Question = { number, type: lastRow > row ? 'GROUP' : 'SINGLE', subQuestions };
       const text = questionText(grid, row, header.questionCol);
       if (text) question.text = text;
       scanned.push({ row, question });
