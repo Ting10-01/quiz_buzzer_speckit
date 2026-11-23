@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { authRoutes } from './auth/authRoutes.js';
 import { GoogleAuthLibraryGateway } from './auth/GoogleAuthLibraryGateway.js';
 import { GoogleClientProvider } from './auth/GoogleClientProvider.js';
 import type { GoogleOAuthGateway } from './auth/GoogleOAuthGateway.js';
@@ -7,6 +8,13 @@ import { TeacherAuth } from './auth/TeacherAuth.js';
 import type { AppConfig } from './config.js';
 import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    // 003, 006: `app.googleClients.authorizedClient()` before every Google call.
+    googleClients: GoogleClientProvider;
+  }
+}
 
 // Substitutes injected by tests. 003–006 may add their own (e.g. `spreadsheetReader`).
 export interface AppDeps {
@@ -23,8 +31,10 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   const googleClients = new GoogleClientProvider(gateway);
   const teacherAuth = new TeacherAuth(gateway, googleClients, app.log);
   app.decorate('requireTeacher', createRequireTeacher(teacherAuth));
+  app.decorate('googleClients', googleClients);
 
-  // Registered by later tasks: authRoutes and app.googleClients (T028), Socket.IO (T042).
+  app.register(authRoutes, { config, teacherAuth, googleClients });
+  // Registered by a later task: Socket.IO (T042).
 
   return app;
 }

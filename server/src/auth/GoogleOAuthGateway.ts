@@ -34,3 +34,9 @@ export function httpStatusOf(error: unknown): number | undefined {
   const status = e?.response?.status ?? e?.status;
   return typeof status === 'number' ? status : undefined;
 }
+
+// Google refused the grant: a stale or reused code, or a revoked refresh token.
+export function isInvalidGrant(error: unknown): boolean {
+  const e = error as { response?: { data?: { error?: unknown } } } | null;
+  return e?.response?.data?.error === 'invalid_grant';
+}
