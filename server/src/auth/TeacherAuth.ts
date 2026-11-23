@@ -22,9 +22,11 @@ export interface AuthLog {
 }
 
 // The single authority on who the teacher is (data-model 4). Whoever signs in with Google and
-// grants drive.file becomes the teacher; there is no account check. Memory only.
+// grants drive.file becomes the teacher and replaces the previous one; there is no account check.
+// Memory only, and never touches activity state (REQ-AUTH-03).
 export class TeacherAuth {
   private binding: TeacherBinding | null = null;
+  private readonly rotateListeners: (() => void)[] = [];
 
   constructor(
     private readonly gateway: GoogleOAuthGateway,
@@ -47,6 +49,7 @@ export class TeacherAuth {
     const teacherToken = randomBytes(32).toString('base64url');
     this.googleClients.replace(signIn.tokens);
     this.binding = { account, teacherToken };
+    if (replaced) for (const listener of this.rotateListeners) listener();
     this.logSignIn('OK', signIn.email, replaced);
     return { ok: true, teacherToken, account };
   }
@@ -60,6 +63,11 @@ export class TeacherAuth {
 
   currentAccount(): TeacherAccount | null {
     return this.binding?.account ?? null;
+  }
+
+  // Called when a sign-in replaces an existing teacher, e.g. to drop the old teacher's sockets.
+  onRotate(listener: () => void): void {
+    this.rotateListeners.push(listener);
   }
 
   private logSignIn(result: 'OK' | 'SCOPE_DENIED', email: string, replaced: boolean): void {
