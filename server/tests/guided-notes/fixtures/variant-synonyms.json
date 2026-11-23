@@ -1,0 +1,278 @@
+{
+ "properties": {
+  "title": "變形：同義詞表頭"
+ },
+ "sheets": [
+  {
+   "properties": {
+    "sheetId": 0,
+    "title": "學習單",
+    "index": 0
+   },
+   "merges": [
+    {
+     "sheetId": 0,
+     "startRowIndex": 1,
+     "endRowIndex": 2,
+     "startColumnIndex": 1,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 3,
+     "endRowIndex": 4,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 3,
+     "endRowIndex": 4,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 4,
+     "endRowIndex": 5,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 4,
+     "endRowIndex": 5,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 5,
+     "endRowIndex": 6,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 5,
+     "endRowIndex": 6,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 6,
+     "endRowIndex": 7,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 6,
+     "endRowIndex": 7,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 7,
+     "endRowIndex": 8,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 7,
+     "endRowIndex": 8,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 8,
+     "endRowIndex": 9,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 8,
+     "endRowIndex": 9,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 9,
+     "endRowIndex": 10,
+     "startColumnIndex": 2,
+     "endColumnIndex": 4
+    },
+    {
+     "sheetId": 0,
+     "startRowIndex": 9,
+     "endRowIndex": 10,
+     "startColumnIndex": 4,
+     "endColumnIndex": 8
+    }
+   ],
+   "data": [
+    {
+     "rowData": [
+      {},
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "計算機概論基礎 學習單",
+         "effectiveValue": {
+          "stringValue": "計算機概論基礎 學習單"
+         }
+        }
+       ]
+      },
+      {},
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "編號",
+         "effectiveValue": {
+          "stringValue": "編號"
+         }
+        },
+        {
+         "formattedValue": "答案",
+         "effectiveValue": {
+          "stringValue": "答案"
+         }
+        },
+        {},
+        {
+         "formattedValue": "題幹",
+         "effectiveValue": {
+          "stringValue": "題幹"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "1",
+         "effectiveValue": {
+          "numberValue": 1
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "電腦系統中負責執行程式指令、處理資料的核心硬體元件，通常被稱為電腦的大腦，它的英文縮寫是什麼？",
+         "effectiveValue": {
+          "stringValue": "電腦系統中負責執行程式指令、處理資料的核心硬體元件，通常被稱為電腦的大腦，它的英文縮寫是什麼？"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "2",
+         "effectiveValue": {
+          "numberValue": 2
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "電腦底層處理的所有資料與指令，最終都會轉換為由數字 1 與哪一個數字所組成的二進位 (Binary) 系統？",
+         "effectiveValue": {
+          "stringValue": "電腦底層處理的所有資料與指令，最終都會轉換為由數字 1 與哪一個數字所組成的二進位 (Binary) 系統？"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "3",
+         "effectiveValue": {
+          "numberValue": 3
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "在網際網路中，每一台連上網路的設備都需要一個獨一無二的識別號碼以便互相通訊，這個號碼被稱為什麼位址 (Address)？",
+         "effectiveValue": {
+          "stringValue": "在網際網路中，每一台連上網路的設備都需要一個獨一無二的識別號碼以便互相通訊，這個號碼被稱為什麼位址 (Address)？"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "4",
+         "effectiveValue": {
+          "numberValue": 4
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "負責管理電腦硬體資源並提供應用程式執行環境的系統軟體（例如 Windows、macOS 或 Linux），我們統稱為什麼？",
+         "effectiveValue": {
+          "stringValue": "負責管理電腦硬體資源並提供應用程式執行環境的系統軟體（例如 Windows、macOS 或 Linux），我們統稱為什麼？"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "5",
+         "effectiveValue": {
+          "numberValue": 5
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "有一種資料結構的特性是「後進先出」(Last-In, First-Out, LIFO)，就像是疊盤子一樣，最後放上去的盤子會最先被拿走，這種資料結構稱為什麼？",
+         "effectiveValue": {
+          "stringValue": "有一種資料結構的特性是「後進先出」(Last-In, First-Out, LIFO)，就像是疊盤子一樣，最後放上去的盤子會最先被拿走，這種資料結構稱為什麼？"
+         }
+        }
+       ]
+      },
+      {
+       "values": [
+        {},
+        {
+         "formattedValue": "6",
+         "effectiveValue": {
+          "numberValue": 6
+         }
+        },
+        {},
+        {},
+        {
+         "formattedValue": "在撰寫程式時，解決特定問題的明確步驟與規則集合，我們稱之為什麼 (Algorithm)？",
+         "effectiveValue": {
+          "stringValue": "在撰寫程式時，解決特定問題的明確步驟與規則集合，我們稱之為什麼 (Algorithm)？"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
