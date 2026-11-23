@@ -140,7 +140,7 @@ description: "001 畫面與流程原型的實作任務"
 - [X] T052 [P] [US1] 在 `frontend/src/pages/teacher/PickPage.tsx`（與 `.module.css`）實作 T-Pick 版面：載入時 `getCurrentAccount()` 顯示帳號；「從 Google 雲端硬碟挑選」按鈕（行為於 T062 完成）、「取消」→ `Main`；`ErrorArea`；不出現「連結 Google 帳號」「解除連結」（SC-004）
 - [X] T053 [P] [US1] 在 `frontend/src/pages/student/JoinPage.tsx`（與 `.module.css`）實作 S-Join 顯示：學生版 `AppHeader`（尚無組別）、載入時 `getCurrentActivity()`、訂閱 `onPhaseChange`；沒有活動時顯示「目前沒有活動，請等老師建立活動」；有活動時以 `GroupGrid` 列出組別；`ErrorArea`
 - [X] T054 [US1] 在 `frontend/src/app/AppRouter.tsx` 接上 `Main`、`T-Login`、`T-Pick`、`S-Join`，老師頁首「搶答板」導向 `Main`
-- [ ] T055 [US1] 在 Phase 3.5、3.6 完成後執行 `npm test`、`npm run test:e2e`，確認 T044–T048、T104–T106、T117–T119 通過；依 quickstart Q1、Q2、Q11、Q14（T-Login、S-Join 部分）人工驗證，結果寫入 `specs/001-ui-prototype/manual-verification.md`
+- [X] T055 [US1] 在 Phase 3.5、3.6 完成後執行 `npm test`、`npm run test:e2e`，確認 T044–T048、T104–T106、T117–T119 通過；依 quickstart Q1、Q2、Q11、Q14（T-Login、S-Join 部分）人工驗證，結果寫入 `specs/001-ui-prototype/manual-verification.md`
 
 **Checkpoint**: US1 可獨立展示（MVP）。
 
