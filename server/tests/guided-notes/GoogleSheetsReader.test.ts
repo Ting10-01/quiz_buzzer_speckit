@@ -130,4 +130,12 @@ describe('GoogleSheetsReader.load', () => {
     expect(vi.mocked(sheets).mock.calls[1]?.[0]).toEqual(expect.objectContaining({ auth: gateway.lastClient }));
     expect(vi.mocked(drive).mock.calls[1]?.[0]).toEqual(expect.objectContaining({ auth: gateway.lastClient }));
   });
+
+  it('only reads: no method that changes a file is called (AC-10)', async () => {
+    answer(loadFixture('multi-sheet'));
+    await reader.load(ID);
+    expect(api.sheetsGet).toHaveBeenCalledTimes(1);
+    expect(api.filesGet).toHaveBeenCalledTimes(1);
+    for (const write of Object.values(api.writes)) expect(write).not.toHaveBeenCalled();
+  });
 });
