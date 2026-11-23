@@ -63,3 +63,26 @@ describe('requireTeacher', () => {
     expect(counter).toBe(0);
   });
 });
+
+// Every teacher-only route in the server. 003–006 MUST add each new teacher-only route here
+// (contracts/server-extension.md; SC-002).
+const TEACHER_ONLY_ROUTES = [
+  { method: 'GET', url: '/api/auth/me' },
+  { method: 'GET', url: '/api/auth/picker-token' },
+] as const;
+
+describe('teacher-only route list', () => {
+  it.each(TEACHER_ONLY_ROUTES)('$method $url rejects a request without a token', async (route) => {
+    const res = await t.app.inject(route);
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual(UNAUTHORIZED);
+  });
+
+  it.each(TEACHER_ONLY_ROUTES)('$method $url rejects a voided token', async (route) => {
+    const old = await signIn('code-a');
+    await signIn('code-b');
+    const res = await t.app.inject({ ...route, headers: { authorization: `Bearer ${old}` } });
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual(UNAUTHORIZED);
+  });
+});
