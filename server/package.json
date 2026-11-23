@@ -13,7 +13,7 @@
     "@googleapis/sheets": "^18.1.3",
     "@quiz-buzzer/shared": "*",
     "fastify": "^5.0.0",
-    "google-auth-library": "^10.0.0",
+    "google-auth-library": "^11.3.4",
     "socket.io": "^4.8.0"
   },
   "devDependencies": {

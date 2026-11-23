@@ -12,9 +12,6 @@ const SPREADSHEET_FIELDS =
 // Each load gives up after this long without an answer (SC-006).
 export const GOOGLE_TIMEOUT_MS = 15_000;
 
-// The @googleapis packages bundle their own google-auth-library major version, so 002's
-// OAuth2Client type differs from theirs although the object works the same at run time.
-type ApiAuth = sheets_v4.Options['auth'];
 
 // research R1. Other errors (e.g. 400) are rethrown and become 500 INTERNAL.
 function toSheetsReadError(error: unknown): unknown {
@@ -62,7 +59,7 @@ export class GoogleSheetsReader implements SpreadsheetReader {
 
   async load(spreadsheetId: string): Promise<LoadedSpreadsheet> {
     // Asked on every load, never kept: a new sign-in replaces the authorization (002 REQ-AUTH-03).
-    const auth = this.clients.authorizedClient() as unknown as ApiAuth;
+    const auth = this.clients.authorizedClient();
     try {
       const [book, file] = await withTimeout((signal) =>
         Promise.all([
