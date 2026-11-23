@@ -24,7 +24,7 @@ description: "Task list for 006 結果與寫回"
 **Purpose**: 006 的測試替身
 
 - [X] T001 [P] 建立 `server/tests/helpers/FakeSpreadsheetWriter.ts`：實作 `SpreadsheetWriter`，記錄 `duplicateSheet`、`writeTexts` 的呼叫順序與參數；可設定任一方法丟出指定的錯誤（Google 401／403／404／500、逾時）
-- [ ] T002 [P] 建立 `server/tests/helpers/resultFakes.ts`：004 `ActivityStore`、`GroupMembership`，005 `SubmissionStore`（`list`、`winner`），003 `ImportStore`（`latest()` 與 `latestMarkers()`，題組小題帶「（1）」等標記）、`SpreadsheetReader`（`app.spreadsheetReader` 的替身，經 `buildApp` 的 `deps.spreadsheetReader` 注入；以 003 的 `server/tests/helpers/gridBuilder.ts` 產生 `SheetGrid`；可設定丟出 `SheetsReadError` 或 Google 401）的替身；`ActivityState` 含 `endedAt`；提供「4 題、6 組、第 2 題已結束、第 3 題搶答中」與「4 題已全部結束（含沒有送出、有 `UNJUDGED` 的題目，最後一題由老師接受而直接進入 `FINISHED`）」兩份固定資料，題目內容與 001 `MockFixtures` 的「題組＋單題範本」相同（4 題，其中 2 題為題組；伺服器測試不引用前端檔案）
+- [X] T002 [P] 建立 `server/tests/helpers/resultFakes.ts`：004 `ActivityStore`、`GroupMembership`，005 `SubmissionStore`（`list`、`winner`），003 `ImportStore`（`latest()` 與 `latestMarkers()`，題組小題帶「（1）」等標記）、`SpreadsheetReader`（`app.spreadsheetReader` 的替身，經 `buildApp` 的 `deps.spreadsheetReader` 注入；以 003 的 `server/tests/helpers/gridBuilder.ts` 產生 `SheetGrid`；可設定丟出 `SheetsReadError` 或 Google 401）的替身；`ActivityState` 含 `endedAt`；提供「4 題、6 組、第 2 題已結束、第 3 題搶答中」與「4 題已全部結束（含沒有送出、有 `UNJUDGED` 的題目，最後一題由老師接受而直接進入 `FINISHED`）」兩份固定資料，題目內容與 001 `MockFixtures` 的「題組＋單題範本」相同（4 題，其中 2 題為題組；伺服器測試不引用前端檔案）
 
 ---
 
