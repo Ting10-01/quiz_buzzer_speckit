@@ -44,7 +44,7 @@ description: "Task list for 002 老師登入"
 - [X] T007 [P] 實作 `server/src/logger.ts`：`loggerOptions`，`redact.paths` 為 `req.headers.authorization`、`req.headers.cookie`、`*.teacherToken`、`*.accessToken`、`*.refreshToken`、`*.access_token`、`*.refresh_token`、`*.id_token`、`*.code`、`*.clientSecret`、`*.apiKey`，`censor: '[Redacted]'`（research RD-07）
 - [X] T008 [P] 實作 `server/src/http/errors.ts`：`ErrorBody { code, message }`、`sendError(reply, status, code, message)`、Fastify `setErrorHandler`（未預期錯誤回 `500 INTERNAL`「伺服器發生錯誤，請稍後再試」，不回傳堆疊；log 只記 `code` 與 `message`）
 - [X] T009 [P] 實作 `server/src/auth/GoogleOAuthGateway.ts`：介面 `GoogleOAuthGateway { exchangeCode(code): Promise<GoogleSignIn>; createClient(tokens): OAuth2Client }`、`GoogleSignIn { email, grantedScopes, tokens }`、`GoogleTokens { accessToken, refreshToken, expiryDate }`、`GoogleUnavailableError { code = 'GOOGLE_UNAVAILABLE' }`（data-model 3）
-- [ ] T010 [P] 建立 `server/tests/helpers/fakeGoogleGateway.ts`：可設定 `code → GoogleSignIn` 的對應、指定的 `code` 延遲完成（測同時登入）、丟出 `GoogleUnavailableError` 或 `invalid_grant`；`createClient` 回傳可控制 `getAccessToken` 結果的假 client
+- [X] T010 [P] 建立 `server/tests/helpers/fakeGoogleGateway.ts`：可設定 `code → GoogleSignIn` 的對應、指定的 `code` 延遲完成（測同時登入）、丟出 `GoogleUnavailableError` 或 `invalid_grant`；`createClient` 回傳可控制 `getAccessToken` 結果的假 client
 - [ ] T011 [P] 建立 `server/tests/helpers/logCapture.ts`：以 pino 目的地串流收集 log 行，供測試搜尋字串
 - [ ] T012 實作 `server/src/app.ts` 的 `buildApp(config, deps)`：建立 Fastify（`loggerOptions`）、註冊錯誤處理；預留 `authRoutes`、`requireTeacher`、`app.googleClients`、Socket.IO 的註冊位置（後續任務補上）；依 T006–T009
 - [ ] T013 實作 `server/src/main.ts`：`loadConfig(process.env)` → `buildApp` → `listen({ host: '127.0.0.1', port })`；`missingGoogleVars` 非空時以 `warn` 只列出變數名稱（REQ-AUTH-13）
