@@ -23,7 +23,7 @@ description: "Task list for 003 匯入學習單"
 ## Phase 1: Setup
 
 - [ ] T001 確認 `shared/src/entities.ts` 的 `Spreadsheet`、`Question`、`SubQuestion`（只有 `index`、`blankCell`）、`ImportSuccess`、`ImportError` 與 `shared/src/guards.ts` 的 `isImportError` 和 001 data-model 一致；003 不修改這兩個檔案（小題標記只存在伺服器，REQ-IMP-09）
-- [ ] T002 [P] 在 `server/package.json` 加入 `@googleapis/sheets`、`@googleapis/drive`，執行 `npm install`
+- [X] T002 [P] 在 `server/package.json` 加入 `@googleapis/sheets`、`@googleapis/drive`，執行 `npm install`
 
 ---
 
