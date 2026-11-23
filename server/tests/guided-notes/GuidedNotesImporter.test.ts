@@ -1,10 +1,13 @@
 import type { sheets_v4 } from '@googleapis/sheets';
-import { beforeEach, describe, expect, it } from 'vitest';
+import Fastify from 'fastify';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TeacherNotSignedInError } from '../../src/auth/GoogleClientProvider.js';
 import { GuidedNotesImporter } from '../../src/guided-notes/GuidedNotesImporter.js';
 import { ImportStore } from '../../src/guided-notes/ImportStore.js';
 import { SheetsReadError } from '../../src/guided-notes/SpreadsheetReader.js';
 import type { ImportError, ImportSuccess } from '../../src/temp-shared/entities.js';
+import { signInFor } from '../helpers/fakeGoogleGateway.js';
+import { createTestApp, type TestApp } from '../helpers/testApp.js';
 import { FakeSpreadsheetReader } from './helpers/fakeSpreadsheetReader.js';
 import { buildSheet, loadFixture, rowsFrom } from './helpers/gridBuilder.js';
 
@@ -14,8 +17,10 @@ let reader: FakeSpreadsheetReader;
 let store: ImportStore;
 let importer: GuidedNotesImporter;
 
+const silentLog = Fastify({ logger: false }).log;
+
 function makeImporter(): GuidedNotesImporter {
-  return new GuidedNotesImporter(reader, store);
+  return new GuidedNotesImporter(reader, store, silentLog);
 }
 
 function success(result: ImportSuccess | ImportError): ImportSuccess {
@@ -120,7 +125,7 @@ describe('GuidedNotesImporter only reads the spreadsheet (AC-10)', () => {
         return typeof value === 'function' ? value.bind(target) : value;
       },
     });
-    const watchedImporter = new GuidedNotesImporter(watched, store);
+    const watchedImporter = new GuidedNotesImporter(watched, store, silentLog);
     await watchedImporter.describe(ID);
     await watchedImporter.read(ID, '學習單');
     expect(new Set(used)).toEqual(new Set(['load']));
@@ -197,5 +202,60 @@ describe('GuidedNotesImporter failures leave the ImportStore unchanged (AC-18, S
     reader.set(GONE, loadFixture('multi-sheet'));
     await importer.describe(GONE);
     expectUnchanged();
+  });
+});
+
+describe('GuidedNotesImporter logging (constitution VI)', () => {
+  const GONE = 'spreadsheet-id-gone1';
+  let t: TestApp;
+  let token: string;
+
+  beforeEach(async () => {
+    reader.set(ID, loadFixture('group')).fail(GONE, new SheetsReadError('UNAVAILABLE'));
+    t = await createTestApp({ spreadsheetReader: reader });
+    t.gateway.set('code-a', signInFor('teacher.a@example.com'));
+    const res = await t.app.inject({
+      method: 'POST',
+      url: '/api/auth/google',
+      headers: { 'x-requested-with': 'XmlHttpRequest' },
+      payload: { code: 'code-a' },
+    });
+    token = res.json().teacherToken;
+  });
+
+  afterEach(async () => {
+    await t.app.close();
+  });
+
+  function read(spreadsheetId: string, worksheet: string) {
+    return t.app.inject({
+      method: 'POST',
+      url: '/api/guided-notes/read',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { spreadsheetId, worksheet },
+    });
+  }
+
+  function readLogs(): Record<string, unknown>[] {
+    return t.logs.parsed().filter((line) => line.spreadsheetId !== undefined);
+  }
+
+  it('logs the spreadsheet, worksheet and question count or code of every read', async () => {
+    await read(ID, '學習單');
+    await read(ID, '不存在');
+    await read(GONE, '學習單');
+    expect(readLogs().map(({ spreadsheetId, worksheet, questionCount, code }) => ({ spreadsheetId, worksheet, questionCount, code }))).toEqual([
+      { spreadsheetId: ID, worksheet: '學習單', questionCount: 4, code: undefined },
+      { spreadsheetId: ID, worksheet: '不存在', questionCount: undefined, code: 'NO_WORKSHEET' },
+      { spreadsheetId: GONE, worksheet: '學習單', questionCount: undefined, code: 'UNAVAILABLE' },
+    ]);
+  });
+
+  it('never logs cell contents or the Authorization value', async () => {
+    await read(ID, '學習單');
+    const text = t.logs.text;
+    for (const cell of ['根據文章第一段', '（1）', '計算機概論基礎', '題號', '作答']) expect(text).not.toContain(cell);
+    expect(text).not.toContain(token);
+    expect(text).not.toContain('fake-access-token');
   });
 });
