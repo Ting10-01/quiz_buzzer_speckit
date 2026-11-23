@@ -163,3 +163,65 @@ describe('GET /api/auth/picker-token', () => {
     expect(res.json()).toEqual({ code: 'GOOGLE_UNAVAILABLE', message: '連不上 Google，請稍後再試' });
   });
 });
+
+describe('authRoutes errors', () => {
+  const NOT_CONFIGURED = {
+    code: 'GOOGLE_NOT_CONFIGURED',
+    message: '伺服器尚未設定 Google 登入，請參考 README 設定環境變數',
+  };
+
+  it('answers 503 on /config and /google when Google is not configured', async () => {
+    const unconfigured = await createTestApp({ google: null });
+    try {
+      for (const res of [await unconfigured.app.inject('/api/auth/config'), await postGoogle(unconfigured.app, 'code-a')]) {
+        expect(res.statusCode).toBe(503);
+        expect(res.json()).toEqual(NOT_CONFIGURED);
+      }
+      expect(unconfigured.gateway.exchangedCodes).toEqual([]);
+    } finally {
+      await unconfigured.app.close();
+    }
+  });
+
+  it('answers 503 on /picker-token but not on /me when Google configuration is missing', async () => {
+    const { teacherToken } = (await postGoogle(t.app, 'code-a')).json();
+    t.config.google = null; // config is read per request; a valid token cannot be had otherwise
+
+    const picker = await getPickerToken(t.app, teacherToken);
+    expect(picker.statusCode).toBe(503);
+    expect(picker.json()).toEqual(NOT_CONFIGURED);
+
+    const me = await getMe(t.app, teacherToken);
+    expect(me.statusCode).toBe(200);
+    expect(me.json()).toEqual({ name: 'teacher.a', email: A });
+  });
+
+  it('answers 502 when Google is unavailable and keeps the current teacher', async () => {
+    const { teacherToken } = (await postGoogle(t.app, 'code-a')).json();
+    t.gateway.set('code-timeout', new GoogleUnavailableError());
+
+    const res = await postGoogle(t.app, 'code-timeout');
+    expect(res.statusCode).toBe(502);
+    expect(res.json()).toEqual({ code: 'GOOGLE_UNAVAILABLE', message: '連不上 Google，請稍後再試' });
+    expect((await getMe(t.app, teacherToken)).json()).toEqual({ name: 'teacher.a', email: A });
+  });
+
+  it('answers 500 INTERNAL without a stack for unexpected errors', async () => {
+    const broken = await createTestApp({
+      beforeReady: (app) => {
+        app.get('/test/broken', async () => {
+          throw new Error('unexpected failure in a route');
+        });
+      },
+    });
+    try {
+      const res = await broken.app.inject('/test/broken');
+      expect(res.statusCode).toBe(500);
+      expect(res.json()).toEqual({ code: 'INTERNAL', message: '伺服器發生錯誤，請稍後再試' });
+      expect(res.body).not.toContain('unexpected failure');
+      expect(res.body).not.toContain('at ');
+    } finally {
+      await broken.app.close();
+    }
+  });
+});
