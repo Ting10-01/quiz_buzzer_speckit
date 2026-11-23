@@ -15,6 +15,8 @@ import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
 import { attachSocketServer } from './realtime/socketServer.js';
 import { submissionRoutes } from './submission/index.js';
+import { ResultQuery } from './results/ResultQuery.js';
+import { registerResultHandlers } from './results/resultSocketHandlers.js';
 import type { ActivityStore, GroupMembership } from './temp-deps/activity.js';
 import type { SubmissionStore } from './temp-deps/submission.js';
 
@@ -63,11 +65,19 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
 
   app.register(authRoutes, { config, teacherAuth, googleClients });
   app.register(guidedNotesRoutes);
-  attachSocketServer(app, teacherAuth);
+  const io = attachSocketServer(app, teacherAuth);
   // 004: activity state, pushes and student group events on app.io.
   app.register(createActivityModule, { importStore: app.importStore });
   // 005: submissions and judging, on 004's command queue and app.io.
   app.register(submissionRoutes);
+
+  // 006. TEMPORARY: until 004 and 005 exist the stores only come from deps (tests), and without
+  // them the result events are not registered.
+  const { activityStore, submissionStore, groupMembership } = deps;
+  if (activityStore && submissionStore && groupMembership) {
+    const resultQuery = new ResultQuery(activityStore, submissionStore);
+    registerResultHandlers(io, resultQuery, groupMembership);
+  }
 
   return app;
 }
