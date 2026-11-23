@@ -1,9 +1,11 @@
 import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
 import { HeaderLocator } from './HeaderLocator.js';
 import type { BlankMarkers } from './ImportStore.js';
-import { isImportError, noHeader } from './importErrors.js';
+import { invalidNumbering, isImportError, noHeader, noQuestions, tooManyQuestions } from './importErrors.js';
 import { QuestionScanner } from './QuestionScanner.js';
 import { columnLetters, type SheetGrid } from './SheetGrid.js';
+
+const MAX_QUESTIONS = 200;
 
 // Turns one worksheet into an ImportSuccess or ImportError. Stateless and offline: it never
 // calls Google and never touches the ImportStore. 006 uses it for the layout check.
@@ -17,6 +19,16 @@ export class GuidedNotesParser {
 
     const scanned = this.scanner.scan(grid, header);
     if (isImportError(scanned)) return scanned;
+    if (scanned.length === 0) return noQuestions(grid.name, header.row);
+    if (scanned.length > MAX_QUESTIONS) return tooManyQuestions(scanned.length);
+    // Numbers must strictly increase from top to bottom; gaps are fine (research R5).
+    for (let i = 1; i < scanned.length; i++) {
+      const previous = scanned[i - 1]!;
+      const current = scanned[i]!;
+      if (current.question.number <= previous.question.number) {
+        return invalidNumbering(current.question.number, current.row, { number: previous.question.number, row: previous.row });
+      }
+    }
 
     const columns = [header.numberCol, header.questionCol, header.answerCol].filter((c) => c !== undefined);
     return {

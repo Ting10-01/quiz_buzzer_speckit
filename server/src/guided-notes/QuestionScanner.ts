@@ -1,5 +1,6 @@
 import type { ImportError, Question, SubQuestion } from '../temp-shared/entities.js';
 import type { HeaderMatch } from './HeaderLocator.js';
+import { noBlank } from './importErrors.js';
 import type { SheetGrid } from './SheetGrid.js';
 
 // A question and the row of its number cell (for error messages).
@@ -29,7 +30,7 @@ function questionText(grid: SheetGrid, row: number, col: number | undefined): st
 // A sub-question marker at the start of a blank cell: "（1）", "(1)" or mixed "（1)".
 const MARKER = /^\s*([（(]\s*\d+\s*[)）])/;
 
-// Reads the questions below the header row (research R4).
+// Reads the questions below the header row (research R4). The only error is NO_BLANK.
 export class QuestionScanner {
   // The marker kept as written (without leading spaces), or "" when there is none.
   static extractMarker(text: string): string {
@@ -64,6 +65,7 @@ export class QuestionScanner {
         const marker = isGroup ? QuestionScanner.extractMarker(grid.textA1(blankCell)) || `（${index}）` : '';
         lines.push(marker + text);
       }
+      if (subQuestions.length === 0) return noBlank(number, row);
       const question: Question = { number, type: isGroup ? 'GROUP' : 'SINGLE', subQuestions };
       if (lines.length > 0) question.text = lines.join('\n');
       scanned.push({ row, question });
