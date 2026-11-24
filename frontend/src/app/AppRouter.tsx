@@ -26,7 +26,7 @@ export type PageState =
   | { id: 'T-Lobby'; activity: Activity }
   | { id: 'T-Live'; activity: Activity }
   | { id: 'T-QuestionEnd'; activity: Activity }
-  | { id: 'T-Results' }
+  | { id: 'T-Results'; activity: Activity }
   | { id: 'S-Join'; previousGroup?: number }
   | { id: 'S-Wait'; groupNumber: number; activity: Activity }
   | { id: 'S-Answer'; groupNumber: number; activity: Activity }

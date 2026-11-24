@@ -86,3 +86,40 @@
 .questionType {
   color: var(--muted);
 }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.questionText {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stats div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stats dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
