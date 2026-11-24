@@ -86,7 +86,7 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await expectImportCounts(page, '4', '2', '6');
   });
 
-  test('Q4: group count, validation failure, create, and edit settings back and forth', async ({
+  test('Q4: group count, validation failure, create, edit settings, and cancel the activity', async ({
     page,
   }) => {
     await toSetup(page);
@@ -132,6 +132,26 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await page.getByRole('button', { name: '儲存設定' }).click();
     await onLobby(page);
     await expect(groups.getByRole('listitem')).toHaveCount(initial + 1);
+
+    // "取消活動" → "繼續準備" closes the dialog and stays on T-Lobby (US2 AC-11).
+    const cancelDialog = page.getByRole('dialog', { name: /取消活動/ });
+    await page.getByRole('button', { name: '取消活動' }).click();
+    await expect(cancelDialog).toBeVisible();
+    await expect(cancelDialog).toContainText('選組頁');
+    await cancelDialog.getByRole('button', { name: '繼續準備' }).click();
+    await expect(cancelDialog).toBeHidden();
+    await onLobby(page);
+    await expect(groups.getByRole('listitem')).toHaveCount(initial + 1);
+
+    // "確定取消活動" goes to T-Pick, where a new activity can be picked and created (US2 AC-12).
+    await page.getByRole('button', { name: '取消活動' }).click();
+    await cancelDialog.getByRole('button', { name: '確定取消活動' }).click();
+    await expect(page.getByRole('button', { name: '從 Google 雲端硬碟挑選' })).toBeVisible();
+    await pick(page, '從 Google 雲端硬碟挑選', '單題範本');
+    await page.getByRole('button', { name: '確認匯入，下一步' }).click();
+    await page.getByRole('button', { name: '建立活動' }).click();
+    await onLobby(page);
+    await expect(page.getByRole('list', { name: '這一輪的題目' }).getByRole('listitem')).toHaveCount(6);
   });
 
   test('Q14: browser back on T-Pick, T-Import, T-Setup and T-Lobby', async ({ page }) => {
@@ -161,6 +181,13 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await page.getByRole('button', { name: '建立活動' }).click();
     await onLobby(page);
     await page.goBack();
+    await onLobby(page);
+
+    // The T-Lobby cancel dialog: back only closes it, like "繼續準備" (FR-014, FR-026).
+    await page.getByRole('button', { name: '取消活動' }).click();
+    await expect(page.getByRole('dialog', { name: /取消活動/ })).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole('dialog')).toBeHidden();
     await onLobby(page);
 
     // T-Setup (edit) back = "取消" → T-Lobby.
