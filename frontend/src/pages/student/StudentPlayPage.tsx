@@ -11,6 +11,7 @@ import {
   Judgement,
   QuestionType,
   type Activity,
+  type QuestionResult,
   type Submission,
 } from '@quiz-buzzer/shared/entities';
 import { isUnexpectedError, isValidationError } from '@quiz-buzzer/shared/guards';
@@ -18,8 +19,9 @@ import type { Navigate, PageState } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { PHASE_LABEL } from '../../components/phaseLabels';
+import { QuestionProgress } from '../../components/QuestionProgress';
 import { questionTypeLabel } from '../../components/questionLabels';
-import { answersLabel } from '../../components/submissionLabels';
+import { answersLabel, noWinnerLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './StudentPlayPage.module.css';
 
@@ -293,6 +295,79 @@ function SubmittedView({
   );
 }
 
+function QuestionDoneView({ navigate, groupNumber, activity }: ViewProps) {
+  const { result: resultService } = useServiceRegistry();
+  const questionNumber = activity.currentQuestion ?? 1;
+  const [result, setResult] = useState<QuestionResult>();
+  const [results, setResults] = useState<QuestionResult[]>([]);
+  const [error, setError] = useState<string>();
+
+  // C-2: what a student may see is filtered by the result service, never by this page.
+  useEffect(() => {
+    let active = true;
+    resultService
+      .getQuestionResult(questionNumber)
+      .then((loaded) => active && setResult(loaded))
+      .catch((reason: unknown) => active && setError(errorMessage(reason)));
+    resultService
+      .getAllResults()
+      .then((all) => active && setResults(all))
+      .catch((reason: unknown) => active && setError(errorMessage(reason)));
+    return () => {
+      active = false;
+    };
+  }, [resultService, questionNumber]);
+
+  usePhaseChange((next) => {
+    if (next.phase === ActivityPhase.OPEN) {
+      navigate({ id: 'S-Answer', groupNumber, activity: next });
+    }
+  });
+
+  const mine = result?.submissions.find((s) => s.groupNumber === groupNumber);
+
+  return (
+    <Shell groupNumber={groupNumber} phase={activity.phase}>
+      <ErrorArea message={error} />
+      <h1 className={styles.title}>第 {questionNumber} 題已結束</h1>
+      <section aria-label="本題結果" className={styles.card}>
+        <h2 className={styles.cardTitle}>本題結果</h2>
+        {result &&
+          (result.winner ? (
+            <p className={styles.winner}>
+              <span className={styles.winnerGroup}>第 {result.winner.groupNumber} 組</span>
+              <span>{answersLabel(result.winner.answers)}</span>
+            </p>
+          ) : (
+            <p className={styles.muted}>{noWinnerLabel(result)}</p>
+          ))}
+        <dl className={styles.stats}>
+          <div>
+            <dt>本題已送出</dt>
+            <dd>{result ? `${result.submissionCount} 組` : ''}</dd>
+          </div>
+        </dl>
+      </section>
+      <section aria-label="本組的答案" className={styles.card}>
+        <h2 className={styles.cardTitle}>本組的答案</h2>
+        {result && (
+          <p className={mine ? styles.answers : styles.muted}>
+            {mine ? answersLabel(mine.answers) : '本組沒有送出'}
+          </p>
+        )}
+      </section>
+      <section className={styles.card}>
+        <QuestionProgress
+          questions={activity.questions}
+          results={results}
+          currentQuestion={questionNumber}
+          currentEnded
+        />
+      </section>
+    </Shell>
+  );
+}
+
 export function StudentPlayPage({ navigate, page, onAwaitingJudgementChange }: StudentPlayPageProps) {
   const view = { navigate, groupNumber: page.groupNumber, activity: page.activity };
   switch (page.id) {
@@ -310,8 +385,7 @@ export function StudentPlayPage({ navigate, page, onAwaitingJudgementChange }: S
           onAwaitingJudgementChange={onAwaitingJudgementChange}
         />
       );
-    default:
-      // S-QuestionDone follows in task T089.
-      return null;
+    case 'S-QuestionDone':
+      return <QuestionDoneView key={page.activity.currentQuestion} {...view} />;
   }
 }
