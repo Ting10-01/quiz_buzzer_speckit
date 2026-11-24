@@ -368,7 +368,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T093 [P] [US5] `frontend/tests/e2e/us5-screen-flow.spec.ts`：以 test 名稱標註畫面流程圖的每條箭頭（H1–H4、T1–T15、S1–S9 與圖上有文字的箭頭；S10 依 SC-002 除外，改由 T079 的元件測試涵蓋），逐條觸發並斷言到達的頁面（SC-001、SC-002）；在 T-ImportError、T-Live、T-QuestionEnd、T-Results、S-Answer、S-Submitted、S-QuestionDone、S-Results 各執行一次 `page.goBack()` 並斷言停留在原頁，`page.reload()` 後回到 Main（FR-014）；每次到達新頁面都斷言「模擬模式」標示可見（SC-003）
 - [X] T094 [P] [US5] `frontend/tests/e2e/us5-mock-controls.spec.ts`：在每個頁面斷言模擬控制列只出現 FR-061 指定的控制，「模擬：同組組員送出」只在 S-Answer（US5 AC-6、AC-7）；「模擬：接受」進入本題結果頁（最後一題為全部結果頁）、「模擬：不接受」停在等待判定頁（AC-5）；「模擬：驗證失敗」只影響下一次送出（AC-8）；學生在 S-Wait 推進後到 S-Answer（AC-4）；`FINISHED` 後再推進不變（邊界）
 - [X] T095 [P] [US5] `frontend/tests/e2e/us5-unexpected-error.spec.ts`：對 FR-061 列出的 12 個頁面（T-Login、T-Pick、T-Import、T-ImportError、T-Setup、T-Lobby、T-Live、T-QuestionEnd、T-Results、S-Join、S-Wait、S-Answer）各點「模擬：非預期錯誤」再點一個會呼叫介面的按鈕，斷言停留原頁、`ErrorArea` 顯示「模擬：連不上伺服器」、已輸入內容不變；T-Live 的「結束並公布結果」與 T-Results 的「寫回」先關閉確認視窗；再點一次成功並清除訊息（US5 AC-9、AC-10，quickstart Q12）
-- [ ] T096 [P] [US5] `frontend/tests/e2e/us5-removed-elements.spec.ts`：走過所有頁面，斷言 spec「相對於設計稿的調整」列出的文字一個都不出現：「公平模式」「匯出 CSV」「限時」「剩餘時間」「時間到」「清掉舊答案」「備份」「開新一輪」「連結 Google 帳號」「解除連結」「複製網址」「連線分頁」「離線」、活動結束時間與總耗時（「結束 ·」「共 」後接時間）與活動名稱（SC-004）
+- [X] T096 [P] [US5] `frontend/tests/e2e/us5-removed-elements.spec.ts`：走過所有頁面，斷言 spec「相對於設計稿的調整」列出的文字一個都不出現：「公平模式」「匯出 CSV」「限時」「剩餘時間」「時間到」「清掉舊答案」「備份」「開新一輪」「連結 Google 帳號」「解除連結」「複製網址」「連線分頁」「離線」、活動結束時間與總耗時（「結束 ·」「共 」後接時間）與活動名稱（SC-004）
 - [ ] T097 [P] [US5] `frontend/tests/component/AppRouter.test.tsx`：以 `isMockMode: false` 且沒有模擬控制的假 registry 渲染 `AppRouter`，斷言「模擬模式」標示與控制列出現 0 次（SC-003、FR-005）；學生頁面套上置中欄（spec Assumptions）
 
 ### Implementation for User Story 5
