@@ -37,7 +37,7 @@ describe('TeacherLoginPage (T-Login)', () => {
   it('stays and asks for spreadsheet access when the scope was denied (002 SCOPE_DENIED)', async () => {
     const { navigate, login } = setup(vi.fn().mockResolvedValue({ ok: false, failure: 'SCOPE_DENIED' }));
     await login();
-    expect(await screen.findByText('需要同意存取 Google 試算表才能使用老師功能')).toBeInTheDocument();
+    expect(await screen.findByText('需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
 
