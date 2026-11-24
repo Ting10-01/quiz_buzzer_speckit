@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@quiz-buzzer/shared": "*",
     "fastify": "^5.0.0",
     "google-auth-library": "^10.0.0",
     "socket.io": "^4.8.0"
