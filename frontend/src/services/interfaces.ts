@@ -40,7 +40,11 @@ export interface ActivityService {
   joinGroup(groupNumber: number): Promise<Activity>;
   leaveGroup(): Promise<void>;
   getCurrentActivity(): Promise<Activity | null>;
-  onPhaseChange(listener: (activity: Activity) => void): Unsubscribe;
+  /**
+   * Notifies phase changes. `null` means the activity no longer exists because the teacher
+   * cancelled it, the same as getCurrentActivity() returning null (research RD-12).
+   */
+  onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe;
   onActivityChange(listener: (activity: Activity) => void): Unsubscribe;
 }
 

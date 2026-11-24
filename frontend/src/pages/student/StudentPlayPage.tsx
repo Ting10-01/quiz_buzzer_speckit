@@ -60,7 +60,8 @@ function usePhaseChange(handler: (activity: Activity) => void) {
     handlerRef.current = handler;
   });
   useEffect(
-    () => activityService.onPhaseChange((activity) => handlerRef.current(activity)),
+    // TODO(T155): remove this cast; null still reaches the views until then.
+    () => activityService.onPhaseChange((activity) => handlerRef.current(activity as Activity)),
     [activityService],
   );
 }

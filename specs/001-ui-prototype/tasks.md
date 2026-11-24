@@ -407,7 +407,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### 型別（先改，讓測試能表達 `null`）
 
-- [ ] T147 在 `frontend/src/services/interfaces.ts` 依類別圖把 `ActivityService.onPhaseChange` 改為 `onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe`，註解說明 `null` 表示活動已被取消（contracts/service-interfaces.md、research RD-12）；`frontend/src/services/mock/MockActivityService.ts` 的 `onPhaseChange` 簽章與 `phaseListeners` 的型別一併改為 `Activity | null`，行為不變（不通知 `null`）。頁面的 listener 先只補型別、不改行為，讓 `npm run typecheck` 通過：`HomePage.tsx`、`JoinPage.tsx` 的 state 已是 `Activity | null`，不需修改；`StudentPlayPage.tsx` 的 `usePhaseChange` 維持 handler 型別 `(activity: Activity) => void`，轉呼叫時暫時寫成 `handlerRef.current(activity as Activity)` 並加註「T155 移除」，不在此過濾 `null`，讓 `null` 仍傳到各 view，T151、T152 才會先失敗
+- [X] T147 在 `frontend/src/services/interfaces.ts` 依類別圖把 `ActivityService.onPhaseChange` 改為 `onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe`，註解說明 `null` 表示活動已被取消（contracts/service-interfaces.md、research RD-12）；`frontend/src/services/mock/MockActivityService.ts` 的 `onPhaseChange` 簽章與 `phaseListeners` 的型別一併改為 `Activity | null`，行為不變（不通知 `null`）。頁面的 listener 先只補型別、不改行為，讓 `npm run typecheck` 通過：`HomePage.tsx`、`JoinPage.tsx` 的 state 已是 `Activity | null`，不需修改；`StudentPlayPage.tsx` 的 `usePhaseChange` 維持 handler 型別 `(activity: Activity) => void`，轉呼叫時暫時寫成 `handlerRef.current(activity as Activity)` 並加註「T155 移除」，不在此過濾 `null`，讓 `null` 仍傳到各 view，T151、T152 才會先失敗
 - [ ] T148 在 `frontend/tests/helpers/studentHarness.tsx` 把 `studentEvents()` 的 `phase` 改為 `channel<Activity | null>()`，讓測試可以 `phase.emit(null)`（依賴 T147）
 
 ### Tests（先寫，確認失敗；代替 S11 的人工操作，SC-002）

@@ -21,7 +21,7 @@ export class MockActivityService
   implements ActivityService, PhaseMockControl, ValidationMockControl
 {
   private readonly sequence = MockFixtures.viewerSequence;
-  private readonly phaseListeners = new Set<(activity: Activity) => void>();
+  private readonly phaseListeners = new Set<(activity: Activity | null) => void>();
 
   constructor(private readonly session: MockSession) {
     session.setViewerPhaseAdvancer(() => this.stepViewerPhase());
@@ -79,7 +79,8 @@ export class MockActivityService
     return this.viewerActivity();
   }
 
-  onPhaseChange(listener: (activity: Activity) => void): Unsubscribe {
+  /** The 001 mock never notifies null: teacher and viewer activities are independent (M3, M7). */
+  onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe {
     this.phaseListeners.add(listener);
     return () => {
       this.phaseListeners.delete(listener);
