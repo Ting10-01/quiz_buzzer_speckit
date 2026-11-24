@@ -3,7 +3,7 @@ import { isGoogleAuthExpired, TeacherNotSignedInError } from '../auth/GoogleClie
 import { httpStatusOf } from '../auth/GoogleOAuthGateway.js';
 import { GuidedNotesParser } from '../guided-notes/GuidedNotesParser.js';
 import type { BlankMarkers, ImportStore } from '../guided-notes/ImportStore.js';
-import { isImportError } from '../guided-notes/importErrors.js';
+import { isImportError } from '@quiz-buzzer/shared/guards';
 import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from '../guided-notes/SpreadsheetReader.js';
 import type { ActivityStore } from '../temp-deps/activity.js';
 import type { ImportError, ImportSuccess, QuestionResult, WriteBackResult } from '@quiz-buzzer/shared/entities';

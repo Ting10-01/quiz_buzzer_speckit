@@ -1,6 +1,6 @@
 import { GuidedNotesParser } from '../../../src/guided-notes/GuidedNotesParser.js';
 import { ImportStore, type BlankMarkers } from '../../../src/guided-notes/ImportStore.js';
-import { isImportError } from '../../../src/guided-notes/importErrors.js';
+import { isImportError } from '@quiz-buzzer/shared/guards';
 import type { ActivityState, ActivityStore, GroupMembership, SocketRef } from '../../../src/temp-deps/activity.js';
 import type { SubmissionStore } from '../../../src/temp-deps/submission.js';
 import type { ImportSuccess, Judgement, Spreadsheet, Submission } from '@quiz-buzzer/shared/entities';
