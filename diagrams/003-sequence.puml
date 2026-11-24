@@ -23,6 +23,7 @@ Page -> Svc : pickSpreadsheet()
 Svc -> L : pick()
 L -> PT : ApiClient.request(GET)（帶老師憑證）
 PT --> L : { accessToken, apiKey, appId }
+L -> L : 載入 api.js、gapi.load('picker')\n（第一次才載入；15 秒逾時）
 L -> GP : 開啟（只顯示 Google 試算表）
 alt 老師關閉選擇器（D3）
   GP --> L : cancel
@@ -35,6 +36,7 @@ else 挑選一份
   Svc -> R : GET /api/guided-notes/spreadsheets/:id
   R -> I : describe(id)
   I -> GR : load(id)
+  GR -> GR : app.googleClients.authorizedClient()（002）
   GR -> G : spreadsheets.get(includeGridData)\nfiles.get(capabilities.canEdit)
   G --> GR : 工作表、儲存格、合併範圍、能否編輯
   GR --> I : LoadedSpreadsheet
@@ -46,9 +48,16 @@ end
 
 == 2. 讀取並解析工作表（readWorksheet） ==
 Page -> Svc : readWorksheet(id, selectedWorksheet)
+note over Page, Svc
+  暫時的橋接：createServiceRegistry 包一層，
+  成功時把結果寫入 MockSession.lastImport，
+  讓仍是模擬實作的活動與結果服務用匯入的題目。
+  004–006 接上後移除。
+end note
 Svc -> R : POST /api/guided-notes/read
 R -> I : read(id, worksheet)
 I -> GR : load(id)
+GR -> GR : app.googleClients.authorizedClient()（002）
 GR -> G : spreadsheets.get / files.get
 G --> GR : 資料
 GR --> I : LoadedSpreadsheet
@@ -60,8 +69,8 @@ else 找到工作表
   opt 找不到表頭
     P --> I : ImportError(NO_HEADER, foundHeaders, acceptedHeaders, fixSteps)
   end
-  P -> P : scan()：逐列讀題號；題號跨列合併 → 題組；\n每列作答欄 → 填空格（合併取左上角）與標記；\n題目欄 → 敘述
-  P -> P : 檢查題號不重複、遞增、1–200 題；每題有填空格
+  P -> P : scan()：逐列讀題號；題號跨列合併 → 題組；\n每列作答欄 → 填空格（合併取左上角）與標記；\n題目欄 → 敘述；作答欄與上一列合併 → NO_BLANK
+  P -> P : 依序檢查：0 題 → NO_QUESTIONS；\n超過 200 題 → TOO_MANY_QUESTIONS；\n題號重複或不遞增 → INVALID_NUMBERING
   P --> I : ImportSuccess 或 ImportError
 end
 alt ImportSuccess
@@ -95,11 +104,17 @@ else Google 授權失效（isGoogleAuthExpired）
   R --> Svc : 401 { code: GOOGLE_AUTH_EXPIRED, message }
 else 老師憑證失效
   R --> Svc : 401 { code: UNAUTHORIZED }（requireTeacher 拒絕，不讀試算表）
+else 伺服器沒有老師的 Google 授權（authorizedClient 丟出）
+  GR --> I : TeacherNotSignedInError
+  I --> R : 錯誤
+  R --> Svc : 401 { code: NOT_SIGNED_IN, message }
 else 挑選後讀不到基本資料
   GR --> I : SheetsReadError(NO_ACCESS)
   R --> Svc : 403 { code: NO_ACCESS }（read 時改回 200 ImportError NO_ACCESS）
+else Picker 腳本載入失敗或 15 秒內沒載入完成
+  L --> Svc : reject UnexpectedError\n「無法載入 Google 檔案選擇器，請確認網路連線」
 end
-Svc --> Page : ApiClient reject ApiError（符合 UnexpectedError，message 取 ErrorBody）
+Svc --> Page : reject：伺服器錯誤是 ApiClient 的 ApiError（message 取 ErrorBody），\nPicker 載入失敗是 UnexpectedError；兩者都符合 UnexpectedError
 Page --> T : 留在原頁，共通錯誤訊息區顯示（ImportStore 不變）
 
 == 5. 下游讀取 ==

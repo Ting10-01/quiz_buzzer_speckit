@@ -5,7 +5,7 @@ skinparam defaultFontName "PingFang TC"
 hide empty members
 scale max 4000 width
 
-package "Entities（001 shared 實體）" #F4F4F4 {
+package "001 shared（entities、guards）" #F4F4F4 {
   class Spreadsheet {
     id: string
     title: string
@@ -39,23 +39,17 @@ package "Entities（001 shared 實體）" #F4F4F4 {
     acceptedHeaders: string[]
     fixSteps: string[]
   }
-  enum ImportErrorCode <<003 定義的 code 值>> {
-    NO_HEADER
-    NO_QUESTIONS
-    INVALID_NUMBERING
-    TOO_MANY_QUESTIONS
-    NO_BLANK
-    NO_ACCESS
-    NO_WORKSHEET
-  }
   class UnexpectedError {
     message: string
+  }
+  class guards <<module（shared/src/guards.ts）>> {
+    +isImportError(value: unknown): value is ImportError
   }
   ImportSuccess --> Spreadsheet
   ImportSuccess "1" *-- "1..*" Question
   Question "1" *-- "1..*" SubQuestion
   Question --> QuestionType
-  ImportError ..> ImportErrorCode : code 的值
+  guards ..> ImportError
 }
 
 package "frontend/src/services（003）" {
@@ -76,10 +70,14 @@ package "frontend/src/services（003）" {
   HttpGuidedNotesService ..|> GuidedNotesService
   HttpGuidedNotesService --> GooglePickerLauncher
   HttpGuidedNotesService ..> UnexpectedError : reject（ApiError）
+  GooglePickerLauncher ..> UnexpectedError : reject（Picker 載入失敗）
 }
 
 package "server/src/guided-notes（003）" {
   class GuidedNotesImporter {
+    -reader: SpreadsheetReader
+    -store: ImportStore
+    -log: FastifyBaseLogger
     +describe(spreadsheetId: string): Promise<Spreadsheet>
     +read(spreadsheetId: string, worksheet: string): Promise<ImportSuccess | ImportError>
   }
@@ -122,11 +120,11 @@ package "server/src/guided-notes（003）" {
     +markersOf(grid: SheetGrid, result: ImportSuccess): BlankMarkers
   }
   class HeaderLocator {
-    +NUMBER_HEADERS = 題號、編號、題次
-    +ANSWER_HEADERS = 作答、答案、回答
-    +QUESTION_HEADERS = 題目、問題、題幹
-    +locate(grid: SheetGrid): HeaderMatch [0..1]
-    +currentHeaderTexts(grid: SheetGrid): string[]
+    +{static} NUMBER_HEADERS = 題號、編號、題次
+    +{static} ANSWER_HEADERS = 作答、答案、回答
+    +{static} QUESTION_HEADERS = 題目、問題、題幹
+    +{static} locate(grid: SheetGrid): HeaderMatch [0..1]
+    +{static} currentHeaderTexts(grid: SheetGrid): string[]
   }
   class HeaderMatch {
     row: number
@@ -144,12 +142,21 @@ package "server/src/guided-notes（003）" {
   }
   class importErrors <<module>> {
     +noHeader(worksheet, foundHeaders): ImportError
-    +noQuestions(worksheet): ImportError
+    +noQuestions(worksheet, headerRow): ImportError
     +invalidNumbering(number, row, previous): ImportError
     +tooManyQuestions(count): ImportError
     +noBlank(number, row): ImportError
     +noAccess(): ImportError
     +noWorksheet(worksheet): ImportError
+  }
+  enum ImportErrorCode <<importErrors 匯出，code 的值>> {
+    NO_HEADER
+    NO_QUESTIONS
+    INVALID_NUMBERING
+    TOO_MANY_QUESTIONS
+    NO_BLANK
+    NO_ACCESS
+    NO_WORKSHEET
   }
   class BlankMarkers <<type>> {
     Readonly<Record<blankCell, marker>>
@@ -158,7 +165,7 @@ package "server/src/guided-notes（003）" {
     -latestResult: ImportSuccess [0..1]
     -latestBlankMarkers: BlankMarkers [0..1]
     +save(result: ImportSuccess, markers: BlankMarkers): void
-    +latest(): ImportSuccess [0..1]
+    +latest(): Readonly<ImportSuccess> [0..1]
     +latestMarkers(): BlankMarkers [0..1]
   }
   class guidedNotesRoutes <<Fastify plugin>> {
@@ -187,7 +194,13 @@ package "server/src/guided-notes（003）" {
   ImportStore o-- "0..1" BlankMarkers
   GuidedNotesParser ..> BlankMarkers : creates
   guidedNotesRoutes --> GuidedNotesImporter
+  guidedNotesRoutes ..> SheetsReadError : 對應 HTTP 錯誤
+  GuidedNotesImporter ..> SheetsReadError : NO_ACCESS 轉 ImportError
+  importErrors ..> ImportErrorCode
 }
+ImportError ..> ImportErrorCode : code 的值
+GuidedNotesImporter ..> guards : isImportError
+GuidedNotesParser ..> guards : isImportError
 
 package "002 提供（只引用）" #EEEEEE {
   class GoogleClientProvider <<app.googleClients>> {
@@ -196,9 +209,14 @@ package "002 提供（只引用）" #EEEEEE {
   class TeacherNotSignedInError {
     code = "NOT_SIGNED_IN"
   }
-  class googleAuthErrors <<module>> {
-    +isGoogleAuthExpired(error): boolean
+  class "isGoogleAuthExpired" as IsExpired <<function（GoogleClientProvider.ts）>> {
+    +isGoogleAuthExpired(error: unknown): boolean
   }
+  class "GoogleOAuthGateway.ts" as GatewayHelpers <<module>> {
+    +httpStatusOf(error: unknown): number [0..1]
+    +isGoogleUnreachable(error: unknown): boolean
+  }
+  class GoogleUnavailableError
   class requireTeacher <<app.requireTeacher>>
   class buildApp <<組合根>> {
     +buildApp(config: AppConfig, deps): FastifyInstance
@@ -224,10 +242,19 @@ ApiError ..|> UnexpectedError
 buildApp ..> guidedNotesRoutes : app.register
 buildApp ..> ImportStore : 建立（app.importStore）
 buildApp ..> GoogleSheetsReader : 建立（app.spreadsheetReader）
-GoogleSheetsReader ..> googleAuthErrors
+GoogleSheetsReader ..> IsExpired
+GoogleSheetsReader ..> GatewayHelpers : 判斷錯誤種類
+GoogleSheetsReader ..> GoogleUnavailableError : 逾時時建立
+guidedNotesRoutes ..> TeacherNotSignedInError : 401 NOT_SIGNED_IN
 guidedNotesRoutes ..> ErrorBody : 錯誤回應
 GoogleSheetsReader --> GoogleClientProvider
 guidedNotesRoutes ..> requireTeacher
+
+' Layout only: stack the 002 elements so the diagram is not too wide.
+IsExpired -[hidden]down- GatewayHelpers
+GatewayHelpers -[hidden]down- GoogleUnavailableError
+buildApp -[hidden]down- requireTeacher
+ErrorBody -[hidden]down- TeacherNotSignedInError
 
 note right of ImportStore
   004 建立活動時呼叫 latest()；006 寫回時呼叫
