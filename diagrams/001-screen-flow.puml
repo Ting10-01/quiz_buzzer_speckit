@@ -54,7 +54,7 @@ legend bottom left
   | <color:#C05621>**S8**</color> | <color:#C05621>階段</color> | S-Join → S-QuestionDone | 加入時本題已結束（本組沒有送出） |
   | <color:#C05621>**S9**</color> | <color:#C05621>階段</color> | S-Join → S-Results | 加入時活動已結束（本組搶到 0 題） |
   | <color:#2F855A>**S10**</color> | <color:#2F855A>送出</color> | S-Join → S-Submitted | 加入時同組組員已送出（依本組狀態為等待判定或不接受；001 的模擬實作不觸發） |
-  | <color:#C05621>**S11**</color> | <color:#C05621>階段</color> | S-Join、S-Wait → S-Join（沒有活動） | 老師取消活動（001 的模擬實作不觸發） |
+  | <color:#C05621>**S11**</color> | <color:#C05621>階段</color> | S-Join、S-Wait → S-Join（沒有活動） | 老師取消活動（001 的頁面已處理；001 的模擬實作不觸發） |
 endlegend
 
 state "Main\n首頁：選擇身分" as Main

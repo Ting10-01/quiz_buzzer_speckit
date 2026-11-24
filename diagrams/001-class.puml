@@ -145,7 +145,7 @@ package "Service Interfaces" {
     +joinGroup(groupNumber: number): Promise<Activity>
     +leaveGroup(): Promise<void>
     +getCurrentActivity(): Promise<Activity | null>
-    +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
+    +onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe
     +onActivityChange(listener: (activity: Activity) => void): Unsubscribe
   }
   interface SubmissionService {

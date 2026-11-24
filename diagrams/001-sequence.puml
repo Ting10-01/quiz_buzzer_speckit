@@ -86,7 +86,7 @@ opt 取消活動（FR-026；只在開放第 1 題之前）
     Teacher -> Page : 點「確定取消活動」
     Page -> Act : cancelActivity()
     Act --> Page : 成功（M3：一律成功）
-    note right of Act : 已加入的學生回到選組頁的\n「目前沒有活動」（004）；\n001 的模擬實作不通知學生端
+    note right of Act : 已加入的學生經 onPhaseChange 收到 null，\n回到選組頁的「目前沒有活動」（004，見第 3 段）；\n001 的模擬實作不通知學生端
     Page --> Teacher : 挑選學習單頁
   else 繼續準備
     Teacher -> Page : 點「繼續準備」
@@ -121,6 +121,11 @@ opt 加入時已在搶答中（S4、S10）
     Sub --> Page : Submission(PENDING 或 REJECTED)
     Page --> Student : 等待判定頁，依 judgement 顯示等待判定或不接受（S10）
   end
+end
+opt 在選組頁或等待開放頁時老師取消活動（S11，由 004 推動；001 的模擬實作不觸發）
+  Act --> Page : 階段：null（沒有活動）
+  Page --> Student : 選組頁「目前沒有活動」，清除已選組別（FR-050、FR-051）
+  note right of Page : 不呼叫 leaveGroup（活動已不存在）；從等待開放頁切換時，\n選組頁與一般進入時相同，載入時呼叫 getCurrentActivity()。\n作答頁、等待判定頁、本題結果頁收到 null 時不切換\n（FR-026：開放第 1 題後不能取消）
 end
 Demo -> Bar : 點「模擬：推進到下一個階段」
 Bar -> Act : advancePhase()（M7，PhaseMockControl）
