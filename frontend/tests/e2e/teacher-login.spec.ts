@@ -101,3 +101,19 @@ test.describe('002 signing in again (T036)', () => {
     await other.close();
   });
 });
+
+test.describe('002 student tabs never get the teacher credential (T041)', () => {
+  test('a student tab in the same browser has no credential and is refused (AC-11)', async ({ page, context }) => {
+    await open(page);
+    await toLogin(page);
+    await signIn(page, CODE.teacherA);
+    await expect(pickButton(page)).toBeVisible();
+
+    const student = await context.newPage();
+    await open(student);
+    await student.getByRole('button', { name: /我是學生/ }).click();
+    expect(await student.evaluate(() => sessionStorage.getItem('teacherToken'))).toBeNull();
+    expect(await student.evaluate(() => document.cookie)).toBe('');
+    expect(await student.evaluate(async () => (await fetch('/api/auth/me')).status)).toBe(401);
+  });
+});

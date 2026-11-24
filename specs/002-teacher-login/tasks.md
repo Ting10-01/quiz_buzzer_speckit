@@ -120,7 +120,7 @@ description: "Task list for 002 老師登入"
 
 - [X] T039 [P] [US3] `server/tests/integration/requireTeacher.test.ts`：在測試用 app 註冊一個掛 `app.requireTeacher` 的假路由（會改變計數器）；沒有標頭、`Basic xxx`、`Bearer`（空）、錯誤憑證、作廢憑證、設了 cookie 但沒有標頭，全部回 `401 UNAUTHORIZED`「需要老師登入」且計數器不變；有效憑證回 200（AC-10、AC-11、AC-12、SC-002）
 - [X] T040 [P] [US3] `server/tests/integration/socketHandshake.test.ts`：以 `socket.io-client` 連線：沒有 `auth.teacherToken` 被接受且不在 `TEACHER_ROOM`，`io.to(TEACHER_ROOM).emit` 的訊息收不到（AC-14、SC-003）；錯誤或作廢的憑證收到 `connect_error`，`message === 'UNAUTHORIZED'`（AC-13）；有效憑證被接受、`socket.data.isTeacher === true`、收得到老師訊息（AC-15）；同帳號或另一個帳號登入後舊的老師連線被中斷，重連被拒絕（AC-08、AC-26）；只允許 `websocket` 傳輸
-- [ ] T041 [P] [US3] `frontend/tests/e2e/teacher-login.spec.ts`（隔離部分）：老師分頁登入後，同一個 browser context 開學生分頁，學生分頁的 `sessionStorage` 沒有 `teacherToken`、`document.cookie` 為空，以 `fetch('/api/auth/me')` 回 401（AC-11）
+- [x] T041 [P] [US3] `frontend/tests/e2e/teacher-login.spec.ts`（隔離部分）：老師分頁登入後，同一個 browser context 開學生分頁，學生分頁的 `sessionStorage` 沒有 `teacherToken`、`document.cookie` 為空，以 `fetch('/api/auth/me')` 回 401（AC-11）
 
 ### Implementation for User Story 3
 
