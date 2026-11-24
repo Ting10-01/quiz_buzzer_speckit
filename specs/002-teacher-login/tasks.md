@@ -167,7 +167,7 @@ description: "Task list for 002 老師登入"
 ### Implementation for User Story 5
 
 - [X] T052 [US5] 在 `server/src/auth/authRoutes.ts` 補齊錯誤對應：`google = null` → 503；`GoogleUnavailableError` → 502；`invalid_grant` → `400 INVALID_CODE`（contracts/auth-http.md）
-- [ ] T053 [US5] 在 `frontend/src/services/http/HttpAuthService.ts` 補齊 `POPUP_BLOCKED`、`LOAD_FAILED` 的 `UnexpectedError` 訊息（spec「登入結果與錯誤訊息」）
+- [x] T053 [US5] 在 `frontend/src/services/http/HttpAuthService.ts` 補齊 `POPUP_BLOCKED`、`LOAD_FAILED` 的 `UnexpectedError` 訊息（spec「登入結果與錯誤訊息」）
 
 **Checkpoint**: 所有錯誤訊息與 spec 表一致；log 不含機敏資料
 
