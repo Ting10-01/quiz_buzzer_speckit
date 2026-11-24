@@ -19,7 +19,11 @@
    npm install
    ```
 
-2. 設定 Google：在 `server/` 建立 `.env`，填入四個值（變數名稱見 `server/.env.example`）。值由本組另外提供，或依下方「Google 登入設定」自行建立。沒有設定也能啟動，但無法登入。
+2. 設定 Google：執行下列指令，依提示貼上四個值，會寫入 `server/.env`（密鑰輸入時不會顯示；直接按 Enter 保留原本的值）。值由本組另外提供，或依下方「Google 登入設定」自行建立。沒有設定也能啟動，但無法登入。
+
+   ```bash
+   npm run setup
+   ```
 3. 啟動伺服器與前端：
 
    ```bash
