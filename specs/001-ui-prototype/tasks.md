@@ -240,7 +240,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T065 [US2] 在 `frontend/src/pages/teacher/ConsolePage.tsx`（與 `.module.css`）建立 ConsolePage，先實作 T-Lobby 檢視：以 AppRouter 傳入的 `Activity`（`createActivity`／`updateSettings` 的回傳值，見 C-1）顯示 FR-025 項目，用 `GroupGrid` 顯示各組人數；訂閱 `onActivityChange`；「修改設定」→ `T-Setup`（`edit`）；「開放第 1 題」按鈕（行為於 T074 完成）；`ErrorArea`；不顯示連線分頁數、離線狀態、限時（SC-004）
 - [X] T066 [US2] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Import`、`T-ImportError`、`T-Setup`、`T-Lobby`
 - [X] T066a [US2] 依 research.md RD-09 的按鈕位置規則，把 T-Import、T-ImportError、T-Setup、T-Lobby 的按鈕改用共用的底部動作列元件
-- [ ] T067 [US2] 執行 `npm test`、`npm run test:e2e`，確認 T056–T060 通過；依 quickstart Q3、Q4 人工驗證並記錄於 `manual-verification.md`
+- [X] T067 [US2] 執行 `npm test`、`npm run test:e2e`，確認 T056–T060 通過；依 quickstart Q3、Q4 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: US1、US2 都可獨立運作。
 
