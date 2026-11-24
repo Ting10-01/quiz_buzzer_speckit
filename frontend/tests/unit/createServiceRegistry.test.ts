@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createServiceRegistry } from '../../src/services/createServiceRegistry';
 import { HttpAuthService } from '../../src/services/http/HttpAuthService';
 
@@ -13,16 +13,29 @@ describe('createServiceRegistry', () => {
     expect(registry.activityValidationControl).toBeDefined();
     expect(registry.submissionValidationControl).toBeDefined();
     expect(registry.unexpectedErrorControl).toBeDefined();
-    expect(registry.choicePrompt).toBeDefined();
-    expect(registry.unexpectedErrorControl).toBe(registry.choicePrompt);
+    // auth (002) and guidedNotes (003) are real, so the mock chooser is gone (001 plan).
+    expect(registry.choicePrompt).toBeUndefined();
   });
 
   it('binds auth to the real HttpAuthService (002) and keeps the other mocks', () => {
     const registry = createServiceRegistry();
     expect(registry.auth).toBeInstanceOf(HttpAuthService);
     expect(registry.isMockMode()).toBe(true);
-    // guidedNotes is still a mock, so the mock chooser stays (001 plan "替換模擬實作的方式").
-    expect(registry.choicePrompt).toBeDefined();
+  });
+
+  it('hands a real import to the activity mock so it uses the imported questions (003)', async () => {
+    const imported = {
+      spreadsheet: { id: 'sheet-1', title: 'T', editable: true, worksheets: ['W'], selectedWorksheet: 'W' },
+      headerRow: 1,
+      headerColumns: ['A', 'B'],
+      questions: [{ number: 7, type: 'SINGLE', text: '第七題', subQuestions: [{ index: 1, blankCell: 'B2' }] }],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(imported), { status: 200 })));
+    const registry = createServiceRegistry();
+    await registry.guidedNotes.readWorksheet('sheet-1', 'W');
+    const activity = await registry.activity.createActivity({ groupCount: 2 });
+    expect(activity).toMatchObject({ questions: [{ number: 7 }] });
+    vi.unstubAllGlobals();
   });
 
   it('shares one MockSession inside a registry', async () => {
