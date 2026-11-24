@@ -5,7 +5,9 @@ import type {
   ImportError,
   ImportSuccess,
   Question,
+  QuestionResult,
   Spreadsheet,
+  Submission,
 } from '@quiz-buzzer/shared/entities';
 
 export function makeQuestions(count: number): Question[] {
@@ -93,6 +95,30 @@ export function makeImportError(overrides: Partial<ImportError> = {}): ImportErr
     foundHeaders: ['No.', 'Content', 'Answer here'],
     acceptedHeaders: ['Number column: 題號', 'Answer column: 作答'],
     fixSteps: ['Rename the headers', 'Press reload'],
+    ...overrides,
+  };
+}
+
+export function makeSubmission(overrides: Partial<Submission> = {}): Submission {
+  return {
+    questionNumber: 1,
+    groupNumber: 1,
+    answers: ['Answer'],
+    rank: 1,
+    elapsedMs: 1000,
+    judgement: 'PENDING',
+    ...overrides,
+  };
+}
+
+/** Builds a QuestionResult; behindFirstMs defaults to elapsedMs minus the first elapsedMs. */
+export function makeQuestionResult(overrides: Partial<QuestionResult> = {}): QuestionResult {
+  const submissions = overrides.submissions ?? [];
+  return {
+    questionNumber: 1,
+    submissionCount: submissions.length,
+    submissions,
+    behindFirstMs: submissions.map((s) => s.elapsedMs - (submissions[0]?.elapsedMs ?? 0)),
     ...overrides,
   };
 }
