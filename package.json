@@ -16,6 +16,7 @@
     "test:e2e": "npm run test:e2e -w frontend",
     "dev:server": "npm run dev -w server",
     "test:server": "npm run test -w server",
-    "typecheck:server": "npm run typecheck -w server"
+    "typecheck:server": "npm run typecheck -w server",
+    "check:secrets": "node scripts/check-secrets.mjs"
   }
 }
