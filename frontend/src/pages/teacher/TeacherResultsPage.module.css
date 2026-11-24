@@ -1,0 +1,112 @@
+.page {
+  min-height: 100vh;
+}
+
+.main {
+  max-width: 1080px;
+  margin: 0 auto;
+  /* Keep the content clear of the fixed action bar (RD-09). */
+  padding: 88px 24px calc(var(--action-bar-height) + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phase {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 12px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.questionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.winner {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.winnerGroup {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.status {
+  font-weight: 600;
+}
+
+.dialogStats {
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+}
+
+.dialogStats div {
+  display: contents;
+}
+
+.dialogStats dt {
+  color: var(--muted);
+}
+
+.dialogStats dd {
+  margin: 0;
+}
