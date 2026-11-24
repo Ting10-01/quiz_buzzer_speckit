@@ -37,7 +37,7 @@
 | 匯出 CSV | T-Results、T-WriteBack | E2 不做 |
 | 每題限時、剩餘時間倒數、「時間到自動結束」 | T-Setup、T-Lobby、T-Live、T-EndConfirm、S-Wait、S-Answer、首頁 | 不在任何子功能的範圍 |
 | 舊答案提醒與還原（「清掉舊答案」） | T-WriteBack | 不在任何子功能的範圍 |
-| 寫回前建立備份工作表 | T-Results、T-WriteBack | 不在任何子功能的範圍 |
+| 寫回前建立備份工作表 | T-Results、T-WriteBack | 由 006 處理 |
 | 「開新一輪」按鈕及「老師開新一輪時，這個畫面會自動切換」 | T-Results、T-WriteBack、S-Results | 不在任何子功能的範圍 |
 | 「連結 Google 帳號」、「解除連結」 | T-Connect、T-Import | 改為登入頁的「用 Google 登入」（002） |
 | 學生加入網址與「複製網址」 | T-Setup、T-Lobby | 學生改由首頁選擇「我是學生」進入 |
