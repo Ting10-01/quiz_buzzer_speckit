@@ -25,6 +25,7 @@ export function HomePage({ navigate }: { navigate: Navigate }) {
         if (active) setError(errorMessage(reason));
       },
     );
+    // null means the teacher cancelled the activity (S11), which shows "目前沒有活動".
     const unsubscribe = activityService.onPhaseChange((next) => setActivity(next));
     return () => {
       active = false;
