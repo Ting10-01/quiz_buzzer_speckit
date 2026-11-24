@@ -30,7 +30,7 @@ description: "001 畫面與流程原型的實作任務"
 
 ## 已解決的文件衝突
 
-產生任務時發現下列衝突，經使用者決定後處理：C-1、C-2（2026-11-21）修改 `contracts/service-interfaces.md`；C-3、C-4（2026-11-22）、C-5（2026-11-24）見表。
+產生任務時發現下列衝突，經使用者決定後處理：C-1、C-2（2026-11-21）修改 `contracts/service-interfaces.md`；C-3、C-4（2026-11-22）、C-5（2026-11-24）見表。Phase 8.5 產生時沒有新的衝突。
 
 | 編號 | 衝突 | 決定 | 影響的任務 |
 | --- | --- | --- | --- |
@@ -386,9 +386,45 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T101 [P] 檢查 `frontend/src/`、`shared/src/` 中的註解與命名皆為英文、同一介面元素沒有重複實作（原則 IX）
 - [X] T101a 抽出 T101 找到的重複實作，行為不變、不修改 `tests/`：`errorMessage()` 移到共用模組，所有轉換錯誤訊息的頁面都改用它（HomePage、TeacherLoginPage、PickPage、ImportPage、SetupPage、ConsolePage、TeacherResultsPage、JoinPage、StudentPlayPage、StudentResultsPage）；卡片下方的返回按鈕抽成 `frontend/src/components/BackButton.tsx`（TeacherLoginPage、PickPage、JoinPage、StudentPlayPage）；本題結果抽成 `frontend/src/components/QuestionWinner.tsx`，統一三頁的樣式（ConsolePage、StudentPlayPage、TeacherResultsPage）；學生頁面在本組搶到時組名維持綠色；「第 n 題 / 共 m 題」改用 `questionLabels.ts` 的函式（ConsolePage、StudentPlayPage）（原則 IX）
 - [X] T102 依 `quickstart.md` 從乾淨環境執行 `npm install`、`npx playwright install chromium`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，回報每個指令與結果（原則 VIII）
-- [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄
+- [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄。在 Phase 8.5 完成後執行
 
-完成後進入 CLAUDE.md 第 2 節步驟 7（圖表一致性驗證，產出 `diagram-verification.md`），不在本任務清單中。
+完成後進入 CLAUDE.md 第 2 節步驟 7（圖表一致性驗證，產出 `diagram-verification.md`），不在本任務清單中。Phase 8.5 完成後，重做 `diagram-verification.md` 的 F4。
+
+---
+
+## Phase 8.5: 規格修訂（2026-11-24）：活動被取消時的首頁與學生頁面
+
+**Purpose**: 套用圖表一致性驗證 F4 之後的 spec 修訂（commit `spec(001): handle activity cancellation on 001 pages`）與設計更新（commit `spec(001): notify no activity through phase change in diagrams`、`spec(001): sync plan with activity cancellation handling`：plan G-8、research RD-12、類別圖、時序圖第 2、3 段、畫面流程圖 S11、contracts `onPhaseChange`、quickstart「自動化測試」的 S11 說明）：
+
+- **介面**：`ActivityService.onPhaseChange` 的 listener 改為 `(activity: Activity | null) => void`；`null` 表示活動已不存在，與 `getCurrentActivity()` 回傳 `null` 同義（research RD-12）。不使用 `phase` 為 `NO_ACTIVITY` 的 `Activity` 表示取消。
+- **首頁**：收到 `null` 時改為顯示「目前沒有活動」（FR-010）。
+- **選組頁**：收到 `null` 時改為顯示「目前沒有活動，請等老師建立活動」、不列出組別，並清除已選的組別（FR-050、S11）。
+- **等待開放頁**：收到 `null` 時切換到選組頁，不帶 `previousGroup`，不呼叫 `leaveGroup`（活動已不存在）；選組頁與一般進入時相同，載入時呼叫 `getCurrentActivity()`，活動已取消時顯示「目前沒有活動」（FR-051、S11）。
+- **作答頁、等待判定頁、本題結果頁**：收到 `null` 時不切換、不出錯（FR-026：開放第 1 題之後不能取消活動）。
+- **模擬實作不變**：001 的模擬實作不通知 `null`（老師端與學生端的模擬活動彼此獨立，M3、M7）；頁面的處理以元件測試 T149–T152 驗證（SC-002）。
+
+本 Phase 在 Phase 8 的 T102 之後、T103 與圖表一致性驗證之前完成。
+
+### 型別（先改，讓測試能表達 `null`）
+
+- [ ] T147 在 `frontend/src/services/interfaces.ts` 依類別圖把 `ActivityService.onPhaseChange` 改為 `onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe`，註解說明 `null` 表示活動已被取消（contracts/service-interfaces.md、research RD-12）；`frontend/src/services/mock/MockActivityService.ts` 的 `onPhaseChange` 簽章與 `phaseListeners` 的型別一併改為 `Activity | null`，行為不變（不通知 `null`）。頁面的 listener 先只補型別、不改行為，讓 `npm run typecheck` 通過：`HomePage.tsx`、`JoinPage.tsx` 的 state 已是 `Activity | null`，不需修改；`StudentPlayPage.tsx` 的 `usePhaseChange` 維持 handler 型別 `(activity: Activity) => void`，轉呼叫時暫時寫成 `handlerRef.current(activity as Activity)` 並加註「T155 移除」，不在此過濾 `null`，讓 `null` 仍傳到各 view，T151、T152 才會先失敗
+- [ ] T148 在 `frontend/tests/helpers/studentHarness.tsx` 把 `studentEvents()` 的 `phase` 改為 `channel<Activity | null>()`，讓測試可以 `phase.emit(null)`（依賴 T147）
+
+### Tests（先寫，確認失敗；代替 S11 的人工操作，SC-002）
+
+- [ ] T149 [P] [US1] 擴充 `frontend/tests/component/HomePage.test.tsx`：`getCurrentActivity` 回傳活動後，`onPhaseChange` 通知 `null`，「目前活動」改為顯示「目前沒有活動」，不再顯示階段、題數與組數；`getCurrentActivity` 只被呼叫一次（不重新呼叫介面）；之後再通知 `Activity` 時恢復顯示（FR-010、S11，邊界）（依賴 T147）。`HomePage.tsx` 已把通知直接存成 `activity`，本測試預期在 T147 後即通過，不是先失敗的測試；若失敗，於 T153 修正
+- [ ] T150 [P] [US4] 擴充 `frontend/tests/component/JoinPage.test.tsx`：有活動且已選第 n 組（含以 `previousGroup` 進入的情況）時，`onPhaseChange` 通知 `null`，頁面顯示「目前沒有活動，請等老師建立活動」、不列出組別、不顯示「加入第 n 組」，頁首不顯示階段；之後再通知 `Activity` 時沒有任何組別被選取（已選組別已清除）；整個過程不呼叫 `joinGroup`、`leaveGroup`、`getGroupSubmission`，`navigate` 不被呼叫（FR-050、S11，邊界）。把 `setup()` 中 `notify` 的型別改為 `(activity: Activity | null) => void`（依賴 T147）
+- [ ] T151 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait 收到 `phase.emit(null)` 時 `navigate` 被呼叫一次，參數為 `{ id: 'S-Join' }`（不帶 `previousGroup`）；不呼叫 `leaveGroup`（FR-051、S11）（依賴 T148）
+- [ ] T152 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.answer.test.tsx`、`StudentPlayPage.judgement.test.tsx`、`StudentPlayPage.questionDone.test.tsx`：S-Answer、S-Submitted（等待判定與不接受）、S-QuestionDone 收到 `phase.emit(null)` 時 `navigate` 不被呼叫、不拋出錯誤，畫面內容（已輸入的答案、送出的答案、本題結果）不變（FR-026，邊界）（依賴 T148）
+
+### Implementation
+
+- [ ] T153 [US1] 確認 `frontend/src/pages/HomePage.tsx` 的 `onPhaseChange` listener 把 `null` 直接存成 `activity`，顯示既有的「目前沒有活動」（FR-010）；補上註解說明 `null` 來自活動被取消（S11）。若 T149 在 T147 後已通過，不改行為（依賴 T149）
+- [ ] T154 [US4] 修改 `frontend/src/pages/student/JoinPage.tsx`：`onPhaseChange` 收到 `null` 時 `setActivity(null)` 並清除 `selected`（`setSelected(undefined)`），不呼叫任何介面；收到 `Activity` 時行為不變（FR-050、S11；依賴 T150）
+- [ ] T155 [US4] 修改 `frontend/src/pages/student/StudentPlayPage.tsx`：`usePhaseChange` 的 handler 型別改為 `(activity: Activity | null) => void`；`WaitView` 收到 `null` 時 `navigate({ id: 'S-Join' })`，不呼叫 `leaveGroup`（FR-051）；`AnswerView`、`SubmittedView`、`QuestionDoneView` 收到 `null` 時直接返回，不呼叫 `navigateWhenQuestionEnds`、不讀取 `next.phase`（FR-026）；移除 T147 暫時加入的 `as Activity`；更新檔頭註解（依賴 T151、T152）
+- [ ] T156 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T149–T152 通過，且其他測試沒有退步；這些元件測試代替 S11 的人工操作，不記錄於 `manual-verification.md`，結果由圖表一致性驗證重做 F4 時引用（SC-002）
+
+**Checkpoint**: 首頁、選組頁、等待開放頁能處理活動被取消；004 只需在真正的實作中通知 `null`，不修改 001 的頁面。
 
 ---
 
@@ -406,16 +442,16 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-008 驗證錯誤顯示 | T058、T064、T081、T087、T094 |
 | FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095、T136 |
 | FR-014 瀏覽器上一頁 | T060、T066a、T069、T080、T118、T119、T131、T132、T137、T138 |
-| FR-010–FR-013 | T044、T045、T050、T051、T105、T110 |
+| FR-010–FR-013 | T044、T045、T050、T051、T105、T110、T149、T153 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
 | FR-023、FR-024 | T058、T064、T066a |
 | FR-025 | T059、T065 |
-| FR-026 | T135–T138、T139–T142 |
+| FR-026 | T135–T138、T139–T142、T152、T155 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076、T143–T145 |
-| FR-050 | T047、T053、T079、T085 |
-| FR-051 | T080、T086 |
+| FR-050 | T047、T053、T079、T085、T147、T150、T154 |
+| FR-051 | T080、T086、T148、T151、T155 |
 | FR-052、FR-053 | T081、T087 |
 | FR-054 | T029、T084、T087 |
 | FR-055、FR-056 | T082、T088、T113、T124、T126 |
@@ -424,7 +460,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-058 | T083、T090 |
 | FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、T135/T140、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
 | FR-061 | T037、T041、T094、T107、T111、T116、T128 |
-| SC-001、SC-002 | T093、T095 |
+| SC-001、SC-002 | T093、T095、T149–T152、T156 |
 | SC-003 | T037、T093、T097 |
 | SC-004 | T096 |
 | SC-005、SC-006 | T055、T092（人工驗證計時）、T134 |
@@ -447,6 +483,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - **US4 (Phase 6)**: 依賴 Phase 2；延續 US1 的 `JoinPage.tsx`；使用 US3 的 `QuestionProgress`（T072）
 - **US5 (Phase 7)**: 依賴 US1–US4 全部完成（驗證整張畫面流程圖）
 - **Polish (Phase 8)**: 依賴所有 Story
+- **規格修訂 (Phase 8.5)**: 依賴 T102；修改 US1、US4 已完成的 `HomePage.tsx`、`JoinPage.tsx`、`StudentPlayPage.tsx` 與 `interfaces.ts`；完成後才做 T103 與圖表一致性驗證（重做 F4）
 
 所有 Story 都會修改 `AppRouter.tsx`，因此 Story 之間依序執行（P1 依 US1 → US2 → US3 → US4，最後 US5）。CLAUDE.md 規定 implement 一次只執行一個 Phase。
 
@@ -464,6 +501,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - US2：T056–T060 測試；T061 可與其他實作平行
 - Phase 4.5：T135–T138 測試
 - Phase 5.5：T143、T144 測試
+- Phase 8.5：T149–T152 測試（T147、T148 之後）
 - US3：T068–T071 測試；T072、T073
 - US4：T079–T084 測試；T090 可與 StudentPlayPage 任務平行
 - US5：T093–T097

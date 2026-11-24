@@ -134,3 +134,33 @@ Metrics：需求 48（FR 41、SC 7）、任務 134、覆蓋率 100%、CRITICAL 0
 | L5 | 問答依序排列；FR-056a 列移到 FR-056 之後 | spec Clarifications；tasks 需求對照表 |
 
 處理後沒有未處理的 CRITICAL 或 HIGH 問題，符合 CLAUDE.md 第 2 節步驟 5 的通過條件。
+
+---
+
+# 第三次分析（2026-11-24）
+
+**Inputs**: 圖表一致性驗證 F4 後的 spec 修訂（commit `spec(001): handle activity cancellation on 001 pages`）、設計更新（commit `spec(001): notify no activity through phase change in diagrams`、`spec(001): sync plan with activity cancellation handling`），以及尚未 commit 的 tasks.md Phase 8.5（T147–T156）。另對照 `HomePage.tsx`、`JoinPage.tsx`、`StudentPlayPage.tsx`、`interfaces.ts`、`MockActivityService.ts`、`studentHarness.tsx` 的現況，確認任務可行。
+
+## Findings
+
+| ID | Category | Severity | Location(s) | Summary |
+| --- | --- | --- | --- | --- |
+| I1 | Inconsistency | MEDIUM | tasks T147；`StudentPlayPage.tsx` 的 `usePhaseChange` | T147 要求頁面只補型別、不改行為且 typecheck 通過，但 `usePhaseChange` 的 handler 只收 `Activity`，介面改為 `Activity \| null` 後無法通過；在此過濾 `null` 會讓 T152 未寫測試就通過並提前做了 T155 的事 |
+| A1 | Ambiguity | MEDIUM | spec FR-051；contract `onPhaseChange`；research RD-12；時序圖第 3 段；quickstart Q15 | FR-051 寫等待開放頁收到 `null` 時「不呼叫任何介面」，但切換後的選組頁載入時會呼叫 `getCurrentActivity()`；原意是不呼叫 `leaveGroup` |
+| I2 | Inconsistency | LOW | tasks T103 | T103 寫「T150–T153 的元件測試結果」，測試任務實為 T149–T152 |
+| D1 | Duplication | LOW | tasks T103、T156 | T103 與 T156 都把 Q15 記錄到 `manual-verification.md` |
+| U1 | Underspecification | LOW | tasks T149、T153 | `HomePage` 已能處理 `null`，T149 寫完即通過、不是先失敗的測試，任務沒有說明 |
+
+Metrics：需求 49（FR 與 SC）、任務 158（未完成 11）、覆蓋率 100%、CRITICAL 0、HIGH 0。
+
+## 處理紀錄（2026-11-24）
+
+| ID | 決定 | 修改位置 |
+| --- | --- | --- |
+| I1 | `usePhaseChange` 維持 handler 型別為 `Activity`，T147 暫時以 `as Activity` 轉呼叫、不過濾 `null`，T155 移除 | tasks T147、T155 |
+| A1 | FR-051 改為「不呼叫『離開組別』，切換後的選組頁與一般進入時相同，載入時取得目前活動」；選組頁本身收到 `null` 時仍不呼叫任何介面。修改併入既有的三筆 commit | spec FR-051（commit `spec(001): handle activity cancellation on 001 pages`）；時序圖第 3 段與 PNG（commit `spec(001): notify no activity through phase change in diagrams`）；contract `onPhaseChange`、research RD-12、quickstart Q15（commit `spec(001): sync plan with activity cancellation handling`）；tasks Phase 8.5 說明 |
+| I2 | 改為 T149–T152 | tasks T103 |
+| D1 | 由 T156 記錄，T103 只確認已記錄 | tasks T103 |
+| U1 | T149 註明預期在 T147 後即通過，失敗時於 T153 修正 | tasks T149 |
+
+處理後沒有未處理的 CRITICAL 或 HIGH 問題，符合 CLAUDE.md 第 2 節步驟 5 的通過條件。
