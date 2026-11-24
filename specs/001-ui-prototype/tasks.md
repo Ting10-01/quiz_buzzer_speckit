@@ -386,7 +386,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T101 [P] 檢查 `frontend/src/`、`shared/src/` 中的註解與命名皆為英文、同一介面元素沒有重複實作（原則 IX）
 - [X] T101a 抽出 T101 找到的重複實作，行為不變、不修改 `tests/`：`errorMessage()` 移到共用模組，所有轉換錯誤訊息的頁面都改用它（HomePage、TeacherLoginPage、PickPage、ImportPage、SetupPage、ConsolePage、TeacherResultsPage、JoinPage、StudentPlayPage、StudentResultsPage）；卡片下方的返回按鈕抽成 `frontend/src/components/BackButton.tsx`（TeacherLoginPage、PickPage、JoinPage、StudentPlayPage）；本題結果抽成 `frontend/src/components/QuestionWinner.tsx`，統一三頁的樣式（ConsolePage、StudentPlayPage、TeacherResultsPage）；學生頁面在本組搶到時組名維持綠色；「第 n 題 / 共 m 題」改用 `questionLabels.ts` 的函式（ConsolePage、StudentPlayPage）（原則 IX）
 - [X] T102 依 `quickstart.md` 從乾淨環境執行 `npm install`、`npx playwright install chromium`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，回報每個指令與結果（原則 VIII）
-- [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄。在 Phase 8.5 完成後執行
+- [X] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄。在 Phase 8.5 完成後執行
 
 完成後進入 CLAUDE.md 第 2 節步驟 7（圖表一致性驗證，產出 `diagram-verification.md`），不在本任務清單中。Phase 8.5 完成後，重做 `diagram-verification.md` 的 F4。
 

@@ -1,6 +1,6 @@
 # 001 圖表一致性驗證
 
-- 日期：2026-11-24
+- 日期：2026-11-24（2026-11-25 依 tasks.md Phase 8.5 重做 F4）
 - 分支：`001-ui-prototype-impl`
 - 範圍：`frontend/src`、`shared/src` 與 `diagrams/001-component.puml`、`001-class.puml`、`001-sequence.puml`、`001-screen-flow.puml`
 - 分類：(a) 圖過時，改圖；(b) 程式偏離設計，改程式；(c) 可接受，不需改
@@ -11,7 +11,7 @@
 | 分類 | 項數 | 狀態 |
 | --- | --- | --- |
 | (a) 圖過時 | 15（D1–D6、C1–C3、Q1–Q6） | 已改圖並重新產生 PNG |
-| (b) 程式偏離設計 | 1（F4） | **未處理**：需先改 spec，見「待處理」 |
+| (b) 程式偏離設計 | 1（F4） | 已修正：先改 spec 與圖，再依 Phase 8.5 改程式，見「F4 處理紀錄」 |
 | (c) 可接受 | 8（D7、D8、C4–C6、F1–F3） | 不需改，理由見各表 |
 
 完全一致、未列入差異的部分：類別圖的實體欄位；`AuthService`、`GuidedNotesService`、`ActivityService`、`SubmissionService`、`ResultService` 與 6 個 mock 控制介面的方法名稱、參數、回傳型別；`ServiceRegistry` 的欄位與 `isMockMode()`；各頁面對服務介面的依賴（D4 除外）；時序圖第 2、5、6 段的呼叫順序。
@@ -60,17 +60,34 @@
 | F1 | T5「切換工作表（找不到表頭）」、T8「重新讀取（仍找不到表頭）」 | 列為觸發 | 有程式路徑（`readToPage` → `isImportError`），但 M2 的模擬資料無法產生，e2e 只測「重新挑選」 | (c) | 程式路徑存在，只是 mock 觸發不了 |
 | F2 | S_Open → S-Results，從「S-Submitted（不接受）」 | 複合狀態的箭頭涵蓋此子狀態 | 與「等待判定」共用 `SubmittedView` → `navigateWhenQuestionEnds`；e2e 沒有這個子狀態的測試 | (c) | 程式路徑存在 |
 | F3 | S10 | 001 的模擬實作不觸發 | 有程式路徑（`JoinPage` 的 `getGroupSubmission`），由 component test T079 涵蓋 | (c) | — |
-| F4 | S11：S-Join、S-Wait → S-Join（沒有活動） | 由 004 推動，001 不觸發 | 001 頁面沒有這條路徑：`onPhaseChange` 的 listener 只收 `Activity`、不能收 `null`；即使收到 `phase: NO_ACTIVITY`，`JoinPage` 仍顯示組別，`WaitView` 只處理 `OPEN`。組件圖註記要求後續子功能只改綁定、不改 001 頁面，004 將無法只改綁定讓 S11 運作 | **(b)** | **待處理**，見下節 |
+| F4 | S11：S-Join、S-Wait → S-Join（沒有活動） | 修改前：由 004 推動，001 不觸發。修改後（commit `3c121a7`）：`onPhaseChange` 的 listener 收 `Activity \| null`，`null` 表示活動被取消；S11 標註「001 的頁面已處理；001 的模擬實作不觸發」 | 修改前：listener 只收 `Activity`，`JoinPage` 仍顯示組別，`WaitView` 只處理 `OPEN`。修改後：見「F4 處理紀錄」 | **(b)** | **已修正**（2026-11-25） |
 
-## 待處理
+## F4 處理紀錄
 
-### F4（b）：001 頁面處理「活動被取消」
+### 修改順序
 
-這項修改不在 `tasks.md` 中，而且 spec 目前把 S11 列為 001 的除外項（SC-002），因此依 CLAUDE.md 第 3 節視為行為變更，必須依序：
+依 CLAUDE.md 第 3 節視為行為變更，依序完成：
 
-1. 修改 `spec.md`：決定 S11 在 001 頁面的行為，以及服務如何通知「沒有活動」（例如 `onPhaseChange` 通知 `phase: NO_ACTIVITY` 的 `Activity`，或改 listener 型別為 `Activity | null`），並將 S11 移出 SC-002 除外項；獨立 commit（類型 `spec`）。
-2. 重跑 `/speckit-plan`（同步 `contracts/service-interfaces.md`、`data-model.md`、類別圖與畫面流程圖）與 `/speckit-tasks`。
-3. 依新任務修改 `JoinPage`、`StudentPlayPage`（WaitView）與測試，再重做本驗證的 F4。
+1. spec：`7ece4a0 spec(001): handle activity cancellation on 001 pages`（FR-010、FR-050、FR-051、FR-026 的處理；SC-002 改為「模擬實作不觸發的切換以元件測試驗證」）。
+2. 圖與設計：`3c121a7`（類別圖、時序圖第 2、3 段、畫面流程圖 S11，並重新產生三張 PNG）、`2ae9890`（plan G-8、research RD-12、contracts、data-model、quickstart「自動化測試」的 S11 說明）、`01ea9ca`（tasks.md Phase 8.5：T147–T156）。
+3. 程式與測試：`7688b85`（T147、T148）、`65445d2`（T149–T152）、`dc6f30d`（T153）、`7f66733`（T154）、`79bd7c0`（T155）、`239b0f8`（T156）。
+
+### 重新驗證（依 tasks.md Phase 8.5）
+
+| 項目 | 圖 | 程式 | 結果 |
+| --- | --- | --- | --- |
+| 介面 | 類別圖 `ActivityService.onPhaseChange(listener: (activity: Activity \| null) => void): Unsubscribe` | `services/interfaces.ts` 相同簽章，註解說明 `null` 表示活動被取消；`MockActivityService.onPhaseChange` 同簽章、不通知 `null` | 一致；與 data-model「`ActivityPhase` 與題號」「首頁與學生端」及 contracts 一致 |
+| 首頁 | 時序圖第 2 段註記：學生經 `onPhaseChange` 收到 `null`；FR-010 | `HomePage` 把通知直接存成 `activity`，`null` 時顯示「目前沒有活動」，不重新呼叫介面（T149） | 一致 |
+| 選組頁 | 時序圖第 3 段 S11：`Act --> Page : 階段：null`，顯示「目前沒有活動」、清除已選組別、不呼叫 `leaveGroup`；畫面流程圖 `S_Join → S_JoinEmpty` | `JoinPage` 的 listener `setActivity(next)`，`null` 時 `setSelected(undefined)`，不呼叫任何介面、不切換頁面（T150） | 一致 |
+| 等待開放頁 | 時序圖第 3 段註記：從等待開放頁切換時，選組頁載入時呼叫 `getCurrentActivity()`；畫面流程圖 `S_Wait → S_JoinEmpty` | `WaitView` 收到 `null` 時 `navigate({ id: 'S-Join' })`，不帶 `previousGroup`、不呼叫 `leaveGroup`；`JoinPage` 掛載時呼叫 `getCurrentActivity()`（T151） | 一致 |
+| 作答頁、等待判定頁、本題結果頁 | 時序圖第 3 段註記：收到 `null` 時不切換（FR-026） | `AnswerView`、`SubmittedView`、`QuestionDoneView` 收到 `null` 時直接返回，不呼叫 `navigateWhenQuestionEnds`（T152） | 一致 |
+| 模擬實作 | 畫面流程圖 S11「001 的模擬實作不觸發」；SC-002 除外項 | 模擬實作不通知 `null`；頁面處理由元件測試 T149–T152 驗證（HomePage 1、JoinPage 2、S-Wait 1、S-Answer 1、S-Submitted 2、S-QuestionDone 1，共 8 個；T156 時 `npm test` 290 個、`npm run test:e2e` 127 個全部通過），不列入人工驗證情境 | 一致 |
+
+`StudentPlayPage.usePhaseChange` 的 handler 型別已改為 `Activity | null`，T147 暫加的 `as Activity` 已移除。組件圖沒有新增或移除元件；組件圖註記「後續子功能只改綁定」現在對 S11 成立：004 只需在真正的實作中通知 `null`。
+
+### 其他項目的複查
+
+Phase 8.5 只修改 `interfaces.ts`、`MockActivityService.ts` 的型別與 `HomePage`、`JoinPage`、`StudentPlayPage` 的 listener，沒有新增元件、類別、方法或呼叫。D1–D8、C1–C6、Q1–Q6、F1–F3 的結論不變；Q2（各畫面掛載時訂閱 `onPhaseChange`）仍成立。上方「除 S10、S11 外，每條箭頭在 e2e 都有一個測試」仍成立：S11 改以元件測試 T149–T152 驗證。
 
 ### 與 data-model.md 同步
 
@@ -79,3 +96,5 @@ C1、C2 在類別圖新增的 `MockSession.consumeUnexpectedError()`、`MockFixt
 ## 圖片產生
 
 以 `java -DPLANTUML_LIMIT_SIZE=16384 -jar plantuml.jar -charset UTF-8` 重新產生 `001-component.png`、`001-class.png`、`001-sequence.png`。PlantUML 預設上限為 4096 px，修改前的 `001-component.png` 寬度剛好是 4096 px，右側已被裁切；這次調高上限後輸出完整（4771 × 1281）。`001-screen-flow` 沒有修改，未重新產生。
+
+F4 的設計修改（commit `3c121a7`）重新產生了 `001-class.png`、`001-sequence.png`、`001-screen-flow.png`，三張 PNG 與 `.puml` 在同一個 commit 中更新。
