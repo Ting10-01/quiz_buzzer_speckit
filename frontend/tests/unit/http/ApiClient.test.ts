@@ -72,6 +72,16 @@ describe('ApiClient', () => {
     expect(store.get()).toBe('token-a');
   });
 
+  it('treats an error answer without ErrorBody as "server unreachable" (dev proxy 502, AC-23)', async () => {
+    // Vite's proxy answers an empty text/plain 502 when the server is not running.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 502 })));
+    await expect(client.request('GET', '/api/auth/config')).rejects.toMatchObject({
+      status: 502,
+      code: 'NETWORK',
+      message: '連不上伺服器，請確認伺服器已啟動',
+    });
+  });
+
   it('rejects with NETWORK when the server cannot be reached', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     await expect(client.request('GET', '/api/auth/config')).rejects.toMatchObject({
