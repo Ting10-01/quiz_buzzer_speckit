@@ -1,5 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { SignInFailure, type TeacherAccount } from '../temp-shared/entities.js';
+import { SignInFailure, type TeacherAccount } from '@quiz-buzzer/shared/entities';
 import type { GoogleClientProvider } from './GoogleClientProvider.js';
 import type { GoogleOAuthGateway } from './GoogleOAuthGateway.js';
 
