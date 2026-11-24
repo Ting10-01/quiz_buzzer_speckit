@@ -3,11 +3,14 @@
 // T-Lobby uses the Activity returned by createActivity / updateSettings and then the
 // onActivityChange snapshots; it never calls getCurrentActivity (contract C-1).
 // Connected tab counts, offline state and time limits are not shown (SC-004).
-import { useEffect, useState } from 'react';
+// Cancelling is only offered here, before question 1 opens (FR-026).
+import { useCallback, useEffect, useState } from 'react';
 import type { Activity } from '@quiz-buzzer/shared/entities';
+import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorArea } from '../../components/ErrorArea';
 import { GroupGrid } from '../../components/GroupGrid';
 import { PHASE_LABEL } from '../../components/phaseLabels';
@@ -27,9 +30,26 @@ function emptyGroupsText(activity: Activity) {
 export function ConsolePage({ navigate, page }: { navigate: Navigate; page: ConsolePageState }) {
   const { activity: activityService } = useServiceRegistry();
   const [activity, setActivity] = useState(page.activity);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [error, setError] = useState<string>();
+
+  // Stable, so ConfirmDialog keeps one entry for browser back (FR-014).
+  const closeCancel = useCallback(() => setCancelOpen(false), []);
 
   // Snapshots replace the displayed activity as a whole (contracts: 老師端的即時更新).
   useEffect(() => activityService.onActivityChange(setActivity), [activityService]);
+
+  const cancelActivity = async () => {
+    // The dialog closes first, so an error shows on T-Lobby (FR-009).
+    setCancelOpen(false);
+    try {
+      await activityService.cancelActivity();
+      setError(undefined);
+      navigate({ id: 'T-Pick' });
+    } catch (reason) {
+      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -41,8 +61,7 @@ export function ConsolePage({ navigate, page }: { navigate: Navigate; page: Cons
           <p className={styles.lead}>{emptyGroupsText(activity)}</p>
         </div>
 
-        {/* Gets a message once the console calls services (T074); T-Lobby itself only switches pages. */}
-        <ErrorArea />
+        <ErrorArea message={error} />
 
         <div className={styles.columns}>
           <section className={styles.card}>
@@ -67,21 +86,38 @@ export function ConsolePage({ navigate, page }: { navigate: Navigate; page: Cons
 
         <ActionBar
           back={
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => navigate({ id: 'T-Setup', mode: 'edit', activity })}
-            >
-              修改設定
+            <button type="button" className="btn btn-ghost" onClick={() => setCancelOpen(true)}>
+              取消活動
             </button>
           }
           primary={
-            // Opening question 1 is wired in by US3 (T074).
-            <button type="button" className="btn btn-primary">
-              開放第 1 題
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate({ id: 'T-Setup', mode: 'edit', activity })}
+              >
+                修改設定
+              </button>
+              {/* Opening question 1 is wired in by US3 (T074). */}
+              <button type="button" className="btn btn-primary">
+                開放第 1 題
+              </button>
+            </>
           }
         />
+
+        <ConfirmDialog
+          open={cancelOpen}
+          title="取消活動？"
+          onClose={closeCancel}
+          actions={[
+            { label: '繼續準備', onClick: closeCancel },
+            { label: '確定取消活動', variant: 'danger', onClick: () => void cancelActivity() },
+          ]}
+        >
+          <p>取消後這個活動就結束了，已加入的學生會回到選組頁，你會回到挑選學習單頁。</p>
+        </ConfirmDialog>
       </main>
     </div>
   );

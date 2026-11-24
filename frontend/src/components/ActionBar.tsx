@@ -1,13 +1,14 @@
-// Bottom action bar (research RD-09): a page's pair of back and forward buttons always sits in
-// the same fixed place, back-type on the left and the main button on the right.
+// Bottom action bar (research RD-09): a page's back and forward buttons always sit in the same
+// fixed place. Buttons that leave the current flow (back, cancel) go on the left; buttons that
+// move forward or stay in the flow go on the right, with the primary button rightmost.
 // Buttons that act on one section stay in that section instead.
 import type { ReactNode } from 'react';
 import styles from './ActionBar.module.css';
 
 interface ActionBarProps {
-  /** Back-type button(s), shown on the left. */
+  /** Button(s) that leave the current flow (back, cancel), shown on the left. */
   back?: ReactNode;
-  /** Main button(s), shown on the right. */
+  /** Button(s) that move forward or stay in the flow, shown on the right; primary last. */
   primary?: ReactNode;
 }
 
