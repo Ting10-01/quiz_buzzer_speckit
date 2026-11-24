@@ -34,7 +34,12 @@ export function JoinPage({ navigate, previousGroup }: JoinPageProps) {
         if (active) setError(errorMessage(reason));
       },
     );
-    const unsubscribe = activityService.onPhaseChange((next) => setActivity(next));
+    const unsubscribe = activityService.onPhaseChange((next) => {
+      setActivity(next);
+      // null means the teacher cancelled the activity (FR-050, S11): the selected group
+      // belonged to it, so the next activity starts with nothing selected.
+      if (next === null) setSelected(undefined);
+    });
     return () => {
       active = false;
       unsubscribe();
