@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pickerWill } from './googlePicker';
 import { fakeTeacherApi, googleWill } from './googleSignIn';
 import {
   SHEET_SINGLE,
@@ -73,9 +74,8 @@ test.describe('US5 removed elements (SC-004)', () => {
     await check(page, 'T-Login', 'T-Login（登入失敗）');
     await toPick(page);
     await check(page, 'T-Pick');
+    await pickerWill(page, null);
     await page.getByRole('button', { name: '從 Google 雲端硬碟挑選' }).click();
-    await expectNoRemoved(page, 'T-Pick 模擬檔案選擇器');
-    await page.keyboard.press('Escape');
     await toImport(page);
     await check(page, 'T-Import', 'T-Import（可編輯）');
     await pick(page, '重新挑選', SHEET_SINGLE);
