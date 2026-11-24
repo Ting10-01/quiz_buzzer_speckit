@@ -162,7 +162,7 @@ description: "Task list for 002 老師登入"
 - [X] T048 [P] [US5] `server/tests/integration/logging.test.ts`：以 `logCapture` 跑完登入、同帳號重新登入、另一個帳號登入、`SCOPE_DENIED`、帶錯誤憑證的請求、picker-token；log 中搜尋不到假 gateway 的授權碼、access token、refresh token、老師憑證、client secret、API key 的值；請求的 `authorization` 顯示 `[Redacted]`（AC-20、SC-004）
 - [X] T049 [P] [US5] `server/tests/integration/authRoutes.test.ts`（錯誤部分）：`google = null` 時 `/api/auth/config`、`/api/auth/google`、`/api/auth/picker-token` 回 `503 GOOGLE_NOT_CONFIGURED`，`/api/auth/me` 帶有效憑證不受影響（AC-21）；假 gateway 丟 `GoogleUnavailableError` 時 `POST /api/auth/google` 回 `502 GOOGLE_UNAVAILABLE` 且伺服器沒有綁定（AC-22）；路由丟出未預期錯誤時回 `500 INTERNAL`，body 沒有堆疊
 - [X] T050 [P] [US5] `server/tests/unit/GoogleAuthLibraryGateway.test.ts`：以 Vitest 假計時器與不回應的假 HTTP 傳輸驗證 15 秒後丟 `GoogleUnavailableError`（AC-22、SC-007）
-- [ ] T051 [P] [US5] `frontend/tests/unit/http/HttpAuthService.test.ts`（錯誤部分）：`POPUP_BLOCKED` reject「瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試」（AC-24）；`LOAD_FAILED` reject「無法載入 Google 登入，請確認網路連線」；`503`、`502`、`400 INVALID_CODE` reject 伺服器的 message（AC-21、AC-22）；`fetch` 失敗 reject「連不上伺服器，請確認伺服器已啟動」（AC-23）
+- [x] T051 [P] [US5] `frontend/tests/unit/http/HttpAuthService.test.ts`（錯誤部分）：`POPUP_BLOCKED` reject「瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試」（AC-24）；`LOAD_FAILED` reject「無法載入 Google 登入，請確認網路連線」；`503`、`502`、`400 INVALID_CODE` reject 伺服器的 message（AC-21、AC-22）；`fetch` 失敗 reject「連不上伺服器，請確認伺服器已啟動」（AC-23）
 
 ### Implementation for User Story 5
 
