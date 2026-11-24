@@ -1,8 +1,9 @@
 import type { FastifyBaseLogger } from 'fastify';
 import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
+import { isImportError } from '@quiz-buzzer/shared/guards';
 import { GuidedNotesParser } from './GuidedNotesParser.js';
 import { HeaderLocator } from './HeaderLocator.js';
-import { isImportError, noAccess, noWorksheet } from './importErrors.js';
+import { noAccess, noWorksheet } from './importErrors.js';
 import type { ImportStore } from './ImportStore.js';
 import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from './SpreadsheetReader.js';
 
