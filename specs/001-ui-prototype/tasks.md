@@ -422,7 +422,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T153 [US1] 確認 `frontend/src/pages/HomePage.tsx` 的 `onPhaseChange` listener 把 `null` 直接存成 `activity`，顯示既有的「目前沒有活動」（FR-010）；補上註解說明 `null` 來自活動被取消（S11）。若 T149 在 T147 後已通過，不改行為（依賴 T149）
 - [X] T154 [US4] 修改 `frontend/src/pages/student/JoinPage.tsx`：`onPhaseChange` 收到 `null` 時 `setActivity(null)` 並清除 `selected`（`setSelected(undefined)`），不呼叫任何介面；收到 `Activity` 時行為不變（FR-050、S11；依賴 T150）
 - [X] T155 [US4] 修改 `frontend/src/pages/student/StudentPlayPage.tsx`：`usePhaseChange` 的 handler 型別改為 `(activity: Activity | null) => void`；`WaitView` 收到 `null` 時 `navigate({ id: 'S-Join' })`，不呼叫 `leaveGroup`（FR-051）；`AnswerView`、`SubmittedView`、`QuestionDoneView` 收到 `null` 時直接返回，不呼叫 `navigateWhenQuestionEnds`、不讀取 `next.phase`（FR-026）；移除 T147 暫時加入的 `as Activity`；更新檔頭註解（依賴 T151、T152）
-- [ ] T156 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T149–T152 通過，且其他測試沒有退步；這些元件測試代替 S11 的人工操作，不記錄於 `manual-verification.md`，結果由圖表一致性驗證重做 F4 時引用（SC-002）
+- [X] T156 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T149–T152 通過，且其他測試沒有退步；這些元件測試代替 S11 的人工操作，不記錄於 `manual-verification.md`，結果由圖表一致性驗證重做 F4 時引用（SC-002）
 
 **Checkpoint**: 首頁、選組頁、等待開放頁能處理活動被取消；004 只需在真正的實作中通知 `null`，不修改 001 的頁面。
 
