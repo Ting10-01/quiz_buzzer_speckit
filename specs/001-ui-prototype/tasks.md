@@ -373,7 +373,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation for User Story 5
 
-- [ ] T098 [US5] 執行 T093–T097；只修正測試找出的頁面切換或控制顯示缺漏，修正範圍限於 Phase 2–6 已建立的檔案，不新增 spec 沒有的行為
+- [X] T098 [US5] 執行 T093–T097；只修正測試找出的頁面切換或控制顯示缺漏，修正範圍限於 Phase 2–6 已建立的檔案，不新增 spec 沒有的行為
 - [ ] T099 [US5] 依 quickstart Q9、Q10、Q12 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: 所有 User Story 完成。
