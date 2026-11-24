@@ -268,7 +268,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T139 在 `frontend/src/services/interfaces.ts` 依類別圖在 `ActivityService` 新增 `cancelActivity(): Promise<void>`（contracts/service-interfaces.md）
 - [X] T140 在 `frontend/src/services/mock/MockActivityService.ts` 實作 `cancelActivity`：檢查 `pendingUnexpectedError`（M9）後清除 `MockSession.teacherActivity`；不改變 `viewerPhaseIndex`、不通知 `onPhaseChange`（M3、data-model「老師端的活動」；依賴 T139）
 - [X] T141 在 `frontend/src/pages/teacher/ConsolePage.tsx` 的 T-Lobby 檢視加入「取消活動」與 T-CancelConfirm（`ConfirmDialog`，按鈕「繼續準備」「確定取消活動」）：確定時呼叫 `cancelActivity()`，成功 → `T-Pick`，非預期錯誤顯示於 `ErrorArea`；依 RD-09 把動作列改為左邊「取消活動」，右邊「修改設定」（secondary）與「開放第 1 題」（primary），並更新 `ActionBar.tsx` 的註解與 prop 說明（左邊為離開流程的按鈕）（依賴 T139）
-- [ ] T142 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T135–T138 通過，且其他測試沒有退步；依 quickstart Q4、Q14 人工驗證並記錄於 `manual-verification.md`
+- [X] T142 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T135–T138 通過，且其他測試沒有退步；依 quickstart Q4、Q14 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: T-Lobby 可取消活動，實作與 2026-11-24 的 spec 一致。
 
