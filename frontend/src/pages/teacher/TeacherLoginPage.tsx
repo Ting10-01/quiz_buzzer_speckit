@@ -11,7 +11,7 @@ import styles from './TeacherLoginPage.module.css';
 
 const FAILURE_MESSAGE: Record<SignInFailure, string> = {
   [SignInFailure.CANCELLED]: '已取消登入',
-  [SignInFailure.SCOPE_DENIED]: '需要同意存取 Google 試算表才能使用老師功能',
+  [SignInFailure.SCOPE_DENIED]: '需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。',
 };
 
 export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
