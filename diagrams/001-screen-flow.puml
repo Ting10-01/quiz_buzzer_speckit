@@ -17,8 +17,8 @@ legend bottom left
   | <color:#2F855A>┄┄ 點線（綠）</color> | 判定結果、同組組員送出推動 | 005（001 只標示） |
   箭頭上寫文字的是一位老師與一組學生走完一輪活動的路徑，以及答案被接受、不接受；其他轉換以代號標示，見下表。
   老師接受某一組後本題自動結束；最後一題結束時活動直接結束，不經過「本題已結束」。每組每題只能送出一次，被拒絕後不能再送出。
-  確認視窗（T-EndConfirm、T-WriteBack）不畫成節點，併入觸發它的轉換。
-  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）；S10 在 001 的模擬實作中不會發生（SC-002 除外項）。
+  確認視窗（T-EndConfirm、T-CancelConfirm、T-WriteBack）不畫成節點，併入觸發它的轉換。
+  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）；S10、S11 在 001 的模擬實作中不會發生（SC-002 除外項）。
   學生端「判定：接受」同時結束本題（M6）。
   任何介面呼叫回傳非預期錯誤時停留在原頁面，在共通錯誤訊息區顯示（FR-009）；此自我轉換在每頁都可能發生，圖中省略，以「模擬：非預期錯誤」觸發（M9）。
 
@@ -42,6 +42,8 @@ legend bottom left
   | <color:#1F5FAD>**T13**</color> | <color:#1F5FAD>點擊</color> | T-Live → T-Live | 不接受（只能判定最早一筆待判定的答案） |
   | <color:#1F5FAD>**T14**</color> | <color:#1F5FAD>點擊</color> | T-Live → T-Live | 結束這一題，在確認視窗按「繼續作答」 |
   | <color:#1F5FAD>**T15**</color> | <color:#1F5FAD>點擊</color> | T-Results → T-Results | 寫回 Google Sheets，在確認視窗按「取消」 |
+  | <color:#1F5FAD>**T16**</color> | <color:#1F5FAD>點擊</color> | T-Lobby → T-Lobby | 取消活動，在確認視窗按「繼續準備」 |
+  | <color:#1F5FAD>**T17**</color> | <color:#1F5FAD>點擊</color> | T-Lobby → T-Pick | 取消活動，在確認視窗按「確定取消活動」 |
   | <color:#1F5FAD>**S1**</color> | <color:#1F5FAD>點擊</color> | S-Join → S-Join | 選擇組別 |
   | <color:#1F5FAD>**S2**</color> | <color:#1F5FAD>點擊</color> | S-Wait → S-Join | 選錯組別？重新選擇 |
   | <color:#C05621>**S3**</color> | <color:#C05621>階段</color> | S-Join（沒有活動）→ S-Join | 老師建立活動 |
@@ -52,6 +54,7 @@ legend bottom left
   | <color:#C05621>**S8**</color> | <color:#C05621>階段</color> | S-Join → S-QuestionDone | 加入時本題已結束（本組沒有送出） |
   | <color:#C05621>**S9**</color> | <color:#C05621>階段</color> | S-Join → S-Results | 加入時活動已結束（本組搶到 0 題） |
   | <color:#2F855A>**S10**</color> | <color:#2F855A>送出</color> | S-Join → S-Submitted | 加入時同組組員已送出（依本組狀態為等待判定或不接受；001 的模擬實作不觸發） |
+  | <color:#C05621>**S11**</color> | <color:#C05621>階段</color> | S-Join、S-Wait → S-Join（沒有活動） | 老師取消活動（001 的模擬實作不觸發） |
 endlegend
 
 state "Main\n首頁：選擇身分" as Main
@@ -129,6 +132,8 @@ T_Lobby -[#1F5FAD]-> T_Setup : <color:#1F5FAD>**T12**</color>
 T_Live -[#1F5FAD]-> T_Live : <color:#1F5FAD>**T13**</color>
 T_Live -[#1F5FAD]-> T_Live : <color:#1F5FAD>**T14**</color>
 T_Results -[#1F5FAD]-> T_Results : <color:#1F5FAD>**T15**</color>
+T_Lobby -[#1F5FAD]-> T_Lobby : <color:#1F5FAD>**T16**</color>
+T_Lobby -[#1F5FAD]-> T_Pick : <color:#1F5FAD>**T17**</color>
 S_Join -[#1F5FAD]-> S_Join : <color:#1F5FAD>**S1**</color>
 S_Wait -[#1F5FAD]-> S_Join : <color:#1F5FAD>**S2**</color>
 S_JoinEmpty -[#C05621,dashed]-> S_Join : <color:#C05621>**S3**</color>
@@ -139,5 +144,7 @@ S_Answer -[#2F855A,dotted]-> S_Submitted : <color:#2F855A>**S7**</color>
 S_Join -[#C05621,dashed]-> S_QuestionDone : <color:#C05621>**S8**</color>
 S_Join -[#C05621,dashed]-> S_Results : <color:#C05621>**S9**</color>
 S_Join -[#2F855A,dotted]-> S_Submitted : <color:#2F855A>**S10**</color>
+S_Join -[#C05621,dashed]-> S_JoinEmpty : <color:#C05621>**S11**</color>
+S_Wait -[#C05621,dashed]-> S_JoinEmpty : <color:#C05621>**S11**</color>
 
 @enduml

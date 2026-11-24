@@ -17,7 +17,7 @@ package "頁面層（Presentation）" {
     component "PickPage (T-Pick)" as PPick
     component "ImportPage\n(T-Import / T-ImportError)" as PImport
     component "SetupPage (T-Setup)" as PSetup
-    component "ConsolePage\n(T-Lobby / T-Live / T-EndConfirm / T-QuestionEnd)" as PConsole
+    component "ConsolePage\n(T-Lobby / T-CancelConfirm / T-Live / T-EndConfirm / T-QuestionEnd)" as PConsole
     component "TeacherResultsPage\n(T-Results / T-WriteBack)" as PTResults
   }
 

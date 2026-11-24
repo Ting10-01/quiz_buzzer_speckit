@@ -31,6 +31,7 @@
 | --- | --- | --- | --- |
 | `createActivity(settings)` | `Promise<Activity \| ValidationError>` | T-Setup（建立模式）「建立活動」 | `Activity`：T-Lobby；`ValidationError`：留在 T-Setup，在 `field` 對應的欄位旁顯示 `message`（FR-008） |
 | `updateSettings(settings)` | `Promise<Activity \| ValidationError>` | T-Setup（修改模式）「儲存設定」 | 同上 |
+| `cancelActivity()` | `Promise<void>` | T-CancelConfirm「確定取消活動」（只在 T-Lobby，開放第 1 題之前） | 成功：T-Pick，活動不存在；已加入的學生回到 S-Join（沒有活動），由 004 推動（FR-026） |
 | `openQuestion(n)` | `Promise<Activity>` | T-Lobby「開放第 1 題」；T-QuestionEnd「開放第 n+1 題」 | T-Live（第 n 題） |
 | `endQuestion(n)` | `Promise<Activity>` | T-EndConfirm「結束並公布結果」 | `QUESTION_ENDED`：T-QuestionEnd；`FINISHED`：T-Results |
 | `joinGroup(n)` | `Promise<Activity>` | S-Join「加入第 n 組」 | 依 `phase` 切換（spec「階段推動的切換」、research RD-14）：`PREPARING` → S-Wait；`OPEN` → 先呼叫 `getGroupSubmission`；`QUESTION_ENDED` → S-QuestionDone；`FINISHED` → S-Results |

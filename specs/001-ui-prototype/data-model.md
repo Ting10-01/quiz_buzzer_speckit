@@ -47,7 +47,7 @@
 | --- | --- | --- |
 | `AuthService` | `signInWithGoogle`、`getCurrentAccount` | 002 |
 | `GuidedNotesService` | `pickSpreadsheet`、`readWorksheet` | 003 |
-| `ActivityService` | `createActivity`、`updateSettings`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange`、`onActivityChange` | 004 |
+| `ActivityService` | `createActivity`、`updateSettings`、`cancelActivity`、`openQuestion`、`endQuestion`、`joinGroup`、`leaveGroup`、`getCurrentActivity`、`onPhaseChange`、`onActivityChange` | 004 |
 | `SubmissionService` | `submitAnswer`、`listSubmissions`、`onSubmissionsChange`、`judge`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement` | 005 |
 | `ResultService` | `getQuestionResult`、`getAllResults`、`writeBack` | 006 |
 | `PhaseMockControl`（mock only） | `advancePhase` | 隨 004 移除 |
@@ -100,7 +100,7 @@
 | 欄位 | 說明 | 寫入者 | 讀取者 |
 | --- | --- | --- | --- |
 | `lastImport` | 最近一次辨識成功的 `ImportSuccess` | MockGuidedNotesService | MockActivityService（老師端活動的題目）、MockResultService（M8） |
-| `teacherActivity` | 老師端建立、開放、結束題目後的 `Activity` | MockActivityService；MockSubmissionService（`judge(ACCEPTED)` 結束本題，M4） | MockSubmissionService、MockResultService |
+| `teacherActivity` | 老師端建立、開放、結束題目後的 `Activity`；`cancelActivity` 清除 | MockActivityService；MockSubmissionService（`judge(ACCEPTED)` 結束本題，M4） | MockSubmissionService、MockResultService |
 | `joinedGroup` | 本分頁所屬的組別；`joinGroup` 設定、`leaveGroup` 清除 | MockActivityService | MockSubmissionService（`submitAnswer`、`getGroupSubmission`、`onGroupSubmitted`、`onJudgement`、`simulateJudgement`、`simulateTeammateSubmission`） |
 | `viewerPhaseIndex` | 首頁與學生頁面看到的階段在 M7 序列中的位置 | MockActivityService（`advancePhase`）；MockSubmissionService（`simulateJudgement(ACCEPTED)` 推進一次，M6） | MockActivityService（`getCurrentActivity`、`onPhaseChange`） |
 | `submissions` | 各題的送出與判定（老師端的判定、學生端本組的送出） | MockSubmissionService | MockResultService |
@@ -117,7 +117,7 @@
 
 依 M3 與 M7，同一個分頁中有兩條互不影響的模擬狀態：
 
-- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 與 `judge(ACCEPTED)` 改變 `teacherActivity`。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
+- **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 與 `judge(ACCEPTED)` 改變 `teacherActivity`；`cancelActivity` 一律成功並清除 `teacherActivity`，不影響 `viewerPhaseIndex`（M3）。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
 - **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 與 `simulateJudgement(ACCEPTED)` 時改變（兩者都經 `onPhaseChange` 通知），使用 `MockFixtures.activity`（4 題、6 組）。
 
 ### 狀態轉換
@@ -135,7 +135,10 @@ NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → OPEN(2) → … 
 ```text
 （無）--createActivity--> PREPARING --openQuestion(1)--> OPEN(1) --endQuestion(1) 或 judge(ACCEPTED)--> QUESTION_ENDED(1)
       --openQuestion(2)--> OPEN(2) … --endQuestion(最後一題) 或 judge(ACCEPTED)--> FINISHED
+PREPARING --cancelActivity--> （無）
 ```
+
+只有 `PREPARING` 可以取消；開放第 1 題之後不能取消或提前結束（FR-026）。
 
 `judge(ACCEPTED)` 結束本題，回傳的 `JudgeOutcome.activity` 為結束後的階段（FR-032a、M4）。
 

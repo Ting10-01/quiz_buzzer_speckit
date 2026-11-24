@@ -77,6 +77,20 @@ Act --> Page : Activity(PREPARING)
 Page -> Act : onActivityChange(listener)
 note right of Act : 學生加入或離開組別時通知（004）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・準備中
+opt 取消活動（FR-026；只在開放第 1 題之前）
+  Teacher -> Page : 點「取消活動」
+  Page --> Teacher : 取消活動確認視窗（ConfirmDialog）
+  alt 確定取消活動
+    Teacher -> Page : 點「確定取消活動」
+    Page -> Act : cancelActivity()
+    Act --> Page : 成功（M3：一律成功）
+    note right of Act : 已加入的學生回到選組頁的\n「目前沒有活動」（004）；\n001 的模擬實作不通知學生端
+    Page --> Teacher : 挑選學習單頁
+  else 繼續準備
+    Teacher -> Page : 點「繼續準備」
+    Page --> Teacher : 關閉視窗，留在控制台・準備中
+  end
+end
 
 == 3. 學生選組與作答 ==
 Student -> Page : 首頁點「我是學生」

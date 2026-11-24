@@ -139,6 +139,7 @@ package "Service Interfaces" {
   interface ActivityService {
     +createActivity(settings: ActivitySettings): Promise<Activity | ValidationError>
     +updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +cancelActivity(): Promise<void>
     +openQuestion(questionNumber: number): Promise<Activity>
     +endQuestion(questionNumber: number): Promise<Activity>
     +joinGroup(groupNumber: number): Promise<Activity>
