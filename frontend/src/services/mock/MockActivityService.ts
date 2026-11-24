@@ -37,6 +37,15 @@ export class MockActivityService
     return this.saveSettings(settings);
   }
 
+  /**
+   * Always succeeds (M3) and clears only the teacher's activity; the viewer phase (M7) is left
+   * alone, so students are not sent back to S-Join here (that transition belongs to 004).
+   */
+  async cancelActivity(): Promise<void> {
+    if (this.session.consumeUnexpectedError()) throw MOCK_UNEXPECTED_ERROR;
+    this.session.teacherActivity = undefined;
+  }
+
   async openQuestion(questionNumber: number): Promise<Activity> {
     if (this.session.consumeUnexpectedError()) throw MOCK_UNEXPECTED_ERROR;
     return this.setTeacherPhase(ActivityPhase.OPEN, questionNumber);
