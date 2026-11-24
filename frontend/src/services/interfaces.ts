@@ -32,6 +32,8 @@ export interface GuidedNotesService {
 export interface ActivityService {
   createActivity(settings: ActivitySettings): Promise<Activity | ValidationError>;
   updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>;
+  /** Only before question 1 opens (FR-026); afterwards the activity no longer exists. */
+  cancelActivity(): Promise<void>;
   openQuestion(questionNumber: number): Promise<Activity>;
   endQuestion(questionNumber: number): Promise<Activity>;
   /** The service remembers this tab's group; later calls never pass a group (principle VI). */
