@@ -382,7 +382,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T100 [P] 確認 ESLint 規則有效：暫時在任一頁面加入 `import ... from '../services/mock/MockFixtures'`，`npm run lint` 應報錯，確認後移除（原則 III）
+- [X] T100 [P] 確認 ESLint 規則有效：暫時在任一頁面加入 `import ... from '../services/mock/MockFixtures'`，`npm run lint` 應報錯，確認後移除（原則 III）
 - [ ] T101 [P] 檢查 `frontend/src/`、`shared/src/` 中的註解與命名皆為英文、同一介面元素沒有重複實作（原則 IX）
 - [ ] T102 依 `quickstart.md` 從乾淨環境執行 `npm install`、`npx playwright install chromium`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，回報每個指令與結果（原則 VIII）
 - [ ] T103 確認 `manual-verification.md` 已涵蓋 quickstart Q1–Q14 且每個 User Story 至少一筆紀錄
