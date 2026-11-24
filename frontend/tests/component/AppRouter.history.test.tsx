@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { AppRouter } from '../../src/app/AppRouter';
 import type { ChoiceRequest } from '../../src/services/interfaces';
 import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeRegistry';
+import { makeActivity, makeImportSuccess, makeSpreadsheet } from '../helpers/fixtures';
 
 let pushState: MockInstance<History['pushState']>;
 
@@ -33,7 +34,14 @@ function setup() {
         .mockResolvedValue({ ok: true, account: { name: 'T', email: 't@example.com' } }),
       getCurrentAccount: vi.fn().mockResolvedValue({ name: 'T', email: 't@example.com' }),
     },
-    activity: { getCurrentActivity: vi.fn().mockResolvedValue(null) },
+    guidedNotes: {
+      pickSpreadsheet: vi.fn().mockResolvedValue(makeSpreadsheet()),
+      readWorksheet: vi.fn().mockResolvedValue(makeImportSuccess()),
+    },
+    activity: {
+      getCurrentActivity: vi.fn().mockResolvedValue(null),
+      createActivity: vi.fn().mockResolvedValue(makeActivity()),
+    },
   });
   renderWithRegistry(<AppRouter />, registry);
   return {
@@ -122,6 +130,32 @@ describe('AppRouter browser back (FR-014, US1 AC-7)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(choicePrompt.answer).toHaveBeenCalledWith(null);
     expect(await onLogin()).toBeInTheDocument();
+    expect(pushState.mock.calls.length).toBe(before + 1);
+  });
+});
+
+/** Main → T-Login → T-Pick → T-Import → T-Setup (create) → T-Lobby through the real pages. */
+async function toLobby() {
+  await userEvent.click(await onHome());
+  await userEvent.click(await onLogin());
+  await userEvent.click(await screen.findByRole('button', { name: '從 Google 雲端硬碟挑選' }));
+  await userEvent.click(await screen.findByRole('button', { name: '確認匯入，下一步' }));
+  await userEvent.click(await screen.findByRole('button', { name: '建立活動' }));
+  await screen.findByRole('button', { name: '修改設定' });
+}
+
+describe('AppRouter browser back on the T-Lobby cancel dialog (FR-014, FR-026)', () => {
+  it('only closes the open cancel dialog, like "繼續準備" (edge)', async () => {
+    const { registry } = setup();
+    await toLobby();
+    await userEvent.click(screen.getByRole('button', { name: '取消活動' }));
+    expect(screen.getByRole('dialog', { name: /取消活動/ })).toBeInTheDocument();
+    const before = pushState.mock.calls.length;
+    goBack();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(registry.activity.cancelActivity).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '修改設定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '開放第 1 題' })).toBeInTheDocument();
     expect(pushState.mock.calls.length).toBe(before + 1);
   });
 });
