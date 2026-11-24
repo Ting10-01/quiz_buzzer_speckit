@@ -33,7 +33,7 @@ npm run dev
 | `npm run typecheck` | `shared/`、`frontend/` 的 TypeScript 檢查 | 沒有錯誤 |
 | `npm run lint` | ESLint，含「頁面與元件不得引用 `services/mock`」規則（原則 III） | 沒有錯誤 |
 | `npm test` | Vitest：`tests/unit`、`tests/component` | 全部通過 |
-| `npm run test:e2e` | Playwright：`tests/e2e` | 全部通過 |
+| `npm run test:e2e` | Playwright：`tests/e2e`。執行前確認 5173 埠沒有其他程式使用；若已有 dev server 在執行，測試會直接使用它，而不是目前資料夾的程式。 | 全部通過 |
 
 implement 階段每完成一個 Phase，回報上述指令與結果（原則 VIII）。
 
