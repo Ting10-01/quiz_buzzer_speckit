@@ -11,6 +11,7 @@ import { ConsolePage } from '../pages/teacher/ConsolePage';
 import { ImportPage } from '../pages/teacher/ImportPage';
 import { PickPage } from '../pages/teacher/PickPage';
 import { SetupPage } from '../pages/teacher/SetupPage';
+import { TeacherResultsPage } from '../pages/teacher/TeacherResultsPage';
 import { TeacherLoginPage } from '../pages/teacher/TeacherLoginPage';
 import styles from './AppRouter.module.css';
 
@@ -78,11 +79,15 @@ function renderPage(page: PageState, navigate: Navigate): ReactNode {
     case 'T-Setup':
       return <SetupPage navigate={navigate} page={page} />;
     case 'T-Lobby':
+    case 'T-Live':
+    case 'T-QuestionEnd':
       return <ConsolePage navigate={navigate} page={page} />;
+    case 'T-Results':
+      return <TeacherResultsPage navigate={navigate} page={page} />;
     case 'S-Join':
       return <JoinPage navigate={navigate} previousGroup={page.previousGroup} />;
     default:
-      // Remaining pages are wired in by later user story phases (tasks T077, T091).
+      // Remaining pages are wired in by later user story phases (task T091).
       return null;
   }
 }
