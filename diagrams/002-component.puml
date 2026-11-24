@@ -52,12 +52,15 @@ PLogin ..> IAuth : signInWithGoogle()
 PPick ..> IAuth : getCurrentAccount()
 Registry --> IAuth
 Registry --> HAuth : auth 綁定
+Registry --> Gis
+Registry --> Api
+Registry --> Cred
 HAuth -up-|> IAuth
 HAuth --> IGis
 Gis -up-|> IGis
 HAuth --> Api
 HAuth --> Cred
-Api --> Cred : 讀取老師憑證
+Api --> Cred : 讀取老師憑證\n401 UNAUTHORIZED 時清除
 Gis --> GIS : 授權碼（popup）
 
 Api --> Routes : HTTP（Authorization: Bearer）
@@ -66,6 +69,10 @@ App --> Logger
 App --> Routes
 App --> Guard
 App --> Sock
+App --> TAuth
+App --> Provider
+App --> Gw : 沒有 deps.gateway 時建立
+Routes --> Config : config.google
 Routes --> Guard : me、picker-token
 Routes --> TAuth : signIn(code)
 Routes --> Provider : picker-token

@@ -15,7 +15,7 @@
 
 | 類別 | 欄位／方法 | 規則 |
 | --- | --- | --- |
-| `HttpAuthService`（實作 001 `AuthService`） | `signInWithGoogle(): Promise<SignInResult>`、`getCurrentAccount(): Promise<TeacherAccount \| null>`；私有 `signingIn` | 登入進行中再呼叫回傳同一個 Promise；結果對應見 [contracts/auth-http.md](./contracts/auth-http.md)「前端如何轉換」 |
+| `HttpAuthService`（實作 001 `AuthService`） | `signInWithGoogle(): Promise<SignInResult>`、`getCurrentAccount(): Promise<TeacherAccount \| null>`；私有 `signingIn: Promise<SignInResult> \| null` | 登入進行中再呼叫回傳同一個 Promise；Google 視窗被擋或無法載入時直接 reject `UnexpectedError`；結果對應見 [contracts/auth-http.md](./contracts/auth-http.md)「前端如何轉換」 |
 | `GoogleIdentityClient`（介面） | `requestCode(clientId: string, scopes: string[]): Promise<GoogleCodeResult>` | 唯一實作 `GisGoogleIdentityClient`；介面供測試替身使用（原則 VIII） |
 | `GisGoogleIdentityClient` | — | 載入 GIS、以 popup 取得授權碼（research RD-10） |
 | `GoogleCodeResult` | `code?: string`、`error?: GoogleCodeError` | 兩者恰有一個 |
@@ -44,9 +44,9 @@
 | `PickerToken` | `accessToken`、`apiKey`、`appId`（皆 `string`） | `GET /api/auth/picker-token` 的回應 |
 | `ErrorBody` | `code: string`、`message: string` | 所有錯誤回應的格式；`message` 是給老師看的中文 |
 | `requireTeacher` | `(request, reply) => Promise<void>` | Fastify preHandler；以 `app.requireTeacher` 提供 |
-| `authRoutes` | Fastify plugin | 四個路由，見 [contracts/auth-http.md](./contracts/auth-http.md) |
-| `attachSocketServer` | `(app, teacherAuth) => io.Server`；常數 `TEACHER_ROOM = 'teacher'` | 見 [contracts/socket-handshake.md](./contracts/socket-handshake.md) |
-| `buildApp` | `(config: AppConfig, deps) => FastifyInstance` | 伺服器組合根；`deps.gateway: GoogleOAuthGateway` 為 002 的替身注入點，003–006 可在 `deps` 加入自己的替身（例如 003 的 `spreadsheetReader`） |
+| `authRoutes` | Fastify plugin；選項 `{ config: AppConfig, teacherAuth, googleClients }` | 每次請求讀 `config.google`（`null` 時回 503）；四個路由，見 [contracts/auth-http.md](./contracts/auth-http.md) |
+| `attachSocketServer` | `(app, teacherAuth) => io.Server`；常數 `TEACHER_ROOM = 'teacher'` | Server 以 `app.io` 提供；見 [contracts/socket-handshake.md](./contracts/socket-handshake.md) |
+| `buildApp` | `(config: AppConfig, deps) => FastifyInstance` | 伺服器組合根；建立 `TeacherAuth`、`GoogleClientProvider`（`app.googleClients`）、`requireTeacher`（`app.requireTeacher`），沒有 `deps.gateway` 時建立 `GoogleAuthLibraryGateway`；`deps.gateway: GoogleOAuthGateway` 為 002 的替身注入點，003–006 可在 `deps` 加入自己的替身（例如 003 的 `spreadsheetReader`） |
 
 ## 4. 目前的老師的狀態轉換（`TeacherAuth`）
 

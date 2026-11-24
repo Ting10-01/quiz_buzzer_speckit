@@ -3,6 +3,7 @@ title 002 時序圖：老師登入（任何登入取代前一個老師）、拒�
 
 skinparam defaultFontName "PingFang TC"
 skinparam sequenceMessageAlign left
+hide footbox
 
 actor "老師" as Teacher
 actor "學生分頁" as Student
@@ -38,6 +39,9 @@ else 已設定
     Gis --> Auth : { error: CANCELLED }
     Auth --> Page : SignInResult(failure: CANCELLED)
     Page --> Teacher : 「已取消登入」
+  else 視窗被擋或無法載入 Google 登入
+    Gis --> Auth : { error: POPUP_BLOCKED | LOAD_FAILED }
+    Auth --> Page : reject UnexpectedError\nPOPUP_BLOCKED「瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試」\nLOAD_FAILED「無法載入 Google 登入，請確認網路連線」
   else 取得授權碼
     Google --> Gis : code
     Gis --> Auth : { code }
@@ -46,40 +50,61 @@ else 已設定
     Routes -> TAuth : signIn(code)
     TAuth -> Gw : exchangeCode(code)
     Gw -> Google : 換取授權、驗證 id_token（最多 15 秒）
-    Google --> Gw : tokens、id_token(email)、scope
-    Gw --> TAuth : GoogleSignIn
-    note right of TAuth : 以 Google 登入的人即為老師，不比對帳號；\nawait 之後同步換發，同時登入以最後完成的為準
-    alt 沒有同意 drive.file
-      TAuth --> Routes : SignInOutcome(SCOPE_DENIED)（丟棄這組授權，目前的老師不變）
-      Routes --> Api : 200 { ok: false, failure: SCOPE_DENIED }
-      Api --> Auth : 回應
-      Auth --> Page : SignInResult(failure: SCOPE_DENIED)
-      Page --> Teacher : 「需要存取雲端硬碟才能讀取學習單。\n請再按一次「用 Google 登入」，\n並在 Google 的畫面勾選雲端硬碟檔案那一項。」
-    else 同意所有權限（第一次登入、同帳號重新登入或另一個帳號登入）
-      TAuth -> TAuth : 以新帳號取代目前的老師，產生新的 teacherToken（舊的作廢）
-      TAuth -> Provider : replace(tokens)
-      Provider -> Gw : createClient(tokens)
-      opt 原本已有老師
-        TAuth -> Sock : onRotate → 中斷舊的老師連線
+    alt 請求格式錯誤、Google 不接受授權碼或連不上 Google
+      Routes --> Api : 400 BAD_REQUEST「登入請求格式錯誤」（缺標頭或 code 不合格，不呼叫 signIn）\n400 INVALID_CODE「Google 登入未完成，請再試一次」（invalid_grant）\n502 GOOGLE_UNAVAILABLE「連不上 Google，請稍後再試」（逾時或網路錯誤）
+      Api --> Auth : reject ApiError
+      Auth --> Page : reject ApiError（頁面顯示 message）
+    else 交換成功
+      Google --> Gw : tokens、id_token(email)、scope
+      Gw --> TAuth : GoogleSignIn
+      note right of TAuth : 以 Google 登入的人即為老師，不比對帳號；\nawait 之後同步換發，同時登入以最後完成的為準
+      alt 沒有同意 drive.file
+        TAuth --> Routes : SignInOutcome(SCOPE_DENIED)（丟棄這組授權，目前的老師不變）
+        Routes --> Api : 200 { ok: false, failure: SCOPE_DENIED }
+        Api --> Auth : 回應
+        Auth --> Page : SignInResult(failure: SCOPE_DENIED)
+        Page --> Teacher : 「需要存取雲端硬碟才能讀取學習單。\n請再按一次「用 Google 登入」，\n並在 Google 的畫面勾選雲端硬碟檔案那一項。」
+      else 同意所有權限（第一次登入、同帳號重新登入或另一個帳號登入）
+        TAuth -> TAuth : 以新帳號取代目前的老師，產生新的 teacherToken（舊的作廢）
+        TAuth -> Provider : replace(tokens)
+        Provider -> Gw : createClient(tokens)
+        opt 原本已有老師
+          TAuth -> Sock : onRotate → 中斷舊的老師連線
+        end
+        TAuth --> Routes : SignInOutcome(ok, teacherToken, account)
+        Routes --> Api : 200 { ok: true, teacherToken, account }
+        Api --> Auth : 回應
+        Auth -> Cred : set(teacherToken)
+        Auth --> Page : SignInResult(ok, account)
+        Page --> Teacher : 挑選學習單頁（001；D21 回控制台等 001 修改，暫時一律進 T-Pick）
       end
-      TAuth --> Routes : SignInOutcome(ok, teacherToken, account)
-      Routes --> Api : 200 { ok: true, teacherToken, account }
-      Api --> Auth : 回應
-      Auth -> Cred : set(teacherToken)
-      Auth --> Page : SignInResult(ok, account)
-      Page --> Teacher : 挑選學習單頁（001；D21 回控制台等 001 修改，暫時一律進 T-Pick）
-      Page -> Auth : getCurrentAccount()
-      Auth -> Api : GET /api/auth/me
-      Api -> Cred : get()
-      Api -> Routes : GET /api/auth/me（Authorization: Bearer）
-      Routes -> Guard : preHandler
-      Guard -> TAuth : verify(token)
-      TAuth --> Guard : true
-      Routes -> TAuth : currentAccount()
-      Routes --> Api : 200 TeacherAccount
-      Api --> Auth : TeacherAccount
-      Auth --> Page : TeacherAccount
     end
+  end
+end
+
+== 1（續）. 挑選學習單頁取得目前的老師（REQ-AUTH-11） ==
+Page -> Auth : getCurrentAccount()
+Auth -> Cred : get()
+alt 本分頁沒有老師憑證
+  Auth --> Page : null（不呼叫伺服器）
+else 有老師憑證
+  Auth -> Api : GET /api/auth/me
+  Api -> Cred : get()
+  Api -> Routes : GET /api/auth/me（Authorization: Bearer）
+  Routes -> Guard : preHandler
+  Guard -> TAuth : verify(token)
+  alt 憑證有效
+    TAuth --> Guard : true
+    Routes -> TAuth : currentAccount()
+    Routes --> Api : 200 TeacherAccount
+    Api --> Auth : TeacherAccount
+    Auth --> Page : TeacherAccount
+  else 憑證已作廢（之後有人登入取代了這個老師）
+    TAuth --> Guard : false
+    Guard --> Api : 401 UNAUTHORIZED
+    Api -> Cred : clear()
+    Api --> Auth : reject ApiError「老師登入已失效，請回首頁重新登入」
+    Auth --> Page : reject ApiError
   end
 end
 
@@ -105,19 +130,19 @@ Sock --> Teacher : 接受；socket.data.isTeacher = true，加入 TEACHER_ROOM
 == 3. 提供 Google 授權給 003、006（REQ-AUTH-09、10） ==
 Page -> Api : GET /api/auth/picker-token（003 的檔案選擇器）
 Api -> Routes : Authorization: Bearer
-Routes -> Guard : preHandler（同第 2 段）
+Routes -> Guard : preHandler（同第 2 段，沒有老師時在這裡回 401 UNAUTHORIZED）
 Routes -> Provider : authorizedClient()
-alt 還沒有老師登入
-  Provider --> Routes : throw TeacherNotSignedInError
-  Routes --> Api : 401 NOT_SIGNED_IN
-else 已登入
-  Provider --> Routes : OAuth2Client
-  Routes -> Google : getAccessToken()（過期時以長期授權更新）
-  alt 授權已被撤銷（invalid_grant）
-    Routes --> Api : 401 GOOGLE_AUTH_EXPIRED「Google 授權已失效…」
-  else 成功
-    Routes --> Api : 200 PickerToken { accessToken, apiKey, appId }
-  end
+note right of Provider
+  requireTeacher 通過代表已有老師（signIn 同步設定
+  binding 與 client），這裡不會丟 TeacherNotSignedInError；
+  它給 003、006 直接呼叫 authorizedClient() 時使用。
+end note
+Provider --> Routes : OAuth2Client
+Routes -> Google : getAccessToken()（過期時以長期授權更新）
+alt 失敗
+  Routes --> Api : 401 GOOGLE_AUTH_EXPIRED「Google 授權已失效，請回首頁重新登入」（授權被撤銷）\n502 GOOGLE_UNAVAILABLE「連不上 Google，請稍後再試」（逾時或網路錯誤）\n503 GOOGLE_NOT_CONFIGURED「伺服器尚未設定 Google 登入…」（缺少環境變數，在 authorizedClient() 之前檢查）
+else 成功
+  Routes --> Api : 200 PickerToken { accessToken, apiKey, appId }
 end
 note over Provider, Google
   003 讀取、006 寫回時，在伺服器端呼叫 authorizedClient()，
