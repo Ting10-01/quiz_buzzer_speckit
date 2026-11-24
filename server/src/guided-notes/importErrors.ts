@@ -1,4 +1,4 @@
-import type { ImportError } from '../temp-shared/entities.js';
+import type { ImportError } from '@quiz-buzzer/shared/entities';
 
 // Every ImportError the import can return (data-model ImportErrorCode). All teacher-facing
 // texts live here so that each code has a reason and at least one fix step (SC-003).

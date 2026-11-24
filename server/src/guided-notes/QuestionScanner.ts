@@ -1,4 +1,4 @@
-import type { ImportError, Question, SubQuestion } from '../temp-shared/entities.js';
+import type { ImportError, Question, SubQuestion } from '@quiz-buzzer/shared/entities';
 import type { HeaderMatch } from './HeaderLocator.js';
 import { noBlank } from './importErrors.js';
 import type { SheetGrid } from './SheetGrid.js';

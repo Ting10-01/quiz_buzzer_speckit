@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GuidedNotesParser } from '../../src/guided-notes/GuidedNotesParser.js';
-import type { ImportError, ImportSuccess, Spreadsheet } from '../../src/temp-shared/entities.js';
+import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
 import { buildGrid, fixtureGrid, rowsFrom, type CellValue } from './helpers/gridBuilder.js';
 
 const SPREADSHEET: Spreadsheet = {

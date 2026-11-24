@@ -1,4 +1,4 @@
-import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
+import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
 import { HeaderLocator } from './HeaderLocator.js';
 import type { BlankMarkers } from './ImportStore.js';
 import { invalidNumbering, isImportError, noHeader, noQuestions, tooManyQuestions } from './importErrors.js';

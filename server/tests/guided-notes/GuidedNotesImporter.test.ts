@@ -5,7 +5,7 @@ import { TeacherNotSignedInError } from '../../src/auth/GoogleClientProvider.js'
 import { GuidedNotesImporter } from '../../src/guided-notes/GuidedNotesImporter.js';
 import { ImportStore } from '../../src/guided-notes/ImportStore.js';
 import { SheetsReadError } from '../../src/guided-notes/SpreadsheetReader.js';
-import type { ImportError, ImportSuccess } from '../../src/temp-shared/entities.js';
+import type { ImportError, ImportSuccess } from '@quiz-buzzer/shared/entities';
 import { signInFor } from '../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../helpers/testApp.js';
 import { FakeSpreadsheetReader } from './helpers/fakeSpreadsheetReader.js';

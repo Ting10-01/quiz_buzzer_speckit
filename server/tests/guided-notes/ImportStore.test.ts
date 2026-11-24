@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ImportStore } from '../../src/guided-notes/ImportStore.js';
-import type { ImportSuccess } from '../../src/temp-shared/entities.js';
+import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 
 function result(title: string, blankCell: string): ImportSuccess {
   return {
