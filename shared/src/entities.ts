@@ -15,6 +15,8 @@ export interface TeacherAccount {
 
 export const SignInFailure = {
   CANCELLED: 'CANCELLED',
+  /** Added by 002: the teacher did not grant drive.file access (001 data-model allows 002 to add kinds). */
+  SCOPE_DENIED: 'SCOPE_DENIED',
 } as const;
 export type SignInFailure = (typeof SignInFailure)[keyof typeof SignInFailure];
 
