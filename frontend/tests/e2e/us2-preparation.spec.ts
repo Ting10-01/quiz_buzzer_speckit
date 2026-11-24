@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
 
 async function expectMockBadge(page: Page) {
@@ -13,10 +14,10 @@ async function signIn(page: Page) {
   await expect(page.getByRole('button', { name: '從 Google 雲端硬碟挑選' })).toBeVisible();
 }
 
-/** Clicks a pick button and chooses a sheet in the mock file chooser (M2). */
+/** Clicks a pick button and chooses a sheet in the stubbed Google Picker (googlePicker.ts). */
 async function pick(page: Page, button: string, sheet: string) {
+  await pickerWill(page, sheet);
   await page.getByRole('button', { name: button }).click();
-  await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: sheet, exact: true }).click();
 }
 
 function statValue(page: Page, label: string) {
@@ -46,10 +47,8 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await signIn(page);
 
     // Closing the chooser stays on T-Pick (US2 AC-5).
+    await pickerWill(page, null);
     await page.getByRole('button', { name: '從 Google 雲端硬碟挑選' }).click();
-    await expect(page.getByRole('dialog', { name: '模擬檔案選擇器' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page.getByRole('button', { name: '從 Google 雲端硬碟挑選' })).toBeVisible();
 
     // 題組＋單題範本: 4 questions, 2 groups, 6 blanks, editable (US2 AC-1).

@@ -1,6 +1,7 @@
 // Shared page checks and walks for the US5 specs (T093–T096). Not a spec file itself:
 // Playwright only collects *.spec.ts.
 import { expect, type Page } from '@playwright/test';
+import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
 
 export type PageId =
@@ -106,10 +107,10 @@ export async function advance(page: Page, times = 1) {
   }
 }
 
-/** Clicks `name` and picks `sheet` in the mock file chooser (M2). */
+/** Clicks `name` and picks `sheet` in the stubbed Google Picker (googlePicker.ts). */
 export async function pick(page: Page, name: string, sheet: string) {
+  await pickerWill(page, sheet);
   await button(page, name).click();
-  await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: sheet, exact: true }).click();
 }
 
 // ----- teacher walks -----

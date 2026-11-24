@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 import { signInAsPageTeacher } from './googleSignIn';
 import {
   GROUP,
@@ -41,6 +41,17 @@ async function expectNoError(page: Page) {
   await expect(errorArea(page)).toHaveCount(0);
 }
 
+/** Makes requests to `url` fail as if the server were down; returns a function that undoes it. */
+async function serverDown(page: Page, url: string) {
+  const handler = (route: Route) => route.abort();
+  await page.route(url, handler);
+  return () => page.unroute(url, handler);
+}
+
+async function expectServerDown(page: Page) {
+  await expect(errorArea(page)).toHaveText('連不上伺服器，請確認伺服器已啟動');
+}
+
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
 const groupItems = (page: Page) => page.getByRole('group', { name: '組數' }).getByRole('listitem');
 
@@ -48,25 +59,26 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
   // auth is real since 002, so the mock control cannot fail it; an unreachable server does instead.
   test('T-Login: 用 Google 登入', async ({ page }) => {
     await toLogin(page);
-    await page.route('**/api/auth/config', (route) => route.abort());
+    const restore = await serverDown(page, '**/api/auth/config');
     await button(page, '用 Google 登入').click();
     await expectOn(page, 'T-Login');
-    await expect(errorArea(page)).toHaveText('連不上伺服器，請確認伺服器已啟動');
+    await expectServerDown(page);
 
-    await page.unroute('**/api/auth/config');
+    await restore();
     await signInAsPageTeacher(page);
     await expectOn(page, 'T-Pick');
     await expectNoError(page);
   });
 
+  // guidedNotes is real since 003, so the mock control cannot fail it; an unreachable server does.
   test('T-Pick: 從 Google 雲端硬碟挑選', async ({ page }) => {
     await toPick(page);
-    await armUnexpectedError(page);
+    const restore = await serverDown(page, '**/api/auth/picker-token');
     await button(page, '從 Google 雲端硬碟挑選').click();
     await expectOn(page, 'T-Pick');
-    await expectError(page);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expectServerDown(page);
 
+    await restore();
     await pick(page, '從 Google 雲端硬碟挑選', SHEET_OK);
     await expectOn(page, 'T-Import');
     await expectNoError(page);
@@ -74,12 +86,13 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-Import: 切換工作表', async ({ page }) => {
     await toImport(page);
-    await armUnexpectedError(page);
+    const restore = await serverDown(page, '**/api/guided-notes/read');
     await page.getByRole('tab', { name: '備註' }).click();
     await expectOn(page, 'T-Import');
-    await expectError(page);
+    await expectServerDown(page);
     await expect(page.getByRole('tab', { name: '學習單' })).toHaveAttribute('aria-selected', 'true');
 
+    await restore();
     await page.getByRole('tab', { name: '備註' }).click();
     await expect(page.getByRole('tab', { name: '備註' })).toHaveAttribute('aria-selected', 'true');
     await expectOn(page, 'T-Import');
@@ -88,11 +101,12 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-ImportError: 重新讀取', async ({ page }) => {
     await toImportError(page);
-    await armUnexpectedError(page);
+    const restore = await serverDown(page, '**/api/guided-notes/read');
     await button(page, '重新讀取').click();
     await expectOn(page, 'T-ImportError');
-    await expectError(page);
+    await expectServerDown(page);
 
+    await restore();
     await button(page, '重新讀取').click();
     await expectOn(page, 'T-Import');
     await expectNoError(page);
