@@ -298,7 +298,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T075 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-EndConfirm（以 `ConfirmDialog`，內容只列本題已送出組數與還沒送出的組別，FR-033）與 T-QuestionEnd：依 T069 的規則；T-QuestionEnd 顯示本題送出組數，以 `QuestionProgress` 顯示進度，「開放第 n+1 題」呼叫 `openQuestion(n+1)` 回到 T-Live；最後一題結束 → `navigate` 到 `T-Results`
 - [X] T076 [US3] 在 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）實作 T-Results 與 T-WriteBack：載入 `getAllResults()`，顯示每題所有送出組別的答案、順位與判定（FR-040）；比第一名慢的秒數只把 `behindFirstMs` 換算成秒顯示，不由 `elapsedMs` 自行計算（FR-003）；不顯示結束時間與總耗時（SC-004）；以 `SheetPreview` 顯示寫回預覽（依 C-5 放寬 `SheetPreview` 的 props，表頭資訊可省略）；「寫回 Google Sheets」開啟 `ConfirmDialog`；「寫回」關閉視窗後呼叫 `writeBack()` 並顯示寫回結果（尚未寫回／成功／失敗）；`ErrorArea`
 - [X] T077 [US3] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Live`、`T-QuestionEnd`、`T-Results`（`T-Results` 的頁面參數帶 `activity`，C-5）
-- [ ] T078 [US3] 執行 `npm test`、`npm run test:e2e`，確認 T068–T071 通過；依 quickstart Q5、Q6 人工驗證並記錄於 `manual-verification.md`
+- [X] T078 [US3] 執行 `npm test`、`npm run test:e2e`，確認 T068–T071 通過；依 quickstart Q5、Q6 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: 老師端流程完整。
 
