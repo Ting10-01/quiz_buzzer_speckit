@@ -246,6 +246,34 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 4.5: 規格修訂（2026-11-24）：取消活動
+
+**Purpose**: 套用 Phase 4 完成後的 spec 修訂（commit `spec(001): allow cancelling an activity before question 1`）與其後的設計更新（research RD-09 按鈕左右規則、三張圖與畫面流程圖、contracts、data-model、quickstart Q4、Q14）：
+
+- **取消活動**：T-Lobby 提供「取消活動」，開啟 T-CancelConfirm 確認視窗；「繼續準備」關閉視窗，「確定取消活動」呼叫 `cancelActivity()` 後進入 T-Pick（FR-026、US2 AC-11、AC-12、畫面流程 T16、T17）。開放第 1 題之後不提供取消或提前結束。
+- **模擬實作**：`cancelActivity` 一律成功，清除 `MockSession.teacherActivity`，不影響首頁與學生端看到的模擬活動（M3）；學生回到 S-Join（沒有活動）由 004 推動，001 不觸發（S11）。
+- **T-Lobby 動作列**：左邊「取消活動」，右邊「修改設定」（secondary）與「開放第 1 題」（primary，最右）（research RD-09）。T066a 中「修改設定」放在左邊的做法由本 Phase 取代。
+
+本 Phase 在 Phase 4 之後、Phase 5 之前完成（Phase 5 的 T074 會修改同一個 `ConsolePage.tsx`）。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T135 [P] 擴充 `frontend/tests/unit/MockActivityService.test.ts`（M3）：`createActivity` 後呼叫 `cancelActivity()` 成功，`MockSession.teacherActivity` 被清除；`getCurrentActivity()` 的結果與 `viewerPhaseIndex` 不變，`onPhaseChange` 不通知（邊界）；`failNextCall()` 後 `cancelActivity()` 以 `UnexpectedError` reject，`teacherActivity` 不變（M9，邊界）
+- [ ] T136 [P] 擴充 `frontend/tests/component/ConsolePage.lobby.test.tsx`（FR-026、US2 AC-11、AC-12）：動作列左邊只有「取消活動」，右邊依序為「修改設定」「開放第 1 題」；點「取消活動」開啟確認視窗，內容說明已加入的學生會回到選組頁，且不呼叫介面；「繼續準備」關閉視窗、停留、不呼叫 `cancelActivity`；「確定取消活動」呼叫 `cancelActivity()` 一次後 `navigate({ id: 'T-Pick' })`；`cancelActivity` reject 非預期錯誤時停留在 T-Lobby 並在 `ErrorArea` 顯示（邊界，FR-009）。在 `frontend/tests/helpers/createFakeRegistry.tsx` 的 `activity` 補上 `cancelActivity`
+- [ ] T137 [P] 擴充 `frontend/tests/component/AppRouter.history.test.tsx`（FR-014）：T-Lobby 的取消活動確認視窗開啟時觸發 `popstate`，只關閉視窗，等同「繼續準備」，不呼叫 `cancelActivity`、頁面不切換（邊界）
+- [ ] T138 [P] 擴充 `frontend/tests/e2e/us2-preparation.spec.ts`：quickstart Q4 的取消活動（「繼續準備」留在 T-Lobby；「確定取消活動」回到 T-Pick，可重新挑選並建立活動）；Q14 中取消活動確認視窗開啟時 `goBack()` 只關閉視窗
+
+### Implementation
+
+- [ ] T139 在 `frontend/src/services/interfaces.ts` 依類別圖在 `ActivityService` 新增 `cancelActivity(): Promise<void>`（contracts/service-interfaces.md）
+- [ ] T140 在 `frontend/src/services/mock/MockActivityService.ts` 實作 `cancelActivity`：檢查 `pendingUnexpectedError`（M9）後清除 `MockSession.teacherActivity`；不改變 `viewerPhaseIndex`、不通知 `onPhaseChange`（M3、data-model「老師端的活動」；依賴 T139）
+- [ ] T141 在 `frontend/src/pages/teacher/ConsolePage.tsx` 的 T-Lobby 檢視加入「取消活動」與 T-CancelConfirm（`ConfirmDialog`，按鈕「繼續準備」「確定取消活動」）：確定時呼叫 `cancelActivity()`，成功 → `T-Pick`，非預期錯誤顯示於 `ErrorArea`；依 RD-09 把動作列改為左邊「取消活動」，右邊「修改設定」（secondary）與「開放第 1 題」（primary），並更新 `ActionBar.tsx` 的註解與 prop 說明（左邊為離開流程的按鈕）（依賴 T139）
+- [ ] T142 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T135–T138 通過，且其他測試沒有退步；依 quickstart Q4、Q14 人工驗證並記錄於 `manual-verification.md`
+
+**Checkpoint**: T-Lobby 可取消活動，實作與 2026-11-24 的 spec 一致。
+
+---
+
 ## Phase 5: User Story 3 - 老師主持搶答與判定 (Priority: P1)
 
 **Goal**: T-Live、T-EndConfirm、T-QuestionEnd、T-Results、T-WriteBack。涵蓋 R3、R4、R5、R5.1、R10、E4、FR-030–FR-034、FR-040–FR-042。
@@ -351,13 +379,14 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-006 階段推動的切換 | T020、T028、T047、T080–T083、T093 |
 | FR-007 搶答板與返回首頁 | T036、T038、T054、T117、T129、T130 |
 | FR-008 驗證錯誤顯示 | T058、T064、T081、T087、T094 |
-| FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095 |
-| FR-014 瀏覽器上一頁 | T060、T066a、T069、T080、T118、T119、T131、T132 |
+| FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095、T136 |
+| FR-014 瀏覽器上一頁 | T060、T066a、T069、T080、T118、T119、T131、T132、T137、T138 |
 | FR-010–FR-013 | T044、T045、T050、T051、T105、T110 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
 | FR-023、FR-024 | T058、T064、T066a |
 | FR-025 | T059、T065 |
+| FR-026 | T135–T138、T139–T142 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076 |
 | FR-050 | T047、T053、T079、T085 |
@@ -368,7 +397,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-056a | T079、T081、T085、T087、T088、T113、T121、T126 |
 | FR-057 | T083、T089 |
 | FR-058 | T083、T090 |
-| FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
+| FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、T135/T140、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
 | FR-061 | T037、T041、T094、T107、T111、T116、T128 |
 | SC-001、SC-002 | T093、T095 |
 | SC-003 | T037、T093、T097 |
@@ -387,6 +416,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - **US1 (Phase 3)**: 依賴 Phase 2
 - **規格修訂 (Phase 3.5、3.6)**: 依賴 Phase 3；依序執行（3.5 → 3.6），修改 Phase 2、3 已建立的檔案；完成後才做 T055 與 Phase 4
 - **US2 (Phase 4)**: 依賴 Phase 2；延續 US1 的 `PickPage.tsx`（T062 修改 T052 的檔案）
+- **規格修訂 (Phase 4.5)**: 依賴 Phase 4；修改 T065、T066a 的 `ConsolePage.tsx`；完成後才做 Phase 5
 - **US3 (Phase 5)**: 依賴 Phase 2；延續 US2 的 `ConsolePage.tsx`（T074 修改 T065 的檔案）
 - **US4 (Phase 6)**: 依賴 Phase 2；延續 US1 的 `JoinPage.tsx`；使用 US3 的 `QuestionProgress`（T072）
 - **US5 (Phase 7)**: 依賴 US1–US4 全部完成（驗證整張畫面流程圖）
@@ -406,6 +436,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - Phase 2：T012、T013；T017–T023（全部測試）；T026–T030（五個模擬服務，在 T025 之後）；T033、T036–T040
 - US1：T044–T048 測試；T049–T053 實作（五個不同檔案）
 - US2：T056–T060 測試；T061 可與其他實作平行
+- Phase 4.5：T135–T138 測試
 - US3：T068–T071 測試；T072、T073
 - US4：T079–T084 測試；T090 可與 StudentPlayPage 任務平行
 - US5：T093–T097
