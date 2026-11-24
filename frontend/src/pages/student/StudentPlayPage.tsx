@@ -6,13 +6,20 @@
 // Students get no way back home once they joined (FR-007), and the rules text and time
 // limits of the design are not shown (SC-004).
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { ActivityPhase, QuestionType, type Activity } from '@quiz-buzzer/shared/entities';
+import {
+  ActivityPhase,
+  Judgement,
+  QuestionType,
+  type Activity,
+  type Submission,
+} from '@quiz-buzzer/shared/entities';
 import { isUnexpectedError, isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { questionTypeLabel } from '../../components/questionLabels';
+import { answersLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './StudentPlayPage.module.css';
 
@@ -24,6 +31,11 @@ export type StudentPlayState = Extract<
 interface StudentPlayPageProps {
   navigate: Navigate;
   page: StudentPlayState;
+  /**
+   * Reports whether S-Submitted is waiting for a judgement, so AppRouter can tell the mock
+   * control bar (FR-061: "模擬：接受" and "模擬：不接受" only appear then).
+   */
+  onAwaitingJudgementChange?: (awaiting: boolean) => void;
 }
 
 interface ViewProps {
@@ -229,7 +241,59 @@ function AnswerView({ navigate, groupNumber, activity }: ViewProps) {
   );
 }
 
-export function StudentPlayPage({ navigate, page }: StudentPlayPageProps) {
+interface SubmittedViewProps extends ViewProps {
+  submission: Submission;
+  onAwaitingJudgementChange?: (awaiting: boolean) => void;
+}
+
+function SubmittedView({
+  navigate,
+  groupNumber,
+  activity,
+  submission,
+  onAwaitingJudgementChange,
+}: SubmittedViewProps) {
+  const { submission: submissionService } = useServiceRegistry();
+  // S10: a groupmate's submission may already have been rejected when this tab joined.
+  const [rejected, setRejected] = useState(submission.judgement === Judgement.REJECTED);
+
+  // Accepting ends the question; the switch comes from the phase change, not the judgement
+  // (FR-055, RD-12), so ACCEPTED shows no state of its own.
+  useEffect(
+    () =>
+      submissionService.onJudgement((judged) => {
+        if (judged.judgement === Judgement.REJECTED) setRejected(true);
+      }),
+    [submissionService],
+  );
+
+  usePhaseChange((next) => {
+    navigateWhenQuestionEnds(navigate, groupNumber, next);
+  });
+
+  useEffect(() => {
+    onAwaitingJudgementChange?.(!rejected);
+  }, [onAwaitingJudgementChange, rejected]);
+  useEffect(() => () => onAwaitingJudgementChange?.(false), [onAwaitingJudgementChange]);
+
+  return (
+    <Shell groupNumber={groupNumber} phase={activity.phase}>
+      <section className={styles.card}>
+        <p className={styles.cardTitle}>第 {submission.questionNumber} 題</p>
+        {/* FR-056: once rejected the group cannot submit again, so nothing here is editable. */}
+        <h1 className={rejected ? `${styles.title} ${styles.rejected}` : styles.title}>
+          {rejected ? '老師沒有接受本組的答案' : '等待老師判定'}
+        </h1>
+        <section aria-label="本組送出的答案" className={styles.notes}>
+          <h2 className={styles.cardTitle}>本組送出的答案</h2>
+          <p className={styles.answers}>{answersLabel(submission.answers)}</p>
+        </section>
+      </section>
+    </Shell>
+  );
+}
+
+export function StudentPlayPage({ navigate, page, onAwaitingJudgementChange }: StudentPlayPageProps) {
   const view = { navigate, groupNumber: page.groupNumber, activity: page.activity };
   switch (page.id) {
     case 'S-Wait':
@@ -237,8 +301,17 @@ export function StudentPlayPage({ navigate, page }: StudentPlayPageProps) {
     case 'S-Answer':
       // Keyed by question, so the next question starts with empty answer fields.
       return <AnswerView key={page.activity.currentQuestion} {...view} />;
+    case 'S-Submitted':
+      return (
+        <SubmittedView
+          key={page.activity.currentQuestion}
+          {...view}
+          submission={page.submission}
+          onAwaitingJudgementChange={onAwaitingJudgementChange}
+        />
+      );
     default:
-      // S-Submitted and S-QuestionDone follow in tasks T088 and T089.
+      // S-QuestionDone follows in task T089.
       return null;
   }
 }

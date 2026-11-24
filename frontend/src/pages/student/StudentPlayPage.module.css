@@ -105,3 +105,12 @@
 .wide {
   width: 100%;
 }
+
+.rejected {
+  color: var(--neg-ink);
+}
+
+.answers {
+  font-size: 16px;
+  font-weight: 500;
+}
