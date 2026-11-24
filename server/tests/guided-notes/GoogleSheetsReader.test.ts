@@ -246,4 +246,12 @@ describe('GoogleSheetsReader.load errors', () => {
     api.sheetsGet.mockRejectedValue(badRequest);
     expect(await readError()).toBe(badRequest);
   });
+
+  it('does not report a bug in reading Google\'s answer as "Google unavailable"', async () => {
+    // Two worksheets without properties make the conversion throw a TypeError.
+    answer({ properties: { title: 'T' }, sheets: [null, null] });
+    const error = await readError();
+    expect(error).toBeInstanceOf(TypeError);
+    expect(error).not.toBeInstanceOf(SheetsReadError);
+  });
 });
