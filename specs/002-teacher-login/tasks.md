@@ -51,7 +51,7 @@ description: "Task list for 002 老師登入"
 - [X] T014 建立 `server/tests/helpers/testApp.ts`：以 `fakeGoogleGateway` 建立 `buildApp`；提供 `inject` 與 listen 隨機埠兩種用法；依 T010、T012
 - [x] T015 [P] `frontend/tests/unit/http/TeacherCredentialStore.test.ts`：`set` 後 `get` 回同一個值；`clear` 後為 `null`；只寫入 `sessionStorage` 的 `teacherToken`，`localStorage` 與 `document.cookie` 不變；`sessionStorage` 丟例外時 `get` 回 `null`（REQ-AUTH-06）
 - [x] T016 [P] 實作 `frontend/src/services/http/TeacherCredentialStore.ts`（research RD-10）
-- [ ] T017 [P] `frontend/tests/unit/http/ApiClient.test.ts`：有憑證時帶 `Authorization: Bearer <token>`、沒有時不帶；2xx 回傳 body；錯誤回應以 `ApiError { status, code, message }` reject，`message` 取 `ErrorBody.message`；有憑證時收到 `401 UNAUTHORIZED` 改為「老師登入已失效，請回首頁重新登入」並清除憑證；收到 `401 GOOGLE_AUTH_EXPIRED` 時保留憑證、message 取伺服器的訊息；`fetch` 失敗以 `status 0`、`code 'NETWORK'`「連不上伺服器，請確認伺服器已啟動」reject（REQ-AUTH-13、AC-23）
+- [x] T017 [P] `frontend/tests/unit/http/ApiClient.test.ts`：有憑證時帶 `Authorization: Bearer <token>`、沒有時不帶；2xx 回傳 body；錯誤回應以 `ApiError { status, code, message }` reject，`message` 取 `ErrorBody.message`；有憑證時收到 `401 UNAUTHORIZED` 改為「老師登入已失效，請回首頁重新登入」並清除憑證；收到 `401 GOOGLE_AUTH_EXPIRED` 時保留憑證、message 取伺服器的訊息；`fetch` 失敗以 `status 0`、`code 'NETWORK'`「連不上伺服器，請確認伺服器已啟動」reject（REQ-AUTH-13、AC-23）
 - [ ] T018 實作 `frontend/src/services/http/ApiClient.ts`：`ApiClient.request<T>(method, path, body?)`、`ApiError`；依 T016
 
 **Checkpoint**: 伺服器能啟動並回應 404；前端能以 `ApiClient` 呼叫伺服器
