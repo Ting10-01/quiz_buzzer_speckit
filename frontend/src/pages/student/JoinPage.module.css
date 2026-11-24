@@ -44,3 +44,8 @@
 .back {
   align-self: center;
 }
+
+/* The main button spans the phone-width column, above the ghost back button (RD-09). */
+.join {
+  width: 100%;
+}

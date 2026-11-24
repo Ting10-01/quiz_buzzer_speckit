@@ -344,7 +344,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation for User Story 4
 
-- [ ] T085 [US4] 在 `frontend/src/pages/student/JoinPage.tsx` 完成選組與加入：`GroupGrid` 可選、底部按鈕「加入第 n 組」（未選時不可用）、`joinGroup(n)` 後依 research RD-14 導向（`PREPARING` → `S-Wait`；`OPEN` → `getGroupSubmission(q)`，`null` → `S-Answer`、有送出 → `S-Submitted` 並帶入該送出；`QUESTION_ENDED` → `S-QuestionDone`；`FINISHED` → `S-Results`）；接受 AppRouter 傳入的 `previousGroup` 預先選取
+- [X] T085 [US4] 在 `frontend/src/pages/student/JoinPage.tsx` 完成選組與加入：`GroupGrid` 可選、底部按鈕「加入第 n 組」（未選時不可用）、`joinGroup(n)` 後依 research RD-14 導向（`PREPARING` → `S-Wait`；`OPEN` → `getGroupSubmission(q)`，`null` → `S-Answer`、有送出 → `S-Submitted` 並帶入該送出；`QUESTION_ENDED` → `S-QuestionDone`；`FINISHED` → `S-Results`）；接受 AppRouter 傳入的 `previousGroup` 預先選取
 - [ ] T086 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx`（與 `.module.css`）建立 StudentPlayPage，實作 S-Wait：學生版 `AppHeader` 顯示組別；顯示階段與說明文字位置（不沿用設計稿的規則說明與限時，SC-004）；「選錯組別？重新選擇」；訂閱 `onPhaseChange` 依「階段推動的切換」表切換內部狀態；`ErrorArea`
 - [ ] T087 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Answer：顯示組別、題號／總題數、題型、題目敘述（若有）、每小題一個答案欄、送出提示區、「整組送出」（001 一律可用）；`ValidationError` 顯示在第一個答案欄旁；訂閱 `onGroupSubmitted`，通知後切換到 S-Submitted 並顯示組員送出的答案（FR-056a）。沒有「被拒絕」狀態；頁面不得出現其他組別的作答狀況（FR-054）
 - [ ] T088 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-Submitted（等待判定／不接受）：顯示本組送出的答案（本人或組員送出）；初始狀態依傳入送出的 `judgement`（`PENDING` 為等待判定、`REJECTED` 為不接受，S10）；訂閱 `onJudgement`，`REJECTED` 時改為不接受狀態並顯示「老師沒有接受本組的答案」，不提供任何再次送出的方式（FR-056）；`ACCEPTED` 時不自行切換，由 `onPhaseChange` 推動（FR-055）；把 `awaitingJudgement` 回報給 AppRouter 以傳給 `MockModeBadge`

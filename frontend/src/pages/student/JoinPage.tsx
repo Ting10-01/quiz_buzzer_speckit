@@ -1,7 +1,8 @@
-// S-Join: lists the groups of the current activity, or "no activity" (FR-050).
-// Selecting and joining a group is completed in US4 (tasks T085).
+// S-Join: lists the groups of the current activity, or "no activity" (FR-050), and joins one.
+// Where joining leads depends only on the phase joinGroup returns and, while a question is
+// open, on this group's submission (research RD-14); the page never derives a phase.
 import { useEffect, useState } from 'react';
-import type { Activity } from '@quiz-buzzer/shared/entities';
+import { ActivityPhase, type Activity } from '@quiz-buzzer/shared/entities';
 import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
@@ -16,9 +17,14 @@ interface JoinPageProps {
   previousGroup?: number;
 }
 
-export function JoinPage({ navigate }: JoinPageProps) {
-  const { activity: activityService } = useServiceRegistry();
+function errorMessage(reason: unknown): string {
+  return isUnexpectedError(reason) ? reason.message : String(reason);
+}
+
+export function JoinPage({ navigate, previousGroup }: JoinPageProps) {
+  const { activity: activityService, submission: submissionService } = useServiceRegistry();
   const [activity, setActivity] = useState<Activity | null>(null);
+  const [selected, setSelected] = useState<number | undefined>(previousGroup);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -28,7 +34,7 @@ export function JoinPage({ navigate }: JoinPageProps) {
         if (active) setActivity(current);
       },
       (reason: unknown) => {
-        if (active) setError(isUnexpectedError(reason) ? reason.message : String(reason));
+        if (active) setError(errorMessage(reason));
       },
     );
     const unsubscribe = activityService.onPhaseChange((next) => setActivity(next));
@@ -37,6 +43,38 @@ export function JoinPage({ navigate }: JoinPageProps) {
       unsubscribe();
     };
   }, [activityService]);
+
+  const join = async (groupNumber: number) => {
+    try {
+      const joined = await activityService.joinGroup(groupNumber);
+      switch (joined.phase) {
+        case ActivityPhase.OPEN: {
+          // A groupmate may already have submitted this question (S10, FR-056a).
+          const existing = await submissionService.getGroupSubmission(joined.currentQuestion ?? 1);
+          setError(undefined);
+          navigate(
+            existing
+              ? { id: 'S-Submitted', groupNumber, activity: joined, submission: existing }
+              : { id: 'S-Answer', groupNumber, activity: joined },
+          );
+          return;
+        }
+        case ActivityPhase.QUESTION_ENDED:
+          setError(undefined);
+          navigate({ id: 'S-QuestionDone', groupNumber, activity: joined });
+          return;
+        case ActivityPhase.FINISHED:
+          setError(undefined);
+          navigate({ id: 'S-Results', groupNumber });
+          return;
+        default:
+          setError(undefined);
+          navigate({ id: 'S-Wait', groupNumber, activity: joined });
+      }
+    } catch (reason) {
+      setError(errorMessage(reason));
+    }
+  };
 
   return (
     <>
@@ -51,7 +89,15 @@ export function JoinPage({ navigate }: JoinPageProps) {
               <h1 className={styles.title}>選擇你的組別</h1>
               <p className={styles.meta}>{activity.questions.length} 題</p>
             </div>
-            <GroupGrid groups={activity.groups} />
+            <GroupGrid groups={activity.groups} selected={selected} onSelect={setSelected} />
+            <button
+              type="button"
+              className={`btn btn-primary ${styles.join}`}
+              disabled={selected === undefined}
+              onClick={() => selected !== undefined && void join(selected)}
+            >
+              {selected === undefined ? '加入組別' : `加入第 ${selected} 組`}
+            </button>
           </>
         ) : (
           <p className={styles.empty}>目前沒有活動，請等老師建立活動</p>
