@@ -245,18 +245,26 @@ package "Mock Implementations (001)" {
     +activity: Activity
     +groupMembers: Group[]
     +submissionsByQuestion
+    +teammateAnswers
+    +viewerSequence: ViewerStep[]
   }
+  class ViewerStep <<mock only>> {
+    phase: ActivityPhase
+    currentQuestion: number [0..1]
+  }
+  MockFixtures "1" *-- "1..*" ViewerStep : viewerSequence
   class MockSession <<per tab>> {
     +lastImport: ImportSuccess [0..1]
     +teacherActivity: Activity [0..1]
     +joinedGroup: number [0..1]
     +viewerPhaseIndex: number
     +submissions: Submission[]
-    +pendingValidationFailure
+    +pendingValidationFailure: { activity: boolean, submission: boolean }
     +pendingUnexpectedError: boolean
     +requestChoice(request: ChoiceRequest): Promise<string | null>
     +setViewerPhaseAdvancer(advance: () => void): void
     +advanceViewerPhase(): void
+    +consumeUnexpectedError(): boolean
   }
   class MockAuthService <<M1>>
   class MockGuidedNotesService <<M2>>
@@ -299,7 +307,9 @@ note bottom of MockSession
   M1、M2 的選擇器經 requestChoice 發出，
   由模擬控制列以 ConfirmDialog 顯示並 answer。
   pendingUnexpectedError 由「模擬：非預期錯誤」設定（M9），
-  下一次由按鈕觸發的介面呼叫以 UnexpectedError reject。
+  下一次由按鈕觸發的介面呼叫以 UnexpectedError reject：
+  各模擬實作呼叫 consumeUnexpectedError() 讀取並清除。
+  viewerPhaseIndex 是 MockFixtures.viewerSequence（M7）的位置。
 end note
 
 note right of MockSubmissionService

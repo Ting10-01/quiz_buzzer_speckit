@@ -89,7 +89,8 @@
 | `activity` | 首頁與學生頁面看到的固定模擬活動：4 題、6 組 | M3 |
 | `groupMembers` | 各組已加入人數，至少一組為 0 人 | M3 |
 | `submissionsByQuestion` | 每題開放時的模擬送出列表：除第 3 題外每題 2 組以上；第 3 題沒有送出 | M4；內容沿用 `docs/design/dark/T-Live.html` |
-| 同組組員的模擬答案 | 「模擬：同組組員送出」時使用的一組固定答案 | M5 |
+| `teammateAnswers` | 同組組員的模擬答案：「模擬：同組組員送出」時使用的固定答案，依題號 | M5 |
+| `viewerSequence` | 首頁與學生頁面看到的階段序列（`ViewerStep[]`，每步為 `phase` 與 `currentQuestion?`）：`NO_ACTIVITY → PREPARING → OPEN(1) → QUESTION_ENDED(1) → … → OPEN(最後一題) → FINISHED`，最後一題不經過 `QUESTION_ENDED`；`MockSession.viewerPhaseIndex` 是它的位置 | M7 |
 
 模擬資料只是展示用的資料，不是預設值（spec Assumptions）。
 
@@ -112,6 +113,7 @@
 | `requestChoice(request): Promise<string \| null>` | `MockAuthService`（M1）、`MockGuidedNotesService`（M2）發出選擇請求；經 `onRequest` 通知模擬控制列顯示，在 `answer` 被呼叫時以選項 id 或 `null`（關閉）完成 |
 | `onRequest(listener)`、`answer(choiceId)` | `MockChoicePrompt` 的實作，見 [contracts/mock-controls.md](contracts/mock-controls.md) |
 | `failNextCall()` | `UnexpectedErrorMockControl` 的實作 |
+| `consumeUnexpectedError(): boolean` | 讀取並清除 `pendingUnexpectedError`；各 `Mock*Service` 在介面方法開頭呼叫，回傳 `true` 時以 `UnexpectedError` reject（M9） |
 
 ### 老師端與學生端的兩條模擬狀態
 

@@ -67,9 +67,9 @@ package "模擬實作（001 提供）" {
 }
 
 
-Router --> PMain
-Router --> PJoin
-Router --> PLogin
+Router --> TeacherPages : renderPage()\n依 PageState 渲染
+Router --> StudentPages : renderPage()\n依 PageState 渲染
+Router --> Badge
 
 PLogin ..> IAuth
 PPick ..> IAuth
@@ -82,6 +82,7 @@ PConsole ..> IResult
 PTResults ..> IResult
 PMain ..> IActivity
 PJoin ..> IActivity
+PJoin ..> ISub
 PPlay ..> IActivity
 PPlay ..> ISub
 PPlay ..> IResult
@@ -93,6 +94,9 @@ PConsole --> CGroups
 PConsole --> CDialog
 PTResults --> CDialog
 PTResults --> CPreview
+PTResults --> CProgress
+PTResults --> CSubTable
+PSResults --> CSubTable
 PImport --> CPreview
 PImport --> CAction
 PSetup --> CAction
@@ -109,6 +113,8 @@ PPlay --> CWinner
 PTResults --> CWinner
 TeacherPages --> CError
 StudentPages --> CError
+TeacherPages --> CHeader
+StudentPages --> CHeader
 
 Badge ..> Registry : isMockMode()
 Badge --> Bar

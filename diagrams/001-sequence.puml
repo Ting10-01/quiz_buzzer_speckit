@@ -31,7 +31,9 @@ Bar -> Sess : answer(choiceId)
 Sess --> Auth : choiceId
 alt 選擇模擬老師帳號
   Auth --> Page : SignInResult(ok, account)
-  Page --> Teacher : 挑選學習單頁
+  Page -> Auth : getCurrentAccount()（挑選學習單頁載入時）
+  Auth --> Page : TeacherAccount
+  Page --> Teacher : 挑選學習單頁（顯示已登入的帳號）
 else 取消
   Auth --> Page : SignInResult(failure)
   Page --> Teacher : 登入頁顯示失敗訊息
@@ -96,6 +98,8 @@ end
 Student -> Page : 首頁點「我是學生」
 Page -> Act : getCurrentActivity()
 Act --> Page : Activity（M3 固定模擬活動）
+Page -> Act : onPhaseChange(listener)
+note right of Act : 首頁、選組頁與學生端各畫面掛載時都訂閱；\n下方「階段：…」都經這個訂閱通知
 Page --> Student : 選組頁
 Student -> Page : 選組別，點「加入第 n 組」
 Page -> Act : joinGroup(n)
@@ -137,6 +141,7 @@ Page -> Sub : onJudgement(listener)
 alt 判定：接受（本題結束）
   Demo -> Bar : 點「模擬：接受」
   Bar -> Sub : simulateJudgement(ACCEPTED)（M6，JudgementMockControl）
+  Sub --> Page : onJudgement：Judgement.ACCEPTED（頁面不處理，切換由階段推動）
   Sub -> Sess : advanceViewerPhase()（M6）
   Sess -> Act : 推進一次（與 advancePhase 同一段程式）
   Act --> Page : 階段：本題已結束（最後一題時為已結束）
@@ -152,6 +157,8 @@ end
 alt 不是最後一題
   Page -> Res : getQuestionResult(q)
   Res --> Page : QuestionResult
+  Page -> Res : getAllResults()
+  Res --> Page : QuestionResult[]（各題進度）
   Page --> Student : 本題結果頁
 else 最後一題（不經過本題已結束）
   Page -> Res : getAllResults()
@@ -165,6 +172,8 @@ Page -> Act : openQuestion(n)
 Act --> Page : Activity(OPEN, n)
 Page -> Sub : listSubmissions(n)
 Sub --> Page : Submission[]（M4：依送出順序）
+Page -> Res : getAllResults()
+Res --> Page : QuestionResult[]（各題進度）
 Page -> Sub : onSubmissionsChange(n, listener)
 note right of Sub : 學生送出時以新的列表通知（005）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・搶答中
@@ -183,11 +192,13 @@ else 沒有組別被接受
   Page -> Act : endQuestion(n)
   Act --> Page : Activity(QUESTION_ENDED 或 FINISHED)
 end
-Page -> Res : getQuestionResult(n)
-Res --> Page : QuestionResult
-alt 非最後一題
+alt 非最後一題（QUESTION_ENDED）
+  Page -> Res : getQuestionResult(n)
+  Res --> Page : QuestionResult
+  Page -> Res : getAllResults()
+  Res --> Page : QuestionResult[]（各題進度）
   Page --> Teacher : 控制台・本題已結束
-else 最後一題
+else 最後一題（FINISHED，不經過本題已結束）
   Page -> Res : getAllResults()
   Res --> Page : QuestionResult[]
   Page --> Teacher : 結果與寫回頁
@@ -213,7 +224,7 @@ Bar -> Sess : failNextCall()（UnexpectedErrorMockControl）
 Bar --> Demo : 控制列顯示「已設定：下一次介面呼叫會回傳非預期錯誤」（FR-061）
 Teacher -> Page : 點會呼叫介面的按鈕（例：「開放第 n 題」）
 Page -> Act : openQuestion(n)
-Act -> Sess : 讀取並清除 pendingUnexpectedError
+Act -> Sess : consumeUnexpectedError()：讀取並清除 pendingUnexpectedError
 Act --> Page : reject UnexpectedError（「模擬：連不上伺服器」）
 Page --> Teacher : 停留在原頁面，共通錯誤訊息區（ErrorArea）顯示訊息
 Teacher -> Page : 再點同一個按鈕
