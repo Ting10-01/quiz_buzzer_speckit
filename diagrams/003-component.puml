@@ -32,6 +32,7 @@ package "server（本機 Fastify）" {
     component "app.requireTeacher\npreHandler" as ReqTeacher
     component "GET /api/auth/picker-token" as PickerToken
     component "app.googleClients\nGoogleClientProvider.authorizedClient()\nisGoogleAuthExpired()" as ClientProvider
+    component "GoogleOAuthGateway.ts\nhttpStatusOf() / isGoogleUnreachable()\nGoogleUnavailableError" as GatewayHelpers
   }
   package "003 guided-notes" {
     component "guidedNotesRoutes\nGET /api/guided-notes/spreadsheets/:id\nPOST /api/guided-notes/read" as Routes
@@ -74,6 +75,7 @@ Routes --> Importer : describe() / read()
 Importer --> IReader : load(spreadsheetId)
 SheetsReader -up-|> IReader
 SheetsReader --> ClientProvider : authorizedClient()
+SheetsReader --> GatewayHelpers : 判斷錯誤種類、逾時錯誤
 SheetsReader ..> GSheets : 讀取（唯讀）
 SheetsReader ..> GDrive : 能否編輯
 SheetsReader ..> Grid : 建立
@@ -82,11 +84,14 @@ Importer --> Header : 選預設工作表
 Parser --> Header : locate()
 Parser --> Scanner : scan()
 Parser --> Errors
+Importer --> Errors : NO_ACCESS / NO_WORKSHEET
 Importer --> Store : 成功時 save(result, markers)
 Act004 ..> Store : latest()
 Res006 ..> Store : latest() / latestMarkers()
 Res006 ..> IReader : 版面檢查 load()
 Res006 ..> Parser : 版面檢查 parse()
+' Layout only: keeps the labels around guidedNotesRoutes clear of the 004/006 package.
+Act004 -[hidden]down- Res006
 
 note bottom of Store
   只存在伺服器記憶體；
@@ -94,6 +99,14 @@ note bottom of Store
   只有 readWorksheet 成功時才取代（D2）。
   001 的「確認匯入」沒有介面呼叫，
   所以以最近一次成功的結果為準。
+end note
+
+note left of Registry
+  暫時的橋接：guidedNotes 包一層，
+  readWorksheet 成功時把結果寫入
+  MockSession.lastImport，讓仍是模擬實作的
+  活動與結果服務用匯入的題目。
+  004–006 接上後移除。
 end note
 
 note bottom of Header

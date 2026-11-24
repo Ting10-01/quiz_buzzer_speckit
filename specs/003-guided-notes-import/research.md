@@ -62,7 +62,7 @@
   - `GET /api/guided-notes/spreadsheets/:spreadsheetId` → 200 `Spreadsheet`。
   - `POST /api/guided-notes/read` → 200，內容是 `ImportSuccess` 或 `ImportError`。`ImportError` 不用 4xx，因為 002 的 `ApiClient` 對非 2xx 只保留 `{ status, code, message }`，會丟掉 `foundHeaders` 等欄位；前端以 001 的 `isImportError` 區分。
   - 錯誤回應一律是 002 的 `ErrorBody` `{ code, message }`：`400 BAD_REQUEST`（輸入不合格）、`401 NOT_SIGNED_IN`（`TeacherNotSignedInError`）、`401 GOOGLE_AUTH_EXPIRED`（`SheetsReadError('AUTH_EXPIRED')`，訊息同 002「Google 授權已失效，請回首頁重新登入」）、`403 NO_ACCESS`（只有 `describe`；`pickSpreadsheet` 不能回傳 `ImportError`）、`502 GOOGLE_UNAVAILABLE`（`SheetsReadError('UNAVAILABLE')`，訊息同 002「連不上 Google，請稍後再試」）。`read` 遇到 `NO_ACCESS` 時回 200 `ImportError`。
-  - 輸入驗證（原則 VII）：`spreadsheetId` 符合 `^[A-Za-z0-9_-]{10,200}$`；`worksheet` 為 1～100 字元的字串（Google 工作表名稱上限 100 字）。以 Fastify 的 JSON schema 驗證。
+  - 輸入驗證（原則 VII）：`spreadsheetId` 符合 `^[A-Za-z0-9_-]{10,200}$`；`worksheet` 為 1～100 字元的字串（Google 工作表名稱上限 100 字）。以 Fastify 的 JSON schema 驗證。`spreadsheetId` 最長 200 字元，超過 Fastify 預設的路徑參數上限 100 字元，所以 `buildApp` 設 `routerOptions: { maxParamLength: 256 }`，讓過長的 id 由 schema 回 400，而不是在路由器比對時就失敗。
   - log：每次讀取記錄 `spreadsheetId`、工作表、結果（題數或 `code`），不記錄 token 或儲存格內容（原則 VI）；使用 002 的 `loggerOptions`（含 redact），不另設 logger。
 - **前端**: `HttpGuidedNotesService` 與 `GooglePickerLauncher` 一律經 002 的 `ApiClient.request(method, path, body?)` 呼叫伺服器。`ApiClient` 自動帶老師憑證，錯誤回應與連不上伺服器以 `ApiError { status, code, message }` reject（符合 001 的 `UnexpectedError`），003 不另外轉換、不另設逾時（伺服器端已有 15 秒逾時）。
 - **Alternatives considered**: `read` 以 422 回 `ImportError`（`ApiClient` 會丟掉欄位，需要改 002）；003 自己寫請求函式（違反 002 的擴充點規則，憑證處理會重複）。
