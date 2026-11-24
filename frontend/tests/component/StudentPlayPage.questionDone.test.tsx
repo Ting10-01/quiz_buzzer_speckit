@@ -98,6 +98,17 @@ describe('StudentPlayPage S-QuestionDone', () => {
     expect(screen.getByText('第 2 題 / 共 4 題')).toBeInTheDocument();
   });
 
+  it('stays without errors and keeps the question result when null is notified (T152, FR-026, edge)', async () => {
+    const { events, navigate } = setup(wonByGroup3());
+    await vi.waitFor(() => expect(questionResult()).toHaveTextContent('第 3 組'));
+    expect(() => events.phase.emit(null)).not.toThrow();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByText('第 1 題已結束')).toBeInTheDocument();
+    expect(questionResult()).toHaveTextContent('CPU');
+    expect(statValue('本題已送出')).toHaveTextContent('2 組');
+    expect(myAnswers()).toHaveTextContent('GPU');
+  });
+
   it('shows an unexpected error from the result service in the error area (FR-009)', async () => {
     const events = studentEvents();
     const registry = studentRegistry(events, {

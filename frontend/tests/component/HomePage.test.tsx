@@ -7,7 +7,7 @@ import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeReg
 import { makeActivity, makeGroups } from '../helpers/fixtures';
 
 function setup(current: Activity | null) {
-  let notify: (activity: Activity) => void = () => {};
+  let notify: (activity: Activity | null) => void = () => {};
   const unsubscribe = vi.fn();
   const registry = createFakeRegistry({
     activity: {
@@ -20,7 +20,7 @@ function setup(current: Activity | null) {
   });
   const navigate = vi.fn();
   const view = renderWithRegistry(<HomePage navigate={navigate} />, registry);
-  return { registry, navigate, unsubscribe, view, notify: (a: Activity) => act(() => notify(a)) };
+  return { registry, navigate, unsubscribe, view, notify: (a: Activity | null) => act(() => notify(a)) };
 }
 
 function serviceCallCount(registry: ReturnType<typeof createFakeRegistry>) {
@@ -62,6 +62,21 @@ describe('HomePage (Main)', () => {
     expect(screen.queryByText('目前沒有活動')).not.toBeInTheDocument();
     view.unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows "目前沒有活動" when onPhaseChange notifies null, then recovers (T149, FR-010, S11, edge)', async () => {
+    const { registry, notify } = setup(makeActivity({ groups: makeGroups([1, 1, 1, 1, 1, 1]) }));
+    expect(await screen.findByText('準備中')).toBeInTheDocument();
+    notify(null);
+    expect(screen.getByText('目前沒有活動')).toBeInTheDocument();
+    expect(screen.queryByText('準備中')).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ 題 · \d+ 組/)).not.toBeInTheDocument();
+    expect(registry.activity.getCurrentActivity).toHaveBeenCalledTimes(1);
+    notify(makeActivity({ phase: 'PREPARING', groups: makeGroups([1, 1, 1]) }));
+    expect(screen.getByText('準備中')).toBeInTheDocument();
+    expect(screen.getByText('4 題 · 3 組')).toBeInTheDocument();
+    expect(screen.queryByText('目前沒有活動')).not.toBeInTheDocument();
+    expect(registry.activity.getCurrentActivity).toHaveBeenCalledTimes(1);
   });
 
   it('shows an unexpected error in the error area (FR-009)', async () => {

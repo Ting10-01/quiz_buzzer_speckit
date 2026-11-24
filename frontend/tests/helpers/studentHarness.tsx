@@ -53,7 +53,7 @@ function channel<T>() {
 
 /** Phase, groupmate and judgement subscriptions with emitters (RD-12). */
 export function studentEvents() {
-  const phase = channel<Activity>();
+  const phase = channel<Activity | null>();
   const groupSubmitted = channel<Submission>();
   const judgement = channel<Submission>();
   return {

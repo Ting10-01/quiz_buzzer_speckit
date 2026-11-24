@@ -107,6 +107,23 @@ describe('StudentPlayPage S-Submitted', () => {
     expectNoWayToResubmit();
   });
 
+  it.each([
+    ['waiting for a judgement', 'PENDING', '等待老師判定'],
+    ['not accepted', 'REJECTED', REJECTED_TEXT],
+  ] as const)(
+    'stays without errors and keeps the sent answers when null is notified while %s (T152, FR-026, edge)',
+    (_state, judgement, heading) => {
+      void _state;
+      const { events, navigate } = setup(sent(judgement));
+      expect(() => events.phase.emit(null)).not.toThrow();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(screen.getByText(heading)).toBeInTheDocument();
+      const answers = screen.getByRole('region', { name: '本組送出的答案' });
+      expect(answers).toHaveTextContent('CPU');
+      expect(answers).toHaveTextContent('作業系統');
+    },
+  );
+
   it('shows nothing about other groups (FR-054)', () => {
     setup();
     expect(screen.queryByText(/第 [13-9] 組/)).not.toBeInTheDocument();

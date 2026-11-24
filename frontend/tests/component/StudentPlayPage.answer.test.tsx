@@ -121,6 +121,17 @@ describe('StudentPlayPage S-Answer', () => {
     expect(navigate).toHaveBeenCalledWith({ id: 'S-Results', groupNumber: 2 });
   });
 
+  it('stays without errors and keeps the typed answers when null is notified (T152, FR-026, edge)', async () => {
+    const { events, navigate } = setup(1);
+    await userEvent.type(field('第 1 小題'), 'CPU');
+    await userEvent.type(field('第 2 小題'), '作業系統');
+    expect(() => events.phase.emit(null)).not.toThrow();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(field('第 1 小題')).toHaveValue('CPU');
+    expect(field('第 2 小題')).toHaveValue('作業系統');
+    expect(screen.getByRole('button', { name: '整組送出' })).toBeInTheDocument();
+  });
+
   it('shows nothing about other groups (FR-054, US4 AC-11)', () => {
     setup(1);
     expect(screen.queryByText(/第 [13-9] 組/)).not.toBeInTheDocument();

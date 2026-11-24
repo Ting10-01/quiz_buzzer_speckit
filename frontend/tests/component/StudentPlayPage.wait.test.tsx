@@ -64,6 +64,14 @@ describe('StudentPlayPage S-Wait', () => {
     expect(screen.getByRole('button', { name: '整組送出' })).toBeInTheDocument();
   });
 
+  it('goes to S-Join without previousGroup and without leaveGroup when null is notified (T151, FR-051, S11)', () => {
+    const { events, navigate, registry } = setup();
+    events.phase.emit(null);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith({ id: 'S-Join' });
+    expect(registry.activity.leaveGroup).not.toHaveBeenCalled();
+  });
+
   it('unsubscribes from phase changes when it unmounts', () => {
     const { events, view } = setup();
     expect(events.phase.listeners.size).toBe(1);

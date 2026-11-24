@@ -408,14 +408,14 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 ### 型別（先改，讓測試能表達 `null`）
 
 - [X] T147 在 `frontend/src/services/interfaces.ts` 依類別圖把 `ActivityService.onPhaseChange` 改為 `onPhaseChange(listener: (activity: Activity | null) => void): Unsubscribe`，註解說明 `null` 表示活動已被取消（contracts/service-interfaces.md、research RD-12）；`frontend/src/services/mock/MockActivityService.ts` 的 `onPhaseChange` 簽章與 `phaseListeners` 的型別一併改為 `Activity | null`，行為不變（不通知 `null`）。頁面的 listener 先只補型別、不改行為，讓 `npm run typecheck` 通過：`HomePage.tsx`、`JoinPage.tsx` 的 state 已是 `Activity | null`，不需修改；`StudentPlayPage.tsx` 的 `usePhaseChange` 維持 handler 型別 `(activity: Activity) => void`，轉呼叫時暫時寫成 `handlerRef.current(activity as Activity)` 並加註「T155 移除」，不在此過濾 `null`，讓 `null` 仍傳到各 view，T151、T152 才會先失敗
-- [ ] T148 在 `frontend/tests/helpers/studentHarness.tsx` 把 `studentEvents()` 的 `phase` 改為 `channel<Activity | null>()`，讓測試可以 `phase.emit(null)`（依賴 T147）
+- [X] T148 在 `frontend/tests/helpers/studentHarness.tsx` 把 `studentEvents()` 的 `phase` 改為 `channel<Activity | null>()`，讓測試可以 `phase.emit(null)`（依賴 T147）
 
 ### Tests（先寫，確認失敗；代替 S11 的人工操作，SC-002）
 
-- [ ] T149 [P] [US1] 擴充 `frontend/tests/component/HomePage.test.tsx`：`getCurrentActivity` 回傳活動後，`onPhaseChange` 通知 `null`，「目前活動」改為顯示「目前沒有活動」，不再顯示階段、題數與組數；`getCurrentActivity` 只被呼叫一次（不重新呼叫介面）；之後再通知 `Activity` 時恢復顯示（FR-010、S11，邊界）（依賴 T147）。`HomePage.tsx` 已把通知直接存成 `activity`，本測試預期在 T147 後即通過，不是先失敗的測試；若失敗，於 T153 修正
-- [ ] T150 [P] [US4] 擴充 `frontend/tests/component/JoinPage.test.tsx`：有活動且已選第 n 組（含以 `previousGroup` 進入的情況）時，`onPhaseChange` 通知 `null`，頁面顯示「目前沒有活動，請等老師建立活動」、不列出組別、不顯示「加入第 n 組」，頁首不顯示階段；之後再通知 `Activity` 時沒有任何組別被選取（已選組別已清除）；整個過程不呼叫 `joinGroup`、`leaveGroup`、`getGroupSubmission`，`navigate` 不被呼叫（FR-050、S11，邊界）。把 `setup()` 中 `notify` 的型別改為 `(activity: Activity | null) => void`（依賴 T147）
-- [ ] T151 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait 收到 `phase.emit(null)` 時 `navigate` 被呼叫一次，參數為 `{ id: 'S-Join' }`（不帶 `previousGroup`）；不呼叫 `leaveGroup`（FR-051、S11）（依賴 T148）
-- [ ] T152 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.answer.test.tsx`、`StudentPlayPage.judgement.test.tsx`、`StudentPlayPage.questionDone.test.tsx`：S-Answer、S-Submitted（等待判定與不接受）、S-QuestionDone 收到 `phase.emit(null)` 時 `navigate` 不被呼叫、不拋出錯誤，畫面內容（已輸入的答案、送出的答案、本題結果）不變（FR-026，邊界）（依賴 T148）
+- [X] T149 [P] [US1] 擴充 `frontend/tests/component/HomePage.test.tsx`：`getCurrentActivity` 回傳活動後，`onPhaseChange` 通知 `null`，「目前活動」改為顯示「目前沒有活動」，不再顯示階段、題數與組數；`getCurrentActivity` 只被呼叫一次（不重新呼叫介面）；之後再通知 `Activity` 時恢復顯示（FR-010、S11，邊界）（依賴 T147）。`HomePage.tsx` 已把通知直接存成 `activity`，本測試預期在 T147 後即通過，不是先失敗的測試；若失敗，於 T153 修正
+- [X] T150 [P] [US4] 擴充 `frontend/tests/component/JoinPage.test.tsx`：有活動且已選第 n 組（含以 `previousGroup` 進入的情況）時，`onPhaseChange` 通知 `null`，頁面顯示「目前沒有活動，請等老師建立活動」、不列出組別、不顯示「加入第 n 組」，頁首不顯示階段；之後再通知 `Activity` 時沒有任何組別被選取（已選組別已清除）；整個過程不呼叫 `joinGroup`、`leaveGroup`、`getGroupSubmission`，`navigate` 不被呼叫（FR-050、S11，邊界）。把 `setup()` 中 `notify` 的型別改為 `(activity: Activity | null) => void`（依賴 T147）
+- [X] T151 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait 收到 `phase.emit(null)` 時 `navigate` 被呼叫一次，參數為 `{ id: 'S-Join' }`（不帶 `previousGroup`）；不呼叫 `leaveGroup`（FR-051、S11）（依賴 T148）
+- [X] T152 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.answer.test.tsx`、`StudentPlayPage.judgement.test.tsx`、`StudentPlayPage.questionDone.test.tsx`：S-Answer、S-Submitted（等待判定與不接受）、S-QuestionDone 收到 `phase.emit(null)` 時 `navigate` 不被呼叫、不拋出錯誤，畫面內容（已輸入的答案、送出的答案、本題結果）不變（FR-026，邊界）（依賴 T148）
 
 ### Implementation
 

@@ -21,7 +21,7 @@ function setup(
     submission?: Partial<SubmissionService>;
   } = {},
 ) {
-  let notify: (activity: Activity) => void = () => {};
+  let notify: (activity: Activity | null) => void = () => {};
   const unsubscribe = vi.fn();
   const registry = createFakeRegistry({
     activity: {
@@ -39,7 +39,7 @@ function setup(
     <JoinPage navigate={navigate} previousGroup={previousGroup} />,
     registry,
   );
-  return { view, registry, navigate, unsubscribe, notify: (a: Activity) => act(() => notify(a)) };
+  return { view, registry, navigate, unsubscribe, notify: (a: Activity | null) => act(() => notify(a)) };
 }
 
 describe('JoinPage (S-Join) display', () => {
@@ -68,6 +68,38 @@ describe('JoinPage (S-Join) display', () => {
     expect(screen.queryByText('目前沒有活動，請等老師建立活動')).not.toBeInTheDocument();
     view.unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  describe('activity cancelled: onPhaseChange notifies null (T150, FR-050, S11, edge)', () => {
+    const groupRadio = (n: number) => screen.getByRole('radio', { name: new RegExp(`第 ${n} 組`) });
+
+    it.each([
+      ['after selecting group 2', undefined],
+      ['when entered with previousGroup 2', 2],
+    ])('shows "no activity", clears the selection and calls no service %s', async (_, previousGroup) => {
+      const { registry, navigate, notify } = setup(makeActivity({ groups: makeGroups([1, 1, 1]) }), {
+        previousGroup,
+      });
+      await screen.findByText('第 1 組');
+      if (previousGroup === undefined) await userEvent.click(groupRadio(2));
+      expect(screen.getByRole('button', { name: '加入第 2 組' })).toBeEnabled();
+
+      notify(null);
+      expect(screen.getByText('目前沒有活動，請等老師建立活動')).toBeInTheDocument();
+      expect(screen.queryByText(/第 \d+ 組/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '加入第 2 組' })).not.toBeInTheDocument();
+      expect(screen.queryByText('準備中')).not.toBeInTheDocument();
+
+      notify(makeActivity({ groups: makeGroups([1, 1, 1]) }));
+      expect(screen.getByText('第 2 組')).toBeInTheDocument();
+      expect(screen.getAllByRole('radio').every((r) => r.getAttribute('aria-checked') === 'false')).toBe(true);
+      expect(screen.queryByRole('button', { name: /^加入第 \d+ 組$/ })).not.toBeInTheDocument();
+
+      expect(registry.activity.joinGroup).not.toHaveBeenCalled();
+      expect(registry.activity.leaveGroup).not.toHaveBeenCalled();
+      expect(registry.submission.getGroupSubmission).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('返回首頁 (FR-007, US1 AC-6)', () => {
