@@ -36,6 +36,8 @@ package "頁面層（Presentation）" {
     component "SheetPreview" as CPreview
     component "ErrorArea\n共通錯誤訊息區（FR-009）" as CError
     component "ActionBar\n底部動作列（RD-09）" as CAction
+    component "BackButton\n卡片下方的返回按鈕（RD-09）" as CBack
+    component "QuestionWinner\n本題結果：搶到的組別與答案" as CWinner
   }
 }
 
@@ -98,6 +100,13 @@ PConsole --> CAction
 PTResults --> CAction
 PPlay --> CProgress
 PJoin --> CGroups
+PLogin --> CBack
+PPick --> CBack
+PJoin --> CBack
+PPlay --> CBack
+PConsole --> CWinner
+PPlay --> CWinner
+PTResults --> CWinner
 TeacherPages --> CError
 StudentPages --> CError
 
