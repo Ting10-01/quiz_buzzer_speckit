@@ -56,5 +56,5 @@ const missing = FIELDS.filter((field) => !current[field.name]).map((field) => fi
 console.log(
   missing.length
     ? `\n已寫入 server/.env，還缺：${missing.join('、')}。之後再執行 npm run setup 補上。`
-    : '\n已寫入 server/.env。執行 npm run dev 啟動系統。',
+    : '\n已寫入 server/.env。執行 npm start 啟動系統。',
 );

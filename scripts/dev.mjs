@@ -1,4 +1,4 @@
-// `npm run dev`: starts the server (port 3000) and the frontend (http://localhost:5173) together.
+// `npm start`: starts the server (port 3000) and the frontend (http://localhost:5173) together.
 // Ctrl+C stops both; if either one exits, the other is stopped too.
 import { spawn } from 'node:child_process';
 
