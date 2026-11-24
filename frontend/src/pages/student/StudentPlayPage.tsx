@@ -3,6 +3,9 @@
 // Each page id renders its own view component, so moving between them starts a fresh view.
 // Page switches driven by the activity phase follow the spec table "階段推動的切換" through
 // onPhaseChange (research RD-12); the page never derives a phase itself (FR-003).
+// A null phase change means the teacher cancelled the activity (S11): S-Wait goes back to
+// S-Join (FR-051); the later pages ignore it, since the activity cannot be cancelled once
+// question 1 has opened (FR-026).
 // Students get no way back home once they joined (FR-007), and the rules text and time
 // limits of the design are not shown (SC-004).
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
@@ -53,15 +56,14 @@ interface ViewProps {
  * Subscribes to phase changes for the life of the view. The handler is kept in a ref so the
  * subscription is made once, while the handler always sees the latest state.
  */
-function usePhaseChange(handler: (activity: Activity) => void) {
+function usePhaseChange(handler: (activity: Activity | null) => void) {
   const { activity: activityService } = useServiceRegistry();
   const handlerRef = useRef(handler);
   useEffect(() => {
     handlerRef.current = handler;
   });
   useEffect(
-    // TODO(T155): remove this cast; null still reaches the views until then.
-    () => activityService.onPhaseChange((activity) => handlerRef.current(activity as Activity)),
+    () => activityService.onPhaseChange((activity) => handlerRef.current(activity)),
     [activityService],
   );
 }
@@ -113,6 +115,11 @@ function WaitView({ navigate, groupNumber, activity }: ViewProps) {
 
   // Students only wait here while PREPARING; the first question opening moves them on.
   usePhaseChange((next) => {
+    // The activity is gone, so there is no group to leave (FR-051); S-Join shows "no activity".
+    if (next === null) {
+      navigate({ id: 'S-Join' });
+      return;
+    }
     if (next.phase === ActivityPhase.OPEN) {
       navigate({ id: 'S-Answer', groupNumber, activity: next });
     }
@@ -156,6 +163,7 @@ function AnswerView({ navigate, groupNumber, activity }: ViewProps) {
   const idPrefix = useId();
 
   usePhaseChange((next) => {
+    if (next === null) return; // cannot happen after question 1 opened (FR-026)
     navigateWhenQuestionEnds(navigate, groupNumber, next);
   });
 
@@ -266,6 +274,7 @@ function SubmittedView({
   );
 
   usePhaseChange((next) => {
+    if (next === null) return; // cannot happen after question 1 opened (FR-026)
     navigateWhenQuestionEnds(navigate, groupNumber, next);
   });
 
@@ -315,6 +324,7 @@ function QuestionDoneView({ navigate, groupNumber, activity }: ViewProps) {
   }, [resultService, questionNumber]);
 
   usePhaseChange((next) => {
+    if (next === null) return; // cannot happen after question 1 opened (FR-026)
     if (next.phase === ActivityPhase.OPEN) {
       navigate({ id: 'S-Answer', groupNumber, activity: next });
     }
