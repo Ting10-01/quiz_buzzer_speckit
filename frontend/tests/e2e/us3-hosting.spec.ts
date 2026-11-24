@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-// T071: quickstart Q5 (hosting and judging) and Q6 (write-back) with the mock services (M4, M8).
+// T071, T144: quickstart Q5 (hosting and judging) and Q6 (write-back) with the mock services (M4, M8).
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
@@ -112,7 +112,8 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     await expect(page.getByRole('main')).toContainText('尚未寫回');
     await expectMockBadge(page);
 
-    // Write-back: "取消" does nothing (US3 AC-13), "寫回" succeeds with the cell count (US3 AC-11).
+    // Write-back: "取消" does nothing (US3 AC-13); "寫回" shows success and the cell count in the
+    // dialog (US3 AC-11); "關閉" leaves the status on the page (US3 AC-14).
     await writeBackButton(page).click();
     await expect(writeBackDialog(page)).toContainText('題組＋單題範本');
     await writeBackDialog(page).getByRole('button', { name: '取消' }).click();
@@ -120,6 +121,10 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     await expect(page.getByRole('main')).toContainText('尚未寫回');
     await writeBackButton(page).click();
     await writeBackDialog(page).getByRole('button', { name: '寫回', exact: true }).click();
+    await expect(writeBackDialog(page)).toContainText('寫回成功');
+    await expect(writeBackDialog(page)).toContainText('已寫入 6 格');
+    await expect(writeBackDialog(page).getByRole('button')).toHaveText(['關閉']);
+    await writeBackDialog(page).getByRole('button', { name: '關閉' }).click();
     await expect(writeBackDialog(page)).toBeHidden();
     await expect(page.getByRole('main')).toContainText('寫回成功');
     await expect(page.getByRole('main')).toContainText('6 格');
@@ -154,9 +159,14 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     await expect(writeBackButton(page)).toBeVisible();
     await expect(page.getByRole('region', { name: '第 6 題' })).toContainText('沒有組別搶答成功');
 
-    // Write-back on the read-only sheet fails with the reason (US3 AC-12).
+    // Write-back on the read-only sheet fails with the reason in the dialog (US3 AC-12), and the
+    // page keeps the failure after "關閉" (US3 AC-14).
     await writeBackButton(page).click();
     await writeBackDialog(page).getByRole('button', { name: '寫回', exact: true }).click();
+    await expect(writeBackDialog(page)).toContainText('寫回失敗');
+    await expect(writeBackDialog(page)).toContainText('沒有編輯權限，無法寫回');
+    await expect(writeBackDialog(page).getByRole('button')).toHaveText(['關閉']);
+    await writeBackDialog(page).getByRole('button', { name: '關閉' }).click();
     await expect(writeBackDialog(page)).toBeHidden();
     await expect(page.getByRole('main')).toContainText('寫回失敗');
     await expect(page.getByRole('main')).toContainText('沒有編輯權限，無法寫回');

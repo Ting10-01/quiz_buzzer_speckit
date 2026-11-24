@@ -1,4 +1,4 @@
-// T070: T-Results and T-WriteBack (US3 AC-10–13, FR-040–FR-042, FR-003, FR-014, SC-004).
+// T070, T143: T-Results and T-WriteBack (US3 AC-10–14, FR-040–FR-042, FR-003, FR-014, SC-004).
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -213,7 +213,8 @@ describe('TeacherResultsPage T-WriteBack (FR-041, US3 AC-10, AC-13)', () => {
   });
 });
 
-describe('TeacherResultsPage write-back result (FR-042, US3 AC-11, AC-12)', () => {
+describe('TeacherResultsPage write-back result in the dialog (FR-042, US3 AC-11, AC-12, AC-14)', () => {
+  // cellCount 5 differs from the 6 cells the confirm text lists, so "5 格" can only come from the result.
   async function writeBackWith(result: WriteBackResult) {
     const writeBack = vi.fn().mockResolvedValue(result);
     setup({ result: { writeBack } });
@@ -222,20 +223,53 @@ describe('TeacherResultsPage write-back result (FR-042, US3 AC-11, AC-12)', () =
     return writeBack;
   }
 
-  it('closes the dialog, writes back once and shows success with the cell count (US3 AC-11)', async () => {
-    const writeBack = await writeBackWith({ ok: true, cellCount: 6 });
+  const dialogButtons = (dialog: HTMLElement) =>
+    within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent);
+
+  it('keeps the dialog open, writes back once and shows success with the cell count (US3 AC-11)', async () => {
+    const writeBack = await writeBackWith({ ok: true, cellCount: 5 });
     expect(writeBack).toHaveBeenCalledTimes(1);
-    expect(writeBackDialog()).not.toBeInTheDocument();
-    await vi.waitFor(() => expect(screen.getByRole('main')).toHaveTextContent('寫回成功'));
-    expect(screen.getByRole('main')).toHaveTextContent('6 格');
-    expect(screen.getByRole('main')).not.toHaveTextContent('尚未寫回');
+    await vi.waitFor(() => expect(writeBackDialog()).toHaveTextContent('寫回成功'));
+    const dialog = writeBackDialog()!;
+    expect(dialog).toHaveTextContent('5 格');
+    expect(dialogButtons(dialog)).toEqual(['關閉']);
   });
 
-  it('shows failure with the returned reason (edge, US3 AC-12)', async () => {
+  it('keeps the dialog open and shows failure with the returned reason (edge, US3 AC-12)', async () => {
     await writeBackWith({ ok: false, cellCount: 0, failureReason: '沒有編輯權限，無法寫回' });
+    await vi.waitFor(() => expect(writeBackDialog()).toHaveTextContent('寫回失敗'));
+    const dialog = writeBackDialog()!;
+    expect(dialog).toHaveTextContent('沒有編輯權限，無法寫回');
+    expect(dialogButtons(dialog)).toEqual(['關閉']);
+  });
+
+  it('"關閉" closes the dialog and the page keeps the success status (US3 AC-14)', async () => {
+    const writeBack = await writeBackWith({ ok: true, cellCount: 5 });
+    await userEvent.click(await within(writeBackDialog()!).findByRole('button', { name: '關閉' }));
     expect(writeBackDialog()).not.toBeInTheDocument();
-    await vi.waitFor(() => expect(screen.getByRole('main')).toHaveTextContent('寫回失敗'));
+    expect(screen.getByRole('main')).toHaveTextContent('寫回成功');
+    expect(screen.getByRole('main')).toHaveTextContent('5 格');
+    expect(screen.getByRole('main')).not.toHaveTextContent('尚未寫回');
+    expect(writeBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('"關閉" closes the dialog and the page keeps the failure status (edge, US3 AC-14)', async () => {
+    await writeBackWith({ ok: false, cellCount: 0, failureReason: '沒有編輯權限，無法寫回' });
+    await userEvent.click(await within(writeBackDialog()!).findByRole('button', { name: '關閉' }));
+    expect(writeBackDialog()).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveTextContent('寫回失敗');
     expect(screen.getByRole('main')).toHaveTextContent('沒有編輯權限，無法寫回');
+  });
+
+  it('reopening after "關閉" shows the confirmation again with "取消" and "寫回" (edge, US3 AC-10)', async () => {
+    await writeBackWith({ ok: true, cellCount: 5 });
+    await userEvent.click(await within(writeBackDialog()!).findByRole('button', { name: '關閉' }));
+    const dialog = await openWriteBack();
+    expect(dialog).toHaveTextContent('覆蓋');
+    expect(dialog).not.toHaveTextContent('寫回成功');
+    expect(dialogButtons(dialog)).toEqual(['取消', '寫回']);
   });
 
   it('closes the dialog and shows an unexpected error in ErrorArea (edge, FR-009)', async () => {
@@ -264,6 +298,27 @@ describe('AppRouter browser back on T-Results (FR-014)', () => {
     goBack();
     expect(writeBackDialog()).not.toBeInTheDocument();
     expect(registry.result.writeBack).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '寫回 Google Sheets' })).toBeInTheDocument();
+  });
+
+  it('closes T-WriteBack showing the result like "關閉", keeping the status (edge, US3 AC-14)', async () => {
+    const opened = makeActivity({ questions: makeMixedQuestions().slice(0, 1), phase: 'OPEN', currentQuestion: 1 });
+    const finished = { ...opened, phase: 'FINISHED' as const };
+    const writeBack = vi.fn().mockResolvedValue({ ok: false, cellCount: 0, failureReason: '沒有編輯權限，無法寫回' });
+    setupRouter(opened, [], [makeQuestionResult()], {
+      activity: { endQuestion: vi.fn().mockResolvedValue(finished) },
+      result: { writeBack },
+    });
+    await walkToLive();
+    await userEvent.click(screen.getByRole('button', { name: '結束這一題' }));
+    await userEvent.click(screen.getByRole('button', { name: '結束並公布結果' }));
+    await userEvent.click(await screen.findByRole('button', { name: '寫回 Google Sheets' }));
+    await userEvent.click(within(writeBackDialog()!).getByRole('button', { name: '寫回' }));
+    await vi.waitFor(() => expect(writeBackDialog()).toHaveTextContent('寫回失敗'));
+    goBack();
+    expect(writeBackDialog()).not.toBeInTheDocument();
+    expect(writeBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('main')).toHaveTextContent('寫回失敗');
     expect(screen.getByRole('button', { name: '寫回 Google Sheets' })).toBeInTheDocument();
   });
 });
