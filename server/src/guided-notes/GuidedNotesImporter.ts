@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from 'fastify';
-import type { ImportError, ImportSuccess, Spreadsheet } from '../temp-shared/entities.js';
+import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
 import { GuidedNotesParser } from './GuidedNotesParser.js';
 import { HeaderLocator } from './HeaderLocator.js';
 import { isImportError, noAccess, noWorksheet } from './importErrors.js';

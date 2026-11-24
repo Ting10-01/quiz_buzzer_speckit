@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as importErrors from '../../src/guided-notes/importErrors.js';
-import type { ImportError } from '../../src/temp-shared/entities.js';
+import type { ImportError } from '@quiz-buzzer/shared/entities';
 
 const cases: [string, ImportError][] = [
   ['NO_HEADER', importErrors.noHeader('學習單', ['No.', '內容'])],

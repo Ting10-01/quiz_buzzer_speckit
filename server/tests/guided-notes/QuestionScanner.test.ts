@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HeaderMatch } from '../../src/guided-notes/HeaderLocator.js';
 import { QuestionScanner, type ScannedQuestion } from '../../src/guided-notes/QuestionScanner.js';
-import type { ImportError } from '../../src/temp-shared/entities.js';
+import type { ImportError } from '@quiz-buzzer/shared/entities';
 import { buildGrid, fixtureGrid, rowsFrom, type CellValue } from './helpers/gridBuilder.js';
 
 const HEADER: HeaderMatch = { row: 1, numberCol: 2, answerCol: 7, questionCol: 3 };

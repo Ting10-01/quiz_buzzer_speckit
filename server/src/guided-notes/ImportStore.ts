@@ -1,4 +1,4 @@
-import type { ImportSuccess } from '../temp-shared/entities.js';
+import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 
 /** blankCell (A1, e.g. "G5") -> marker found at the start of that cell ("（1）", "(2)" or ""). */
 export type BlankMarkers = Readonly<Record<string, string>>;
