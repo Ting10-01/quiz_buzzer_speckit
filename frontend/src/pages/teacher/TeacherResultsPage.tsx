@@ -1,4 +1,6 @@
-// TeacherResultsPage: T-Results (FR-040, FR-042) and the T-WriteBack dialog (FR-041).
+// TeacherResultsPage: T-Results (FR-040, FR-042) and the T-WriteBack dialog (FR-041, FR-042).
+// The write-back result shows inside T-WriteBack, which then offers only "關閉"; the page keeps a
+// one-line status after the dialog closes (US3 AC-11, AC-12, AC-14).
 // Results come from getAllResults() as they are; the seconds behind first are the result
 // service's behindFirstMs, never computed here (FR-003). The sheet, worksheet and blank cells
 // come from the finished Activity passed by the console (C-5).
@@ -60,6 +62,8 @@ export function TeacherResultsPage({
   const [results, setResults] = useState<QuestionResult[]>([]);
   const [writeOpen, setWriteOpen] = useState(false);
   const [writeResult, setWriteResult] = useState<WriteBackResult>();
+  // Set once writeBack() returns while T-WriteBack is open; cleared when the dialog reopens.
+  const [dialogResult, setDialogResult] = useState<WriteBackResult>();
   const [error, setError] = useState<string>();
 
   // Stable, so ConfirmDialog keeps one entry for browser back (FR-014).
@@ -76,14 +80,21 @@ export function TeacherResultsPage({
     };
   }, [resultService]);
 
+  const openWrite = () => {
+    setDialogResult(undefined);
+    setWriteOpen(true);
+  };
+
   const writeBack = async () => {
-    // The dialog closes first, so the outcome or an error shows on T-Results (FR-009, FR-042).
-    setWriteOpen(false);
     try {
       const outcome = await resultService.writeBack();
+      // The dialog stays open and shows the outcome (FR-042); the page keeps it as its status.
       setError(undefined);
       setWriteResult(outcome);
+      setDialogResult(outcome);
     } catch (reason) {
+      // An unexpected error closes the dialog and shows on T-Results (FR-009).
+      setWriteOpen(false);
       setError(errorMessage(reason));
     }
   };
@@ -167,7 +178,7 @@ export function TeacherResultsPage({
 
         <ActionBar
           primary={
-            <button type="button" className="btn btn-primary" onClick={() => setWriteOpen(true)}>
+            <button type="button" className="btn btn-primary" onClick={openWrite}>
               寫回 Google Sheets
             </button>
           }
@@ -177,22 +188,37 @@ export function TeacherResultsPage({
           open={writeOpen}
           title="寫回 Google Sheets？"
           onClose={closeWrite}
-          actions={[
-            { label: '取消', onClick: closeWrite },
-            { label: '寫回', variant: 'primary', onClick: () => void writeBack() },
-          ]}
+          actions={
+            dialogResult
+              ? [{ label: '關閉', variant: 'primary', onClick: closeWrite }]
+              : [
+                  { label: '取消', onClick: closeWrite },
+                  { label: '寫回', variant: 'primary', onClick: () => void writeBack() },
+                ]
+          }
         >
-          <p>
-            把每題成功組別的答案寫入「{title}」的「{selectedWorksheet}」工作表。這些填空格原本的內容會被覆蓋。
-          </p>
-          <dl className={styles.dialogStats}>
-            <div>
-              <dt>寫入答案</dt>
-              <dd>
-                {cellCount} 格（{activity.questions.length} 題）
-              </dd>
-            </div>
-          </dl>
+          {dialogResult ? (
+            <p
+              role="status"
+              className={`${styles.status} ${dialogResult.ok ? styles.ok : styles.failed}`}
+            >
+              {writeBackText(dialogResult)}
+            </p>
+          ) : (
+            <>
+              <p>
+                把每題成功組別的答案寫入「{title}」的「{selectedWorksheet}」工作表。這些填空格原本的內容會被覆蓋。
+              </p>
+              <dl className={styles.dialogStats}>
+                <div>
+                  <dt>寫入答案</dt>
+                  <dd>
+                    {cellCount} 格（{activity.questions.length} 題）
+                  </dd>
+                </div>
+              </dl>
+            </>
+          )}
         </ConfirmDialog>
       </main>
     </div>

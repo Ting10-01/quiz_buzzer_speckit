@@ -92,6 +92,14 @@
   font-weight: 600;
 }
 
+.ok {
+  color: var(--pos-ink);
+}
+
+.failed {
+  color: var(--neg-ink);
+}
+
 .dialogStats {
   margin: 12px 0 0;
   display: grid;

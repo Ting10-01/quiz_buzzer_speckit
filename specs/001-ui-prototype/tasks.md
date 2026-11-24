@@ -315,13 +315,13 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先改，確認失敗）
 
-- [ ] T143 [P] [US3] 修改 `frontend/tests/component/TeacherResultsPage.test.tsx`：「寫回」呼叫 `writeBack()` 一次後 T-WriteBack 仍開啟，成功時視窗內顯示寫回成功與 `cellCount` 格、失敗時顯示 `failureReason`；視窗的按鈕只剩「關閉」（FR-042、US3 AC-11、AC-12）；點「關閉」後視窗關閉，T-Results 保留一行寫回狀態（US3 AC-14）；顯示結果時觸發 `popstate` 只關閉視窗，等同「關閉」（FR-014，邊界）；關閉後再按「寫回 Google Sheets」，視窗回到確認前的內容與「取消」「寫回」（US3 AC-10，邊界）；`writeBack` reject 時視窗關閉，`ErrorArea` 顯示訊息（FR-009，邊界）
-- [ ] T144 [P] [US3] 修改 `frontend/tests/e2e/us3-hosting.spec.ts`：quickstart Q6 改為按「寫回」後確認視窗仍可見，視窗內顯示「寫回成功」與格數，或「寫回失敗」與「沒有編輯權限，無法寫回」；按「關閉」後視窗消失，結果頁仍顯示寫回狀態
+- [X] T143 [P] [US3] 修改 `frontend/tests/component/TeacherResultsPage.test.tsx`：「寫回」呼叫 `writeBack()` 一次後 T-WriteBack 仍開啟，成功時視窗內顯示寫回成功與 `cellCount` 格、失敗時顯示 `failureReason`；視窗的按鈕只剩「關閉」（FR-042、US3 AC-11、AC-12）；點「關閉」後視窗關閉，T-Results 保留一行寫回狀態（US3 AC-14）；顯示結果時觸發 `popstate` 只關閉視窗，等同「關閉」（FR-014，邊界）；關閉後再按「寫回 Google Sheets」，視窗回到確認前的內容與「取消」「寫回」（US3 AC-10，邊界）；`writeBack` reject 時視窗關閉，`ErrorArea` 顯示訊息（FR-009，邊界）
+- [X] T144 [P] [US3] 修改 `frontend/tests/e2e/us3-hosting.spec.ts`：quickstart Q6 改為按「寫回」後確認視窗仍可見，視窗內顯示「寫回成功」與格數，或「寫回失敗」與「沒有編輯權限，無法寫回」；按「關閉」後視窗消失，結果頁仍顯示寫回狀態
 
 ### Implementation
 
-- [ ] T145 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）的 T-WriteBack：「寫回」不先關閉視窗，`writeBack()` 回傳後在視窗內顯示寫回結果，`actions` 改為只有「關閉」；「關閉」與 `onClose`（上一頁）關閉視窗，頁面的寫回狀態行保留；重新開啟時回到確認前的內容；`writeBack()` reject 時關閉視窗並在 `ErrorArea` 顯示（FR-009）。沿用 `ConfirmDialog`，不修改元件（依賴 T143、T144 失敗）
-- [ ] T146 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T143、T144 通過，且其他測試沒有退步
+- [X] T145 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）的 T-WriteBack：「寫回」不先關閉視窗，`writeBack()` 回傳後在視窗內顯示寫回結果，`actions` 改為只有「關閉」；「關閉」與 `onClose`（上一頁）關閉視窗，頁面的寫回狀態行保留；重新開啟時回到確認前的內容；`writeBack()` reject 時關閉視窗並在 `ErrorArea` 顯示（FR-009）。沿用 `ConfirmDialog`，不修改元件（依賴 T143、T144 失敗）
+- [X] T146 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T143、T144 通過，且其他測試沒有退步
 
 **Checkpoint**: 寫回結果顯示在確認視窗內，實作與修訂後的 spec 一致；接著由使用者進行 T078 的人工驗證。
 
