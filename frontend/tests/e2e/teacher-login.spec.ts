@@ -1,12 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
 import { googleWill } from './googleSignIn';
+import { TEST_SERVER, startTestServer } from './testServer';
 
 // T022, T036, T041: teacher sign-in against the real server with a fake Google gateway
-// (server/tests/e2e/startTestServer.ts, started by playwright.config.ts on port 3100).
+// (testServer.ts starts server/tests/e2e/startTestServer.ts on port 3100).
 // The server holds one teacher, so these tests run one at a time.
 test.describe.configure({ mode: 'serial' });
 
-const TEST_SERVER = 'http://127.0.0.1:3100';
+let stopServer: (() => void) | undefined;
+test.beforeAll(async () => {
+  stopServer = await startTestServer();
+});
+test.afterAll(() => stopServer?.());
 
 // Same codes and accounts as E2E_CODES / E2E_ACCOUNTS in startTestServer.ts.
 const CODE = { teacherA: 'e2e-code-teacher-a', teacherB: 'e2e-code-teacher-b', noDriveScope: 'e2e-code-no-drive-scope' };
