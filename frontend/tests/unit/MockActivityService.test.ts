@@ -72,6 +72,37 @@ describe('MockActivityService teacher side (M3)', () => {
     expect(await activity.endQuestion(4)).toMatchObject({ phase: 'FINISHED' });
   });
 
+  it('cancelActivity clears the teacher activity (FR-026)', async () => {
+    const { session, activity } = setup();
+    await activity.createActivity({ groupCount: 6 });
+    expect(session.teacherActivity).toBeDefined();
+    await expect(activity.cancelActivity()).resolves.toBeUndefined();
+    expect(session.teacherActivity).toBeUndefined();
+  });
+
+  it('cancelActivity does not change what the viewer sees (edge, M3)', async () => {
+    const { session, activity } = setup();
+    await activity.advancePhase(); // viewer: PREPARING
+    const listener = vi.fn();
+    activity.onPhaseChange(listener);
+    const viewerBefore = await activity.getCurrentActivity();
+    const indexBefore = session.viewerPhaseIndex;
+    await activity.createActivity({ groupCount: 3 });
+    await activity.cancelActivity();
+    expect(session.viewerPhaseIndex).toBe(indexBefore);
+    await expect(activity.getCurrentActivity()).resolves.toEqual(viewerBefore);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('cancelActivity rejects once after failNextCall and keeps the teacher activity (edge, M9)', async () => {
+    const { session, activity } = setup();
+    await activity.createActivity({ groupCount: 6 });
+    const before = structuredClone(session.teacherActivity);
+    session.failNextCall();
+    await expect(activity.cancelActivity()).rejects.toEqual({ message: '模擬：連不上伺服器' });
+    expect(session.teacherActivity).toEqual(before);
+  });
+
   it('accepts onActivityChange subscriptions without notifying', async () => {
     const { activity } = setup();
     const listener = vi.fn();

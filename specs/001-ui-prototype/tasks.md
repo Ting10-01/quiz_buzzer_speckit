@@ -258,7 +258,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T135 [P] 擴充 `frontend/tests/unit/MockActivityService.test.ts`（M3）：`createActivity` 後呼叫 `cancelActivity()` 成功，`MockSession.teacherActivity` 被清除；`getCurrentActivity()` 的結果與 `viewerPhaseIndex` 不變，`onPhaseChange` 不通知（邊界）；`failNextCall()` 後 `cancelActivity()` 以 `UnexpectedError` reject，`teacherActivity` 不變（M9，邊界）
+- [X] T135 [P] 擴充 `frontend/tests/unit/MockActivityService.test.ts`（M3）：`createActivity` 後呼叫 `cancelActivity()` 成功，`MockSession.teacherActivity` 被清除；`getCurrentActivity()` 的結果與 `viewerPhaseIndex` 不變，`onPhaseChange` 不通知（邊界）；`failNextCall()` 後 `cancelActivity()` 以 `UnexpectedError` reject，`teacherActivity` 不變（M9，邊界）
 - [ ] T136 [P] 擴充 `frontend/tests/component/ConsolePage.lobby.test.tsx`（FR-026、US2 AC-11、AC-12）：動作列左邊只有「取消活動」，右邊依序為「修改設定」「開放第 1 題」；點「取消活動」開啟確認視窗，內容說明已加入的學生會回到選組頁，且不呼叫介面；「繼續準備」關閉視窗、停留、不呼叫 `cancelActivity`；「確定取消活動」呼叫 `cancelActivity()` 一次後 `navigate({ id: 'T-Pick' })`；`cancelActivity` reject 非預期錯誤時停留在 T-Lobby 並在 `ErrorArea` 顯示（邊界，FR-009）。在 `frontend/tests/helpers/createFakeRegistry.tsx` 的 `activity` 補上 `cancelActivity`
 - [ ] T137 [P] 擴充 `frontend/tests/component/AppRouter.history.test.tsx`（FR-014）：T-Lobby 的取消活動確認視窗開啟時觸發 `popstate`，只關閉視窗，等同「繼續準備」，不呼叫 `cancelActivity`、頁面不切換（邊界）
 - [ ] T138 [P] 擴充 `frontend/tests/e2e/us2-preparation.spec.ts`：quickstart Q4 的取消活動（「繼續準備」留在 T-Lobby；「確定取消活動」回到 T-Pick，可重新挑選並建立活動）；Q14 中取消活動確認視窗開啟時 `goBack()` 只關閉視窗
