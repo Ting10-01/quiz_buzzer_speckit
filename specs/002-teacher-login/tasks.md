@@ -179,7 +179,7 @@ description: "Task list for 002 老師登入"
 - [x] T058 [US1] 依 spec Session 2026-11-24 修改 `SCOPE_DENIED` 的訊息：`frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照改為「需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。」，並更新 `frontend/tests/component/TeacherLoginPage.test.tsx` 的案例（AC-04）
 - [ ] T055 依 `specs/002-teacher-login/quickstart.md` 第 4 節以真正的 Google 執行 M1–M13，結果記錄在 `specs/002-teacher-login/manual-verification.md`（原則 VIII；SC-001、SC-006、AC-19 等只能人工驗證的項目）
 - [ ] T056 機密檢查：以 `git grep` 搜尋 `ya29`、`1//`、`GOCSPX-`、`AIza` 與本機四個環境變數的值，確認 repo 與 commit 紀錄 0 筆，結果記在 `manual-verification.md`（AC-25、SC-004）
-- [ ] T057 圖表一致性驗證：逐一對照 `diagrams/002-component.puml`、`002-class.puml`、`002-sequence.puml` 與程式碼的組件、類別、方法與呼叫順序，結果寫在 `specs/002-teacher-login/diagram-verification.md`（原則 I）
+- [x] T057 圖表一致性驗證：逐一對照 `diagrams/002-component.puml`、`002-class.puml`、`002-sequence.puml` 與程式碼的組件、類別、方法與呼叫順序，結果寫在 `specs/002-teacher-login/diagram-verification.md`（原則 I）
 
 ---
 
