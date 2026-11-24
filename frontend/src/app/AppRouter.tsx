@@ -7,6 +7,8 @@ import { closeTopDialog } from '../components/ConfirmDialog';
 import { MockModeBadge } from '../components/MockModeBadge';
 import { HomePage } from '../pages/HomePage';
 import { JoinPage } from '../pages/student/JoinPage';
+import { StudentPlayPage } from '../pages/student/StudentPlayPage';
+import { StudentResultsPage } from '../pages/student/StudentResultsPage';
 import { ConsolePage } from '../pages/teacher/ConsolePage';
 import { ImportPage } from '../pages/teacher/ImportPage';
 import { PickPage } from '../pages/teacher/PickPage';
@@ -42,6 +44,8 @@ export type Navigate = (page: PageState) => void;
 /**
  * FR-014: where browser back goes, matching the page's back-type button that calls no service.
  * null means the page has no such button and stays put. Later stories add their pages here.
+ * Student pages after joining (S-Wait to S-Results) have none: "選錯組別？重新選擇" calls a
+ * service, so back stays on them too.
  */
 function backTarget(page: PageState): PageState | null {
   switch (page.id) {
@@ -65,7 +69,11 @@ function pushHistoryEntry() {
   window.history.pushState(null, '');
 }
 
-function renderPage(page: PageState, navigate: Navigate): ReactNode {
+function renderPage(
+  page: PageState,
+  navigate: Navigate,
+  onAwaitingJudgementChange: (awaiting: boolean) => void,
+): ReactNode {
   switch (page.id) {
     case 'Main':
       return <HomePage navigate={navigate} />;
@@ -86,14 +94,26 @@ function renderPage(page: PageState, navigate: Navigate): ReactNode {
       return <TeacherResultsPage navigate={navigate} page={page} />;
     case 'S-Join':
       return <JoinPage navigate={navigate} previousGroup={page.previousGroup} />;
-    default:
-      // Remaining pages are wired in by later user story phases (task T091).
-      return null;
+    case 'S-Wait':
+    case 'S-Answer':
+    case 'S-Submitted':
+    case 'S-QuestionDone':
+      return (
+        <StudentPlayPage
+          navigate={navigate}
+          page={page}
+          onAwaitingJudgementChange={onAwaitingJudgementChange}
+        />
+      );
+    case 'S-Results':
+      return <StudentResultsPage page={page} />;
   }
 }
 
 export function AppRouter() {
   const [page, setPage] = useState<PageState>({ id: 'Main' });
+  // True only while S-Submitted waits for a judgement (FR-061 mock accept / reject controls).
+  const [awaitingJudgement, setAwaitingJudgement] = useState(false);
 
   const navigate = useCallback<Navigate>((next) => {
     pushHistoryEntry();
@@ -125,7 +145,7 @@ export function AppRouter() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [page]);
 
-  const content = renderPage(page, navigate);
+  const content = renderPage(page, navigate, setAwaitingJudgement);
   const isStudentPage = page.id.startsWith('S-');
 
   return (
@@ -137,7 +157,10 @@ export function AppRouter() {
       ) : (
         content
       )}
-      <MockModeBadge page={page.id} awaitingJudgement={false} />
+      <MockModeBadge
+        page={page.id}
+        awaitingJudgement={page.id === 'S-Submitted' && awaitingJudgement}
+      />
     </>
   );
 }
