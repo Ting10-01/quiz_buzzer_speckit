@@ -304,6 +304,29 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 5.5: 規格修訂（2026-11-24）：寫回結果顯示在確認視窗
+
+**Purpose**: 套用 T078 人工驗證（quickstart Q6）後的 spec 修訂：寫回失敗只顯示在結果頁的一行文字，不夠明顯。修訂 US3 AC-11、AC-12，新增 AC-14，修訂 FR-042、T-WriteBack 的狀態與「頁面與按鈕」、畫面流程圖 T-Results 的自我轉換、時序圖第 5 段、contracts `writeBack()` 與 quickstart Q6：
+
+- **寫回後視窗不關閉**：按「寫回」呼叫 `writeBack()` 後，T-WriteBack 不關閉，改為在視窗內顯示寫回成功與格數，或寫回失敗與原因；按鈕只剩「關閉」（FR-042、US3 AC-11、AC-12）。
+- **關閉後保留狀態**：點「關閉」或瀏覽器上一頁關閉視窗，留在 T-Results，頁面保留一行寫回狀態（尚未寫回／寫回成功／寫回失敗）（US3 AC-14、FR-014）。再按「寫回 Google Sheets」時視窗回到確認前的內容（US3 AC-10）。
+- **非預期錯誤不變**：`writeBack()` reject 時依 FR-009 先關閉視窗，在 T-Results 的 `ErrorArea` 顯示。
+- T070、T071、T076 中「『寫回』關閉視窗後顯示寫回結果」的內容由本 Phase 取代。T078 的人工驗證在本 Phase 完成後進行。
+
+### Tests（先改，確認失敗）
+
+- [ ] T143 [P] [US3] 修改 `frontend/tests/component/TeacherResultsPage.test.tsx`：「寫回」呼叫 `writeBack()` 一次後 T-WriteBack 仍開啟，成功時視窗內顯示寫回成功與 `cellCount` 格、失敗時顯示 `failureReason`；視窗的按鈕只剩「關閉」（FR-042、US3 AC-11、AC-12）；點「關閉」後視窗關閉，T-Results 保留一行寫回狀態（US3 AC-14）；顯示結果時觸發 `popstate` 只關閉視窗，等同「關閉」（FR-014，邊界）；關閉後再按「寫回 Google Sheets」，視窗回到確認前的內容與「取消」「寫回」（US3 AC-10，邊界）；`writeBack` reject 時視窗關閉，`ErrorArea` 顯示訊息（FR-009，邊界）
+- [ ] T144 [P] [US3] 修改 `frontend/tests/e2e/us3-hosting.spec.ts`：quickstart Q6 改為按「寫回」後確認視窗仍可見，視窗內顯示「寫回成功」與格數，或「寫回失敗」與「沒有編輯權限，無法寫回」；按「關閉」後視窗消失，結果頁仍顯示寫回狀態
+
+### Implementation
+
+- [ ] T145 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）的 T-WriteBack：「寫回」不先關閉視窗，`writeBack()` 回傳後在視窗內顯示寫回結果，`actions` 改為只有「關閉」；「關閉」與 `onClose`（上一頁）關閉視窗，頁面的寫回狀態行保留；重新開啟時回到確認前的內容；`writeBack()` reject 時關閉視窗並在 `ErrorArea` 顯示（FR-009）。沿用 `ConfirmDialog`，不修改元件（依賴 T143、T144 失敗）
+- [ ] T146 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T143、T144 通過，且其他測試沒有退步
+
+**Checkpoint**: 寫回結果顯示在確認視窗內，實作與修訂後的 spec 一致；接著由使用者進行 T078 的人工驗證。
+
+---
+
 ## Phase 6: User Story 4 - 學生以組別作答 (Priority: P1)
 
 **Goal**: S-Join 選組與加入（依階段與本組狀態決定目的頁）、S-Wait、S-Answer、S-Submitted（等待判定／不接受）、S-QuestionDone、S-Results。涵蓋 R6–R9、E1、E4、FR-050–FR-058、FR-056a。
@@ -389,7 +412,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-025 | T059、T065 |
 | FR-026 | T135–T138、T139–T142 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
-| FR-040–FR-042 | T070、T076 |
+| FR-040–FR-042 | T070、T076、T143–T145 |
 | FR-050 | T047、T053、T079、T085 |
 | FR-051 | T080、T086 |
 | FR-052、FR-053 | T081、T087 |
@@ -419,6 +442,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - **US2 (Phase 4)**: 依賴 Phase 2；延續 US1 的 `PickPage.tsx`（T062 修改 T052 的檔案）
 - **規格修訂 (Phase 4.5)**: 依賴 Phase 4；修改 T065、T066a 的 `ConsolePage.tsx`；完成後才做 Phase 5
 - **US3 (Phase 5)**: 依賴 Phase 2；延續 US2 的 `ConsolePage.tsx`（T074 修改 T065 的檔案）
+- **規格修訂 (Phase 5.5)**: 依賴 T076；修改 T076 的 `TeacherResultsPage.tsx`；T078 的人工驗證在本 Phase 之後
 - **US4 (Phase 6)**: 依賴 Phase 2；延續 US1 的 `JoinPage.tsx`；使用 US3 的 `QuestionProgress`（T072）
 - **US5 (Phase 7)**: 依賴 US1–US4 全部完成（驗證整張畫面流程圖）
 - **Polish (Phase 8)**: 依賴所有 Story
@@ -438,6 +462,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - US1：T044–T048 測試；T049–T053 實作（五個不同檔案）
 - US2：T056–T060 測試；T061 可與其他實作平行
 - Phase 4.5：T135–T138 測試
+- Phase 5.5：T143、T144 測試
 - US3：T068–T071 測試；T072、T073
 - US4：T079–T084 測試；T090 可與 StudentPlayPage 任務平行
 - US5：T093–T097

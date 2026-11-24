@@ -64,7 +64,7 @@
 | --- | --- | --- | --- |
 | `getQuestionResult(q)` | `Promise<QuestionResult>` | 結束一題後的 T-QuestionEnd；S-QuestionDone | FR-034、FR-057 |
 | `getAllResults()` | `Promise<QuestionResult[]>` | T-Live、T-QuestionEnd、S-QuestionDone 的題目進度；T-Results；S-Results | FR-030、FR-040、FR-057、FR-058 |
-| `writeBack()` | `Promise<WriteBackResult>` | T-WriteBack「寫回」 | 關閉視窗，在 T-Results 顯示成功與格數，或失敗與原因（FR-042） |
+| `writeBack()` | `Promise<WriteBackResult>` | T-WriteBack「寫回」 | 視窗不關閉，在視窗內顯示成功與格數，或失敗與原因，按鈕改為「關閉」；關閉後 T-Results 保留寫回狀態（FR-042） |
 
 **比第一名慢的時間由服務提供**：`QuestionResult.behindFirstMs` 與 `submissions` 同順序，單位為毫秒，由服務計算；頁面只換算成秒顯示，不自行由 `elapsedMs` 相減（FR-003、FR-040）。「第一名」的定義由 006 決定（D23）；001 的模擬實作以 `rank` 1 的送出為基準。
 

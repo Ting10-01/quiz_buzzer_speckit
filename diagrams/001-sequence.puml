@@ -203,7 +203,9 @@ alt 可編輯的學習單
 else 僅檢視的學習單
   Res --> Page : WriteBackResult(failure: 沒有編輯權限)
 end
-Page --> Teacher : 結果頁顯示寫回結果
+Page --> Teacher : 確認寫回視窗不關閉，顯示寫回結果，按鈕改為「關閉」
+Teacher -> Page : 點「關閉」
+Page --> Teacher : 結果頁保留一行寫回狀態
 
 == 6. 非預期錯誤（FR-009、M9） ==
 Demo -> Bar : 點「模擬：非預期錯誤」

@@ -96,7 +96,7 @@ T_Lobby -[#1F5FAD]-> T_Live : <color:#1F5FAD>點擊：開放第 1 題</color>
 T_Live -[#1F5FAD]-> T_QuestionEnd : <color:#1F5FAD>點擊：接受，或結束這一題（確認後）</color>\n<color:#1F5FAD>（非最後一題）</color>
 T_QuestionEnd -[#1F5FAD]-> T_Live : <color:#1F5FAD>點擊：開放第 n+1 題</color>
 T_Live -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：接受，或結束這一題（確認後）</color>\n<color:#1F5FAD>（最後一題）</color>
-T_Results -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：寫回 Google Sheets（確認後）</color>
+T_Results -[#1F5FAD]-> T_Results : <color:#1F5FAD>點擊：寫回 Google Sheets，在確認視窗按「寫回」</color>\n<color:#1F5FAD>（視窗內顯示寫回結果，按「關閉」後頁面保留寫回狀態）</color>
 
 ' ===== 寫在圖上：一組學生走一輪 =====
 Main -[#1F5FAD]-> S_Join : <color:#1F5FAD>點擊：我是學生</color>
