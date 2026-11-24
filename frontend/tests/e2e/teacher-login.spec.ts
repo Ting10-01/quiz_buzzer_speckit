@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fakeGuidedNotesApi, pickerWill } from './googlePicker';
 import { googleWill } from './googleSignIn';
 import { TEST_SERVER, startTestServer } from './testServer';
 
@@ -87,9 +88,10 @@ test.describe('002 signing in again (T036)', () => {
     await open(page);
     await toLogin(page);
     await signIn(page, CODE.teacherA);
-    // Tab 1 moves on to T-Import (guidedNotes is still the 001 mock here).
+    // Tab 1 moves on to T-Import through the stubbed Picker (googlePicker.ts).
+    await fakeGuidedNotesApi(page);
+    await pickerWill(page, '題組＋單題範本');
     await pickButton(page).click();
-    await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: '題組＋單題範本' }).click();
     await expect(page.getByRole('button', { name: '確認匯入，下一步' })).toBeVisible();
 
     const other = await browser.newContext();
