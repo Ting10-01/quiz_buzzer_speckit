@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signInAsPageTeacher } from './googleSignIn';
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
@@ -8,8 +9,7 @@ async function expectMockBadge(page: Page) {
 async function signIn(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: /我是老師/ }).click();
-  await page.getByRole('button', { name: '用 Google 登入' }).click();
-  await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '模擬老師帳號' }).click();
+  await signInAsPageTeacher(page);
   await expect(page.getByRole('button', { name: '從 Google 雲端硬碟挑選' })).toBeVisible();
 }
 

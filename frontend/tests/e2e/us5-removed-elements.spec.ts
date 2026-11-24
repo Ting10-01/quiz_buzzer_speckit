@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fakeTeacherApi, googleWill } from './googleSignIn';
 import {
   SHEET_SINGLE,
   advance,
@@ -66,9 +67,9 @@ test.describe('US5 removed elements (SC-004)', () => {
     await check(page, 'Main', 'Main（有活動）');
     await toLogin(page);
     await check(page, 'T-Login');
+    await fakeTeacherApi(page);
+    await googleWill(page, { error: 'popup_closed' });
     await page.getByRole('button', { name: '用 Google 登入' }).click();
-    await expectNoRemoved(page, 'T-Login 模擬帳號選擇');
-    await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
     await check(page, 'T-Login', 'T-Login（登入失敗）');
     await toPick(page);
     await check(page, 'T-Pick');

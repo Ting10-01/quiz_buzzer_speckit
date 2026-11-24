@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fakeTeacherApi, googleWill } from './googleSignIn';
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
@@ -18,22 +19,20 @@ test.describe('US1 entry (quickstart Q1, Q2, Q14)', () => {
     await expectMockBadge(page);
   });
 
-  test('Q2: the two mock account choices', async ({ page }) => {
+  // 002 replaced the mock account chooser with Google sign-in; the popup is stubbed (googleSignIn.ts).
+  test('Q2: cancelled sign-in, then signed in', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /我是老師/ }).click();
     const login = page.getByRole('button', { name: '用 Google 登入' });
 
+    await fakeTeacherApi(page);
+    await googleWill(page, { error: 'popup_closed' });
     await login.click();
-    const chooser = page.getByRole('dialog', { name: '模擬帳號選擇' });
-    await expect(chooser.getByRole('button')).toHaveText(['模擬老師帳號', '取消']);
-    await chooser.getByRole('button', { name: '取消' }).click();
     await expect(page.getByText('已取消登入')).toBeVisible();
     await expectMockBadge(page);
 
-    await expect(chooser).toBeHidden();
-
+    await googleWill(page, { code: 'e2e-code' });
     await login.click();
-    await page.getByRole('dialog').getByRole('button', { name: '模擬老師帳號' }).click();
     await expect(page.getByRole('button', { name: '從 Google 雲端硬碟挑選' })).toBeVisible();
     await expect(page.getByText('teacher@example.com')).toBeVisible();
     await expectMockBadge(page);
@@ -67,17 +66,5 @@ test.describe('US1 entry (quickstart Q1, Q2, Q14)', () => {
     // Back on the home page stays in the app.
     await page.goBack();
     await expect(home).toBeVisible();
-  });
-
-  test('Q14: browser back with the mock chooser open only closes it', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /我是老師/ }).click();
-    await page.getByRole('button', { name: '用 Google 登入' }).click();
-    const chooser = page.getByRole('dialog', { name: '模擬帳號選擇' });
-    await expect(chooser).toBeVisible();
-    await page.goBack();
-    await expect(chooser).toBeHidden();
-    await expect(page.getByText('已取消登入')).toBeVisible();
-    await expect(page.getByRole('button', { name: '用 Google 登入' })).toBeVisible();
   });
 });

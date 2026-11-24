@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { signInAsPageTeacher } from './googleSignIn';
 
 // T071, T144: quickstart Q5 (hosting and judging) and Q6 (write-back) with the mock services (M4, M8).
 
@@ -10,8 +11,7 @@ async function expectMockBadge(page: Page) {
 async function toLive(page: Page, sheet: string) {
   await page.goto('/');
   await page.getByRole('button', { name: /我是老師/ }).click();
-  await page.getByRole('button', { name: '用 Google 登入' }).click();
-  await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '模擬老師帳號' }).click();
+  await signInAsPageTeacher(page);
   await page.getByRole('button', { name: '從 Google 雲端硬碟挑選' }).click();
   await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: sheet, exact: true }).click();
   await page.getByRole('button', { name: '確認匯入，下一步' }).click();

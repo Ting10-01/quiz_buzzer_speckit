@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signInAsPageTeacher } from './googleSignIn';
 import {
   GROUP,
   SHEET_OK,
@@ -44,16 +45,16 @@ const button = (page: Page, name: string) => page.getByRole('button', { name, ex
 const groupItems = (page: Page) => page.getByRole('group', { name: '組數' }).getByRole('listitem');
 
 test.describe('US5 unexpected error on every page with a service call (FR-009)', () => {
+  // auth is real since 002, so the mock control cannot fail it; an unreachable server does instead.
   test('T-Login: 用 Google 登入', async ({ page }) => {
     await toLogin(page);
-    await armUnexpectedError(page);
+    await page.route('**/api/auth/config', (route) => route.abort());
     await button(page, '用 Google 登入').click();
     await expectOn(page, 'T-Login');
-    await expectError(page);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(errorArea(page)).toHaveText('連不上伺服器，請確認伺服器已啟動');
 
-    await button(page, '用 Google 登入').click();
-    await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '模擬老師帳號' }).click();
+    await page.unroute('**/api/auth/config');
+    await signInAsPageTeacher(page);
     await expectOn(page, 'T-Pick');
     await expectNoError(page);
   });

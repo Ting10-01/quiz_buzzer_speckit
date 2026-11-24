@@ -1,6 +1,7 @@
 // Shared page checks and walks for the US5 specs (T093–T096). Not a spec file itself:
 // Playwright only collects *.spec.ts.
 import { expect, type Page } from '@playwright/test';
+import { signInAsPageTeacher } from './googleSignIn';
 
 export type PageId =
   | 'Main'
@@ -121,8 +122,7 @@ export async function toLogin(page: Page) {
 
 export async function toPick(page: Page) {
   await toLogin(page);
-  await button(page, '用 Google 登入').click();
-  await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '模擬老師帳號' }).click();
+  await signInAsPageTeacher(page);
   await expectOn(page, 'T-Pick');
 }
 
