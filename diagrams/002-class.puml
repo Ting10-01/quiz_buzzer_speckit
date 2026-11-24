@@ -40,7 +40,7 @@ package "Frontend（frontend/src/services/）" {
   class HttpAuthService {
     +signInWithGoogle(): Promise<SignInResult>
     +getCurrentAccount(): Promise<TeacherAccount | null>
-    -signingIn: boolean
+    -signingIn: Promise<SignInResult> [0..1]
   }
   interface GoogleIdentityClient {
     +requestCode(clientId: string, scopes: string[]): Promise<GoogleCodeResult>
@@ -82,6 +82,7 @@ package "Frontend（frontend/src/services/）" {
 
 ApiError ..|> UnexpectedError
 HttpAuthService ..> SignInResult
+HttpAuthService ..> UnexpectedError : reject（視窗被擋、無法載入）
 
 package "Server（server/src/）" {
   class AppConfig {
@@ -181,6 +182,7 @@ package "Server（server/src/）" {
   GoogleClientProvider ..> TeacherNotSignedInError : throw
   RequireTeacher --> TeacherAuth
   RequireTeacher ..> ErrorBody : 401
+  AuthRoutes --> AppConfig : config.google
   AuthRoutes --> TeacherAuth
   AuthRoutes --> GoogleClientProvider
   AuthRoutes --> RequireTeacher
@@ -190,9 +192,10 @@ package "Server（server/src/）" {
   SocketServer --> TeacherAuth
   BuildApp --> AppConfig
   BuildApp --> AuthRoutes
-  BuildApp --> RequireTeacher
-  BuildApp --> SocketServer
+  BuildApp --> RequireTeacher : app.requireTeacher
+  BuildApp --> SocketServer : app.io
   BuildApp --> TeacherAuth
+  BuildApp --> GoogleAuthLibraryGateway : 沒有 deps.gateway 時建立
   BuildApp --> GoogleClientProvider : app.googleClients
 }
 

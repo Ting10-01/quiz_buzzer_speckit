@@ -93,6 +93,7 @@
 | G-1 | research RD-11 需要區分「連不上 Google」與其他錯誤 | 類別圖新增 `GoogleUnavailableError`（`GoogleAuthLibraryGateway` 丟出） |
 | G-2 | 003、006 要從 `app` 取得 `GoogleClientProvider`（contracts/server-extension.md） | 類別圖新增 `buildApp --> TeacherAuth`、`buildApp --> GoogleClientProvider : app.googleClients` |
 | G-3 | 2026-11-22 配合 001 最終版：以 Google 登入的人即為老師、任何登入取代前一個老師、`SCOPE_DENIED` 由 002 新增且以 200 回傳 | 類別圖拿掉 `NOT_TEACHER`、`TeacherBinding.googleSub`、`GoogleSignIn.sub`，`SignInFailure` 註記改為「002 新增」；時序圖第 1 段拿掉「sub 不同 → NOT_TEACHER」分支，`SCOPE_DENIED` 改為 200，成功分支改為「取代前一個老師」並註明 D21 的暫時限制 |
+| G-4 | 2026-11-25 圖表一致性驗證（T057）：程式依契約實作、圖沒跟上 | 類別圖：`signingIn` 改為 `Promise<SignInResult> [0..1]`，新增 `HttpAuthService ..> UnexpectedError`、`authRoutes --> AppConfig`、`buildApp --> GoogleAuthLibraryGateway`，`app.requireTeacher`、`app.io` 標上名稱。組件圖：補上組合根建立的實作與 `authRoutes --> loadConfig`。時序圖：第 1 段加上視窗被擋或無法載入、`POST /api/auth/google` 的錯誤回應；新增「1（續）」畫出 `getCurrentAccount()` 沒有憑證回 `null`、憑證作廢時清除；第 3 段把走不到的 `NOT_SIGNED_IN` 分支改成 note，補上 502、503 |
 
 PNG 已重新產生。
 
