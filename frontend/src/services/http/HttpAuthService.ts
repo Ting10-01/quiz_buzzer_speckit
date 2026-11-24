@@ -12,6 +12,11 @@ import type { TeacherCredentialStore } from './TeacherCredentialStore';
 
 const SCOPES = ['openid', 'email', 'https://www.googleapis.com/auth/drive.file'];
 
+const POPUP_ERROR_MESSAGE: Record<Exclude<GoogleCodeError, 'CANCELLED'>, string> = {
+  [GoogleCodeError.POPUP_BLOCKED]: '瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試',
+  [GoogleCodeError.LOAD_FAILED]: '無法載入 Google 登入，請確認網路連線',
+};
+
 type SignInResponse =
   | { ok: true; teacherToken: string; account: TeacherAccount }
   | { ok: false; failure: SignInFailure };
@@ -42,7 +47,9 @@ export class HttpAuthService implements AuthService {
     const { clientId } = await this.api.request<{ clientId: string }>('GET', '/api/auth/config');
     const { code, error } = await this.google.requestCode(clientId, SCOPES);
     if (error === GoogleCodeError.CANCELLED) return { ok: false, failure: SignInFailure.CANCELLED };
-    if (!code) throw { message: '無法開啟 Google 登入，請再試一次' } satisfies UnexpectedError;
+    if (error || !code) {
+      throw { message: POPUP_ERROR_MESSAGE[error ?? GoogleCodeError.LOAD_FAILED] } satisfies UnexpectedError;
+    }
 
     const response = await this.api.request<SignInResponse>('POST', '/api/auth/google', { code });
     if (!response.ok) return { ok: false, failure: response.failure };
