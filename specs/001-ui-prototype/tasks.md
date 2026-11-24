@@ -340,7 +340,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T081 [P] [US4] `frontend/tests/component/StudentPlayPage.answer.test.tsx`：題組時每個小題一個答案欄、只有一個「整組送出」與一個送出提示區（FR-052、FR-053）；送出呼叫 `submitAnswer(q, answers)`（不帶組別）→ S-Submitted 顯示送出的答案與「等待老師判定」（US4 AC-6）；訂閱 `onGroupSubmitted`，通知後 → S-Submitted 顯示組員送出的答案（S7、FR-056a、US4 AC-12）；`ValidationError` 時停留並在第一個答案欄旁顯示（邊界，US4 AC-10）；非預期錯誤時答案欄內容不變；`onPhaseChange` 通知 `QUESTION_ENDED` → S-QuestionDone 並呼叫 `getQuestionResult(q)`、`FINISHED` → `S-Results`
 - [X] T082 [P] [US4] `frontend/tests/component/StudentPlayPage.judgement.test.tsx`：S-Submitted 訂閱 `onJudgement`；`REJECTED` 時停留並顯示「老師沒有接受本組的答案」與本組送出的答案，頁面上沒有「整組送出」或任何答案欄（FR-056、US4 AC-8，邊界）；`ACCEPTED` 時頁面本身不切換，隨後 `onPhaseChange` 通知 `QUESTION_ENDED` → S-QuestionDone、`FINISHED` → `S-Results`（FR-055、US4 AC-7）；不接受狀態下 `onPhaseChange` 推進同樣切換（US4 AC-9）；頁面不出現「已接受」狀態；`MockModeBadge` 收到的 `awaitingJudgement` 只在等待判定狀態為 true
 - [X] T083 [P] [US4] `frontend/tests/component/StudentPlayPage.questionDone.test.tsx` 與 `frontend/tests/component/StudentResultsPage.test.tsx`：S-QuestionDone 顯示本題成功組別與答案，或「沒有組別搶答成功」「沒有組別送出」（邊界，spec Edge Cases）、本題送出組數、本組送出的答案（若有）、題目進度（呼叫 `getAllResults()`，見 C-2）；頁面只呈現回傳內容，不自行過濾其他組別的資料（FR-057）；`onPhaseChange` 通知 `OPEN` → S-Answer；S-Results 顯示本組搶到的題數，以及每一題所有送出組別的答案、順位與判定，頁面上沒有任何按鈕（FR-058）；本組搶到 0 題時顯示 0（邊界，S9）
-- [ ] T084 [P] [US4] `frontend/tests/e2e/us4-student.spec.ts`：走 quickstart Q7、Q8、Q13；並驗證 SC-007——S-Answer 與 S-Submitted 上不出現其他組別的組號、答案或送出狀態（FR-054）
+- [X] T084 [P] [US4] `frontend/tests/e2e/us4-student.spec.ts`：走 quickstart Q7、Q8、Q13；並驗證 SC-007——S-Answer 與 S-Submitted 上不出現其他組別的組號、答案或送出狀態（FR-054）
 
 ### Implementation for User Story 4
 
