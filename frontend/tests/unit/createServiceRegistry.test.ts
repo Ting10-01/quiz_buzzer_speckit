@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createServiceRegistry } from '../../src/services/createServiceRegistry';
+import { HttpAuthService } from '../../src/services/http/HttpAuthService';
 
 describe('createServiceRegistry', () => {
   it('binds every interface to a mock and exposes every mock control', () => {
@@ -14,6 +15,14 @@ describe('createServiceRegistry', () => {
     expect(registry.unexpectedErrorControl).toBeDefined();
     expect(registry.choicePrompt).toBeDefined();
     expect(registry.unexpectedErrorControl).toBe(registry.choicePrompt);
+  });
+
+  it('binds auth to the real HttpAuthService (002) and keeps the other mocks', () => {
+    const registry = createServiceRegistry();
+    expect(registry.auth).toBeInstanceOf(HttpAuthService);
+    expect(registry.isMockMode()).toBe(true);
+    // guidedNotes is still a mock, so the mock chooser stays (001 plan "替換模擬實作的方式").
+    expect(registry.choicePrompt).toBeDefined();
   });
 
   it('shares one MockSession inside a registry', async () => {
