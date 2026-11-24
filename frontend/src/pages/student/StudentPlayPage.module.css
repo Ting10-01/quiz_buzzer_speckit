@@ -54,3 +54,54 @@
 .back {
   align-self: center;
 }
+
+.questionText {
+  font-size: 16px;
+  white-space: pre-line;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.input {
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--control);
+  background: var(--sheet);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.input:focus {
+  border-color: var(--text);
+  outline: none;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--neg);
+}
+
+.fieldError {
+  color: var(--neg-ink);
+  font-size: 13px;
+}
+
+.hint {
+  min-height: 1.5em;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wide {
+  width: 100%;
+}
