@@ -84,7 +84,7 @@ function LobbyView({ navigate, activity: initial }: ViewProps) {
   // Stable, so ConfirmDialog keeps one entry for browser back (FR-014).
   const closeCancel = useCallback(() => setCancelOpen(false), []);
 
-  // Snapshots replace the displayed activity as a whole (contracts: 老師端的即時更新).
+  // Snapshots replace the displayed activity as a whole (contracts "老師端的即時更新").
   useEffect(() => activityService.onActivityChange(setActivity), [activityService]);
 
   const cancelActivity = async () => {
