@@ -109,6 +109,58 @@ describe('HttpAuthService', () => {
     });
   });
 
+  describe('signInWithGoogle errors', () => {
+    const config = () => json(200, { clientId: 'client-1' });
+
+    it('rejects when the browser blocked the Google popup (AC-24)', async () => {
+      fakeServer({ 'GET /api/auth/config': config });
+      await expect(service(fakeGoogle({ error: 'POPUP_BLOCKED' })).signInWithGoogle()).rejects.toMatchObject({
+        message: '瀏覽器擋住了 Google 登入視窗，請允許彈出視窗後再試',
+      });
+    });
+
+    it('rejects when the Google sign-in script cannot load', async () => {
+      fakeServer({ 'GET /api/auth/config': config });
+      await expect(service(fakeGoogle({ error: 'LOAD_FAILED' })).signInWithGoogle()).rejects.toMatchObject({
+        message: '無法載入 Google 登入，請確認網路連線',
+      });
+    });
+
+    it.each([
+      [503, 'GOOGLE_NOT_CONFIGURED', '伺服器尚未設定 Google 登入，請參考 README 設定環境變數', 'GET /api/auth/config'],
+      [502, 'GOOGLE_UNAVAILABLE', '連不上 Google，請稍後再試', 'POST /api/auth/google'],
+      [400, 'INVALID_CODE', 'Google 登入未完成，請再試一次', 'POST /api/auth/google'],
+    ])('rejects %i %s with the server message (AC-21, AC-22)', async (status, code, message, failing) => {
+      fakeServer({
+        'GET /api/auth/config': config,
+        'POST /api/auth/google': () => json(200, { ok: true, teacherToken: 't', account: ACCOUNT }),
+        [failing]: () => json(status, { code, message }),
+      });
+      await expect(service(fakeGoogle({ code: 'code-1' })).signInWithGoogle()).rejects.toMatchObject({
+        status,
+        code,
+        message,
+      });
+      expect(store.get()).toBeNull();
+    });
+
+    it('rejects "server unreachable" when fetch fails (AC-23)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+      await expect(service(fakeGoogle({ code: 'code-1' })).signInWithGoogle()).rejects.toMatchObject({
+        message: '連不上伺服器，請確認伺服器已啟動',
+      });
+    });
+
+    it('lets the teacher try again after a failed sign-in', async () => {
+      fakeServer({ 'GET /api/auth/config': config });
+      const google = fakeGoogle({ error: 'POPUP_BLOCKED' });
+      const auth = service(google);
+      await auth.signInWithGoogle().catch(() => undefined);
+      await auth.signInWithGoogle().catch(() => undefined);
+      expect(google.requestCode).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('getCurrentAccount', () => {
     it('returns null without calling the server when the tab has no credential', async () => {
       const fetchMock = fakeServer({});
