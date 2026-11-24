@@ -351,7 +351,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [X] T089 [US4] 在 `frontend/src/pages/student/StudentPlayPage.tsx` 實作 S-QuestionDone：`getQuestionResult(q)` 與 `getAllResults()`（見 C-2；只呈現回傳內容，不自行過濾），顯示 FR-057 項目並以 `QuestionProgress` 顯示進度；`onPhaseChange` 通知 `OPEN` → S-Answer；S-Answer、S-Submitted 收到 `FINISHED` 時 → `navigate` 到 `S-Results`（最後一題不經過本頁）
 - [X] T090 [P] [US4] 在 `frontend/src/pages/student/StudentResultsPage.tsx`（與 `.module.css`）實作 S-Results：`getAllResults()`，顯示本組搶到的題數，以及每一題所有送出組別的答案、順位與判定（FR-058）；不提供任何按鈕，不出現「開新一輪」（SC-004）
 - [X] T091 [US4] 在 `frontend/src/app/AppRouter.tsx` 接上 `S-Wait`、`S-Answer`、`S-Submitted`（參數帶入本組送出）、`S-QuestionDone`、`S-Results`（前四者由 StudentPlayPage、最後由 StudentResultsPage 呈現），並把 StudentPlayPage 的內部狀態對應到傳給 `MockModeBadge` 的頁面 id；這些頁面在 FR-014 的對照中都屬於「停留」
-- [ ] T092 [US4] 執行 `npm test`、`npm run test:e2e`，確認 T079–T084 通過；依 quickstart Q7、Q8、Q13 人工驗證並記錄於 `manual-verification.md`
+- [X] T092 [US4] 執行 `npm test`、`npm run test:e2e`，確認 T079–T084 通過；依 quickstart Q7、Q8、Q13 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: 老師端與學生端流程都完整。
 
