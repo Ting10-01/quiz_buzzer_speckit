@@ -69,7 +69,7 @@ description: "Task list for 002 老師登入"
 - [X] T019 [P] [US1] `server/tests/unit/TeacherAuth.test.ts`（登入部分）：沒有老師時帳號 A `signIn` 成功、回傳 43 字元 base64url 的 `teacherToken` 與 `account`（`name` 為 email `@` 前面），`GoogleClientProvider.replace` 以 A 的 tokens 呼叫（AC-01）；缺 `drive.file` 回 `SCOPE_DENIED`：沒有老師時仍沒有老師，已有老師時原本的憑證仍 `verify` 為 true、`replace` 沒有被呼叫（AC-04）
 - [X] T020 [P] [US1] `server/tests/integration/authRoutes.test.ts`（登入部分）：`GET /api/auth/config` 回 `{ clientId }`；`POST /api/auth/google` 成功回 200 `{ ok: true, teacherToken, account }`；缺 `drive.file` 回 200 `{ ok: false, failure: 'SCOPE_DENIED' }`（預期中的失敗用 200）；缺 `X-Requested-With` 或 `code` 不是 1–2,048 字元的字串回 `400 BAD_REQUEST`；`invalid_grant` 回 `400 INVALID_CODE`；`GET /api/auth/me` 帶有效憑證回 `TeacherAccount`；回應中沒有 `NOT_TEACHER`
 - [x] T021 [P] [US1] `frontend/tests/unit/http/HttpAuthService.test.ts`（登入部分）：以假的 `GoogleIdentityClient` 與 `fetch` 驗證 contracts/auth-http.md「前端如何轉換」的每一列：成功存入憑證並回 `{ ok: true, account }`；`CANCELLED` 不呼叫伺服器；200 `{ ok: false, failure: 'SCOPE_DENIED' }` 轉成登入失敗且本分頁原有憑證不變；登入進行中再呼叫回傳同一個 Promise、只開一次 Google 視窗；`getCurrentAccount()` 沒有憑證回 `null`、有憑證回帳號（AC-01、AC-03、AC-04、REQ-AUTH-11）
-- [ ] T022 [P] [US1] `frontend/tests/e2e/teacher-login.spec.ts`（登入部分）：以 `server/tests/e2e/startTestServer.ts` 與 `page.route` 替換 GIS script；首頁 →「我是老師」→「用 Google 登入」→ T-Pick 顯示帳號 A；替身回 `CANCELLED` 時看到「已取消登入」；回缺權限的帳號時看到「需要同意存取 Google 試算表才能使用老師功能」
+- [ ] T022 [P] [US1] `frontend/tests/e2e/teacher-login.spec.ts`（登入部分）：以 `server/tests/e2e/startTestServer.ts` 與 `page.route` 替換 GIS script；首頁 →「我是老師」→「用 Google 登入」→ T-Pick 顯示帳號 A；替身回 `CANCELLED` 時看到「已取消登入」；回缺權限的帳號時看到「需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。」
 
 ### Implementation for User Story 1
 
@@ -176,6 +176,7 @@ description: "Task list for 002 老師登入"
 ## Phase 8: Polish & Cross-Cutting Concerns
 
 - [X] T054 在 `README.md` 新增「Google 登入設定」一節：依 quickstart 第 1 節列出 Google Cloud 設定步驟與四個環境變數**名稱**，不含任何值
+- [ ] T058 [US1] 依 spec Session 2026-11-24 修改 `SCOPE_DENIED` 的訊息：`frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照改為「需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。」，並更新 `frontend/tests/component/TeacherLoginPage.test.tsx` 的案例（AC-04）
 - [ ] T055 依 `specs/002-teacher-login/quickstart.md` 第 4 節以真正的 Google 執行 M1–M13，結果記錄在 `specs/002-teacher-login/manual-verification.md`（原則 VIII；SC-001、SC-006、AC-19 等只能人工驗證的項目）
 - [ ] T056 機密檢查：以 `git grep` 搜尋 `ya29`、`1//`、`GOCSPX-`、`AIza` 與本機四個環境變數的值，確認 repo 與 commit 紀錄 0 筆，結果記在 `manual-verification.md`（AC-25、SC-004）
 - [ ] T057 圖表一致性驗證：逐一對照 `diagrams/002-component.puml`、`002-class.puml`、`002-sequence.puml` 與程式碼的組件、類別、方法與呼叫順序，結果寫在 `specs/002-teacher-login/diagram-verification.md`（原則 I）
@@ -212,11 +213,11 @@ description: "Task list for 002 老師登入"
 
 | 需求 | 驗收準則 | 任務 |
 | --- | --- | --- |
-| REQ-AUTH-01 用 Google 登入、結果與訊息 | AC-01、AC-03、AC-04 | T021、T022、T023、T029、T030、T031、T032 |
+| REQ-AUTH-01 用 Google 登入、結果與訊息 | AC-01、AC-03、AC-04 | T021、T022、T023、T058、T029、T030、T031、T032 |
 | REQ-AUTH-02 以 Google 登入的人即為老師、同一時間一個老師 | AC-01、AC-26、AC-27 | T019、T020、T026、T033、T034 |
 | REQ-AUTH-03 任何登入取代前一個老師、舊憑證作廢、活動不變 | AC-07、AC-08、AC-09、AC-26、AC-27 | T034、T035、T036、T037、T038、T040、T042 |
 | REQ-AUTH-04 取消 | AC-03 | T021、T022、T030 |
-| REQ-AUTH-05 一次取得 `drive.file`、缺權限失敗 | AC-04 | T019、T020、T023、T024、T026、T030 |
+| REQ-AUTH-05 一次取得 `drive.file`、缺權限失敗 | AC-04 | T019、T020、T023、T058、T024、T026、T030 |
 | REQ-AUTH-06 憑證只在本分頁、Bearer、不用 cookie | AC-09、AC-11 | T015、T016、T017、T018、T039、T041 |
 | REQ-AUTH-07 伺服器拒絕未登入者的老師請求 | AC-10、AC-11、AC-12 | T027、T039、T043 |
 | REQ-AUTH-08 即時連線的老師檢查 | AC-13、AC-14、AC-15 | T040、T042 |
