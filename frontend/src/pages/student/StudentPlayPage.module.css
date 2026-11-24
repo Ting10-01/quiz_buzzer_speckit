@@ -1,0 +1,56 @@
+/* Student pages sit in the centred 390 px column set by AppRouter (research RD-09). */
+.main {
+  flex: 1;
+  padding: 24px 16px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phase {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.cardTitle {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.back {
+  align-self: center;
+}
