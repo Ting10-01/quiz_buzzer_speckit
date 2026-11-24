@@ -7,12 +7,13 @@
     "server"
   ],
   "scripts": {
-    "dev": "npm run dev -w frontend",
+    "dev": "node scripts/dev.mjs",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w frontend && npm run typecheck -w server",
     "lint": "npm run lint -w frontend",
     "test": "npm run test -w frontend && npm run test -w server",
     "test:e2e": "npm run test:e2e -w frontend",
     "dev:server": "npm run dev -w server",
-    "test:server": "npm run test -w server"
+    "test:server": "npm run test -w server",
+    "dev:frontend": "npm run dev -w frontend"
   }
 }
