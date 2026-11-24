@@ -1,0 +1,4 @@
+/* Back-type buttons sit outside the card, centered directly below it. */
+.back {
+  align-self: center;
+}

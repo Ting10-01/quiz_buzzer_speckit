@@ -8,26 +8,22 @@
 // and clearing old answers.
 import { useCallback, useEffect, useState } from 'react';
 import type { Activity, QuestionResult, WriteBackResult } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { QuestionProgress } from '../../components/QuestionProgress';
 import { questionTypeLabel } from '../../components/questionLabels';
 import { SheetPreview } from '../../components/SheetPreview';
+import { QuestionWinner } from '../../components/QuestionWinner';
 import { SubmissionTable } from '../../components/SubmissionTable';
-import { answersLabel, noWinnerLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './TeacherResultsPage.module.css';
 
 type TeacherResultsPageState = Extract<PageState, { id: 'T-Results' }>;
-
-function errorMessage(reason: unknown): string {
-  return isUnexpectedError(reason) ? reason.message : String(reason);
-}
 
 /** What write-back puts in each blank cell: the winning group's answer per sub-question. */
 function filledCells(activity: Activity, results: QuestionResult[]): Record<string, string> {
@@ -130,15 +126,7 @@ export function TeacherResultsPage({
                       <span className={styles.muted}>送出 {result.submissionCount} 組</span>
                     )}
                   </header>
-                  {result &&
-                    (result.winner ? (
-                      <p className={styles.winner}>
-                        <span className={styles.winnerGroup}>第 {result.winner.groupNumber} 組</span>
-                        <span>{answersLabel(result.winner.answers)}</span>
-                      </p>
-                    ) : (
-                      <p className={styles.muted}>{noWinnerLabel(result)}</p>
-                    ))}
+                  {result && <QuestionWinner result={result} />}
                   {result && result.submissions.length > 0 && (
                     <SubmissionTable
                       label={`第 ${question.number} 題的送出`}

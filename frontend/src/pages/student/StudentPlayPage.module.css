@@ -51,10 +51,6 @@
   border-top: 1px solid var(--rule);
 }
 
-.back {
-  align-self: center;
-}
-
 .questionText {
   font-size: 16px;
   white-space: pre-line;
@@ -113,19 +109,6 @@
 .answers {
   font-size: 16px;
   font-weight: 500;
-}
-
-.winner {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 16px;
-}
-
-.winnerGroup {
-  color: var(--pos-ink);
-  font-size: 20px;
-  font-weight: 600;
 }
 
 .stats {

@@ -3,11 +3,12 @@
 // Group count range and default belong to 004 (D4, D5); "−" and "+" only change the entered value.
 import { useState } from 'react';
 import { QuestionType, type ActivitySettings } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError, isValidationError } from '@quiz-buzzer/shared/guards';
+import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './SetupPage.module.css';
 
@@ -49,7 +50,7 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
       }
       navigate({ id: 'T-Lobby', activity: result });
     } catch (reason) {
-      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+      setError(errorMessage(reason));
     }
   };
 

@@ -14,14 +14,17 @@ import {
   type QuestionResult,
   type Submission,
 } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError, isValidationError } from '@quiz-buzzer/shared/guards';
+import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
+import { BackButton } from '../../components/BackButton';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { QuestionProgress } from '../../components/QuestionProgress';
-import { questionTypeLabel } from '../../components/questionLabels';
-import { answersLabel, noWinnerLabel } from '../../components/submissionLabels';
+import { questionCountLabel, questionTypeLabel } from '../../components/questionLabels';
+import { QuestionWinner } from '../../components/QuestionWinner';
+import { answersLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './StudentPlayPage.module.css';
 
@@ -44,10 +47,6 @@ interface ViewProps {
   navigate: Navigate;
   groupNumber: number;
   activity: Activity;
-}
-
-function errorMessage(reason: unknown): string {
-  return isUnexpectedError(reason) ? reason.message : String(reason);
 }
 
 /**
@@ -140,9 +139,7 @@ function WaitView({ navigate, groupNumber, activity }: ViewProps) {
         </section>
       </section>
       {/* The page's only back-type button sits right under the card (RD-09). */}
-      <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => void chooseAgain()}>
-        選錯組別？重新選擇
-      </button>
+      <BackButton onClick={() => void chooseAgain()}>選錯組別？重新選擇</BackButton>
     </Shell>
   );
 }
@@ -191,9 +188,7 @@ function AnswerView({ navigate, groupNumber, activity }: ViewProps) {
     <Shell groupNumber={groupNumber} phase={activity.phase}>
       <ErrorArea message={error} />
       <section className={styles.card}>
-        <p className={styles.cardTitle}>
-          第 {questionNumber} 題 / 共 {activity.questions.length} 題
-        </p>
+        <p className={styles.cardTitle}>{questionCountLabel(questionNumber, activity.questions.length)}</p>
         {question && <p className={styles.muted}>{questionTypeLabel(question)}</p>}
         {question?.text && <p className={styles.questionText}>{question.text}</p>}
       </section>
@@ -332,15 +327,9 @@ function QuestionDoneView({ navigate, groupNumber, activity }: ViewProps) {
       <h1 className={styles.title}>第 {questionNumber} 題已結束</h1>
       <section aria-label="本題結果" className={styles.card}>
         <h2 className={styles.cardTitle}>本題結果</h2>
-        {result &&
-          (result.winner ? (
-            <p className={styles.winner}>
-              <span className={styles.winnerGroup}>第 {result.winner.groupNumber} 組</span>
-              <span>{answersLabel(result.winner.answers)}</span>
-            </p>
-          ) : (
-            <p className={styles.muted}>{noWinnerLabel(result)}</p>
-          ))}
+        {result && (
+          <QuestionWinner result={result} isOwnGroup={result.winner?.groupNumber === groupNumber} />
+        )}
         <dl className={styles.stats}>
           <div>
             <dt>本題已送出</dt>

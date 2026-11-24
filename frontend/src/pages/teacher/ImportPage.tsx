@@ -3,11 +3,11 @@
 // "連結 Google 帳號" / "解除連結" from the T-Import design are removed (SC-004).
 import { useState } from 'react';
 import { QuestionType, type ImportError, type ImportSuccess, type Spreadsheet } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { blankCellsLabel, questionTypeLabel } from '../../components/questionLabels';
 import { SheetPreview } from '../../components/SheetPreview';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
@@ -32,7 +32,7 @@ export function ImportPage({ navigate, page }: ImportPageProps) {
       setError(undefined);
       if (next) navigate(next);
     } catch (reason) {
-      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+      setError(errorMessage(reason));
     }
   };
   const repick = () => void run(() => pickToPage(guidedNotes));

@@ -2,10 +2,11 @@
 // "Link / unlink Google account" from the T-Connect design is removed (SC-004).
 import { useEffect, useState } from 'react';
 import type { TeacherAccount } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
+import { BackButton } from '../../components/BackButton';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import { pickToPage } from './importNavigation';
 import styles from './PickPage.module.css';
@@ -22,7 +23,7 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
         if (active) setAccount(current);
       },
       (reason: unknown) => {
-        if (active) setError(isUnexpectedError(reason) ? reason.message : String(reason));
+        if (active) setError(errorMessage(reason));
       },
     );
     return () => {
@@ -36,7 +37,7 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
       setError(undefined);
       if (next) navigate(next);
     } catch (reason) {
-      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+      setError(errorMessage(reason));
     }
   };
 
@@ -63,9 +64,7 @@ export function PickPage({ navigate }: { navigate: Navigate }) {
             從 Google 雲端硬碟挑選
           </button>
         </section>
-        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
-          取消
-        </button>
+        <BackButton onClick={() => navigate({ id: 'Main' })}>取消</BackButton>
       </main>
     </div>
   );

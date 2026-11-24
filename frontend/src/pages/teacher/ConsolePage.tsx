@@ -14,18 +14,19 @@ import {
   type QuestionResult,
   type Submission,
 } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { GroupGrid } from '../../components/GroupGrid';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { QuestionProgress } from '../../components/QuestionProgress';
-import { questionTypeLabel } from '../../components/questionLabels';
+import { questionCountLabel, questionTypeLabel } from '../../components/questionLabels';
+import { QuestionWinner } from '../../components/QuestionWinner';
 import { SubmissionTable } from '../../components/SubmissionTable';
-import { answersLabel, groupsLabel, noWinnerLabel } from '../../components/submissionLabels';
+import { groupsLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './ConsolePage.module.css';
 
@@ -34,10 +35,6 @@ type ConsolePageState = Extract<PageState, { id: 'T-Lobby' | 'T-Live' | 'T-Quest
 interface ViewProps {
   navigate: Navigate;
   activity: Activity;
-}
-
-function errorMessage(reason: unknown): string {
-  return isUnexpectedError(reason) ? reason.message : String(reason);
 }
 
 /**
@@ -251,9 +248,7 @@ function LiveView({ navigate, activity }: ViewProps) {
     <Shell navigate={navigate}>
       <div className={styles.intro}>
         <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>
-        <h1 className={styles.title}>
-          第 {questionNumber} 題 / 共 {activity.questions.length} 題
-        </h1>
+        <h1 className={styles.title}>{questionCountLabel(questionNumber, activity.questions.length)}</h1>
         {question && (
           <p className={styles.lead}>
             第 {questionNumber} 題 · {questionTypeLabel(question)}
@@ -387,15 +382,7 @@ function QuestionEndView({ navigate, activity }: ViewProps) {
         <div className={styles.stack}>
           <section aria-label="本題結果" className={styles.card}>
             <h2 className={styles.cardTitle}>本題結果</h2>
-            {result &&
-              (result.winner ? (
-                <p className={styles.winner}>
-                  <span className={styles.winnerGroup}>第 {result.winner.groupNumber} 組</span>
-                  <span>{answersLabel(result.winner.answers)}</span>
-                </p>
-              ) : (
-                <p className={styles.lead}>{noWinnerLabel(result)}</p>
-              ))}
+            {result && <QuestionWinner result={result} />}
           </section>
           <dl className={styles.stats}>
             <div>

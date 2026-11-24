@@ -76,18 +76,6 @@
   color: var(--muted);
 }
 
-.winner {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-}
-
-.winnerGroup {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--accent-text);
-}
-
 .status {
   font-weight: 600;
 }

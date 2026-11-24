@@ -11,3 +11,8 @@ export function questionTypeLabel(question: Question): string {
 export function blankCellsLabel(question: Question): string {
   return question.subQuestions.map((sub) => sub.blankCell).join('、');
 }
+
+/** Current question out of all questions, e.g. "第 2 題 / 共 4 題". */
+export function questionCountLabel(questionNumber: number, total: number): string {
+  return `第 ${questionNumber} 題 / 共 ${total} 題`;
+}

@@ -2,10 +2,10 @@
 // (FR-010). The activity name is never shown (FR-023).
 import { useEffect, useState } from 'react';
 import type { Activity } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate } from '../app/AppRouter';
 import { AppHeader } from '../components/AppHeader';
 import { ErrorArea } from '../components/ErrorArea';
+import { errorMessage } from '../components/errorMessage';
 import { PHASE_LABEL } from '../components/phaseLabels';
 import { useServiceRegistry } from '../services/ServiceRegistryContext';
 import styles from './HomePage.module.css';
@@ -22,7 +22,7 @@ export function HomePage({ navigate }: { navigate: Navigate }) {
         if (active) setActivity(current);
       },
       (reason: unknown) => {
-        if (active) setError(isUnexpectedError(reason) ? reason.message : String(reason));
+        if (active) setError(errorMessage(reason));
       },
     );
     const unsubscribe = activityService.onPhaseChange((next) => setActivity(next));

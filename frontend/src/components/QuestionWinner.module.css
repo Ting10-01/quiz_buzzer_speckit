@@ -1,0 +1,21 @@
+/* Wraps the answers under the group on the narrow student column. */
+.winner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.group {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.own {
+  color: var(--pos-ink);
+}
+
+.none {
+  color: var(--muted);
+}

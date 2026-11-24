@@ -142,16 +142,3 @@
 .dialogStats dd {
   margin: 0;
 }
-
-.winner {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  font-size: 18px;
-}
-
-.winnerGroup {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--accent-text);
-}

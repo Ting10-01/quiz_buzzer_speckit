@@ -3,10 +3,11 @@
 // open, on this group's submission (research RD-14); the page never derives a phase.
 import { useEffect, useState } from 'react';
 import { ActivityPhase, type Activity } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
+import { BackButton } from '../../components/BackButton';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { GroupGrid } from '../../components/GroupGrid';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
@@ -15,10 +16,6 @@ import styles from './JoinPage.module.css';
 interface JoinPageProps {
   navigate: Navigate;
   previousGroup?: number;
-}
-
-function errorMessage(reason: unknown): string {
-  return isUnexpectedError(reason) ? reason.message : String(reason);
 }
 
 export function JoinPage({ navigate, previousGroup }: JoinPageProps) {
@@ -104,9 +101,7 @@ export function JoinPage({ navigate, previousGroup }: JoinPageProps) {
         )}
         {/* FR-007: lets a user who picked the wrong role go back without any service call.
             Sits under the main button, or under the notice when there is none. */}
-        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
-          返回首頁
-        </button>
+        <BackButton onClick={() => navigate({ id: 'Main' })}>返回首頁</BackButton>
       </main>
     </>
   );

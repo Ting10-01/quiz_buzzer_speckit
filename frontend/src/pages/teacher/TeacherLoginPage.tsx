@@ -1,10 +1,11 @@
 // T-Login: the only sign-in option is "用 Google 登入" (FR-012); failures stay on the page (FR-013).
 import { useState } from 'react';
 import { SignInFailure } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import type { Navigate } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
+import { BackButton } from '../../components/BackButton';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './TeacherLoginPage.module.css';
 
@@ -27,7 +28,7 @@ export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
         setFailure(result.failure);
       }
     } catch (reason) {
-      setError(isUnexpectedError(reason) ? reason.message : String(reason));
+      setError(errorMessage(reason));
     }
   }
 
@@ -48,9 +49,7 @@ export function TeacherLoginPage({ navigate }: { navigate: Navigate }) {
           )}
         </section>
         {/* FR-007: lets a user who picked the wrong role go back without any service call. */}
-        <button type="button" className={`btn btn-ghost ${styles.back}`} onClick={() => navigate({ id: 'Main' })}>
-          返回首頁
-        </button>
+        <BackButton onClick={() => navigate({ id: 'Main' })}>返回首頁</BackButton>
         <ErrorArea message={error} />
       </main>
     </div>

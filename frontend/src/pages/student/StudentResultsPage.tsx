@@ -5,9 +5,9 @@
 import { useEffect, useState } from 'react';
 import type { PageState } from '../../app/AppRouter';
 import type { QuestionResult } from '@quiz-buzzer/shared/entities';
-import { isUnexpectedError } from '@quiz-buzzer/shared/guards';
 import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
+import { errorMessage } from '../../components/errorMessage';
 import { PHASE_LABEL } from '../../components/phaseLabels';
 import { SubmissionTable } from '../../components/SubmissionTable';
 import { noWinnerLabel } from '../../components/submissionLabels';
@@ -29,7 +29,7 @@ export function StudentResultsPage({ page }: StudentResultsPageProps) {
     resultService.getAllResults().then(
       (all) => active && setResults(all),
       (reason: unknown) =>
-        active && setError(isUnexpectedError(reason) ? reason.message : String(reason)),
+        active && setError(errorMessage(reason)),
     );
     return () => {
       active = false;
