@@ -3,13 +3,16 @@
   "private": true,
   "workspaces": [
     "shared",
-    "frontend"
+    "frontend",
+    "server"
   ],
   "scripts": {
     "dev": "npm run dev -w frontend",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w frontend",
     "lint": "npm run lint -w frontend",
     "test": "npm run test -w frontend",
-    "test:e2e": "npm run test:e2e -w frontend"
+    "test:e2e": "npm run test:e2e -w frontend",
+    "dev:server": "npm run dev -w server",
+    "test:server": "npm run test -w server"
   }
 }
