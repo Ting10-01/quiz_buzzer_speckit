@@ -61,3 +61,43 @@ test.describe('002 teacher sign-in (T022)', () => {
     await expect(pickButton(page)).toHaveCount(0);
   });
 });
+
+test.describe('002 signing in again (T036)', () => {
+  test('a reload keeps the tab credential, and signing in again reaches T-Pick (AC-07, AC-09)', async ({ page }) => {
+    await open(page);
+    await toLogin(page);
+    await signIn(page, CODE.teacherA);
+    await expect(pickButton(page)).toBeVisible();
+
+    await page.reload();
+    expect(await page.evaluate(() => sessionStorage.getItem('teacherToken'))).toBeTruthy();
+
+    // D21 temporary limitation: after a reload the teacher goes through T-Login to T-Pick.
+    await toLogin(page);
+    await signIn(page, CODE.teacherA);
+    await expect(pickButton(page)).toBeVisible();
+  });
+
+  test('another teacher signing in makes the first tab sign in again (AC-08, AC-26)', async ({ page, browser }) => {
+    await open(page);
+    await toLogin(page);
+    await signIn(page, CODE.teacherA);
+    // Tab 1 moves on to T-Import (guidedNotes is still the 001 mock here).
+    await pickButton(page).click();
+    await page.getByRole('dialog', { name: '模擬檔案選擇器' }).getByRole('button', { name: '題組＋單題範本' }).click();
+    await expect(page.getByRole('button', { name: '確認匯入，下一步' })).toBeVisible();
+
+    const other = await browser.newContext();
+    const pageB = await other.newPage();
+    await open(pageB);
+    await toLogin(pageB);
+    await signIn(pageB, CODE.teacherB);
+    await expect(pageB.getByText(EMAIL.teacherB)).toBeVisible();
+
+    // Back on T-Pick, tab 1 asks for its account again and learns it was replaced.
+    await page.getByRole('button', { name: '取消' }).click();
+    await expect(page.getByRole('alert')).toHaveText(SIGN_IN_AGAIN);
+    expect(await page.evaluate(() => sessionStorage.getItem('teacherToken'))).toBeNull();
+    await other.close();
+  });
+});
