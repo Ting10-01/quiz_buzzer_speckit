@@ -27,7 +27,7 @@
 3. 啟動伺服器與前端：
 
    ```bash
-   npm run dev
+   npm start
    ```
 
 4. 用瀏覽器開 <http://localhost:5173>。老師按「我是老師」→「用 Google 登入」→「從 Google 雲端硬碟挑選」選擇學習單；學生在其他分頁按「我是學生」。按 Ctrl+C 停止。
@@ -45,9 +45,11 @@
 ### 測試
 
 ```bash
-npm test          # 前端與伺服器的單元、整合測試
-npm run test:e2e  # 瀏覽器端對端測試（第一次執行前先 npx playwright install chromium）
-npm run typecheck
+npm test                  # 前端的單元與元件測試
+npm run test:server       # 伺服器的單元與整合測試
+npm run test:e2e          # 瀏覽器端對端測試（第一次執行前先 npx playwright install chromium）
+npm run typecheck         # 前端與 shared 的型別檢查
+npm run typecheck:server  # 伺服器的型別檢查
 ```
 
 自動化測試以替身取代 Google，不需要 `.env`。
