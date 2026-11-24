@@ -54,7 +54,7 @@ else 已設定
       Routes --> Api : 200 { ok: false, failure: SCOPE_DENIED }
       Api --> Auth : 回應
       Auth --> Page : SignInResult(failure: SCOPE_DENIED)
-      Page --> Teacher : 「需要同意存取 Google 試算表才能使用老師功能」
+      Page --> Teacher : 「需要存取雲端硬碟才能讀取學習單。\n請再按一次「用 Google 登入」，\n並在 Google 的畫面勾選雲端硬碟檔案那一項。」
     else 同意所有權限（第一次登入、同帳號重新登入或另一個帳號登入）
       TAuth -> TAuth : 以新帳號取代目前的老師，產生新的 teacherToken（舊的作廢）
       TAuth -> Provider : replace(tokens)
