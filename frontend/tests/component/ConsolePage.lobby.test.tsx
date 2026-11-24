@@ -2,11 +2,15 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Activity } from '@quiz-buzzer/shared/entities';
+import type { ActivityService } from '../../src/services/interfaces';
 import { ConsolePage } from '../../src/pages/teacher/ConsolePage';
 import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeRegistry';
 import { makeActivity, makeGroups, makeMixedQuestions } from '../helpers/fixtures';
 
-function setup(activity: Activity = makeActivity({ questions: makeMixedQuestions() })) {
+function setup(
+  activity: Activity = makeActivity({ questions: makeMixedQuestions() }),
+  services: Partial<ActivityService> = {},
+) {
   const navigate = vi.fn();
   let notify: (next: Activity) => void = () => {};
   const unsubscribe = vi.fn();
@@ -16,6 +20,7 @@ function setup(activity: Activity = makeActivity({ questions: makeMixedQuestions
         notify = listener;
         return unsubscribe;
       }),
+      ...services,
     },
   });
   const view = renderWithRegistry(
@@ -103,5 +108,75 @@ describe('ConsolePage (T-Lobby) updates and buttons', () => {
     notify(latest);
     await userEvent.click(screen.getByRole('button', { name: '修改設定' }));
     expect(navigate).toHaveBeenCalledWith({ id: 'T-Setup', mode: 'edit', activity: latest });
+  });
+});
+
+/** The left and right sides of the bottom action bar (ActionBar: bar > inner > two sides). */
+function actionBarSides(container: HTMLElement) {
+  const bar = container.querySelector('[data-action-bar]');
+  if (!bar) throw new Error('action bar not found');
+  const sides = Array.from(bar.querySelectorAll(':scope > div > div')) as HTMLElement[];
+  expect(sides).toHaveLength(2);
+  const names = (side: HTMLElement) =>
+    within(side)
+      .queryAllByRole('button')
+      .map((button) => button.textContent);
+  return { left: names(sides[0]), right: names(sides[1]) };
+}
+
+const cancelDialog = () => screen.queryByRole('dialog', { name: /取消活動/ });
+
+describe('ConsolePage (T-Lobby) cancel activity (FR-026, US2 AC-11, AC-12)', () => {
+  it('puts only "取消活動" on the left and "修改設定", "開放第 1 題" on the right (RD-09)', () => {
+    const { view } = setup();
+    expect(actionBarSides(view.container)).toEqual({
+      left: ['取消活動'],
+      right: ['修改設定', '開放第 1 題'],
+    });
+  });
+
+  it('"取消活動" opens the confirm dialog saying joined students go back to S-Join, without a service call (US2 AC-11)', async () => {
+    const { registry } = setup();
+    expect(cancelDialog()).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '取消活動' }));
+    const dialog = cancelDialog();
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(/學生/);
+    expect(dialog).toHaveTextContent(/選組頁/);
+    expect(within(dialog!).getByRole('button', { name: '繼續準備' })).toBeInTheDocument();
+    expect(within(dialog!).getByRole('button', { name: '確定取消活動' })).toBeInTheDocument();
+    expect(registry.activity.cancelActivity).not.toHaveBeenCalled();
+  });
+
+  it('"繼續準備" closes the dialog and stays on T-Lobby without cancelling (US2 AC-11)', async () => {
+    const { navigate, registry } = setup();
+    await userEvent.click(screen.getByRole('button', { name: '取消活動' }));
+    await userEvent.click(screen.getByRole('button', { name: '繼續準備' }));
+    expect(cancelDialog()).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '開放第 1 題' })).toBeInTheDocument();
+    expect(registry.activity.cancelActivity).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('"確定取消活動" calls cancelActivity once and goes to T-Pick (US2 AC-12)', async () => {
+    const cancelActivity = vi.fn().mockResolvedValue(undefined);
+    const { navigate } = setup(undefined, { cancelActivity });
+    await userEvent.click(screen.getByRole('button', { name: '取消活動' }));
+    await userEvent.click(screen.getByRole('button', { name: '確定取消活動' }));
+    expect(cancelActivity).toHaveBeenCalledTimes(1);
+    expect(cancelActivity).toHaveBeenCalledWith();
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith({ id: 'T-Pick' });
+  });
+
+  it('stays on T-Lobby and shows an unexpected error in ErrorArea after closing the dialog (edge, FR-009)', async () => {
+    const cancelActivity = vi.fn().mockRejectedValue({ message: '模擬：連不上伺服器' });
+    const { navigate } = setup(undefined, { cancelActivity });
+    await userEvent.click(screen.getByRole('button', { name: '取消活動' }));
+    await userEvent.click(screen.getByRole('button', { name: '確定取消活動' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('模擬：連不上伺服器');
+    expect(cancelDialog()).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '開放第 1 題' })).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

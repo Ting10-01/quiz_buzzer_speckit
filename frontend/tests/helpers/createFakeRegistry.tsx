@@ -43,6 +43,7 @@ export function createFakeRegistry(overrides: FakeRegistryOverrides = {}): Servi
     activity: {
       createActivity: vi.fn(),
       updateSettings: vi.fn(),
+      cancelActivity: vi.fn(),
       openQuestion: vi.fn(),
       endQuestion: vi.fn(),
       joinGroup: vi.fn(),
