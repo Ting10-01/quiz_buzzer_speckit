@@ -73,6 +73,7 @@
 | G-5 | FR-040：比第一名慢的秒數由結果介面提供，頁面不自行計算（analyze 後修改，spec commit `spec(001): revise spec for analyze and teacher sign-in`） | `QuestionResult` 沒有這個值，原本由頁面以 `elapsedMs` 相減，與 FR-003 衝突 | 類別圖 `QuestionResult` 新增 `behindFirstMs: number[]`（與 `submissions` 同順序）；data-model、contract 同步 |
 | G-6 | FR-032a、FR-055、FR-056a、M4–M6：接受後本題結束、同組組員送出、只有最早一筆可判定（spec commit `spec(001): align ui flow with feature split`） | `judge` 只回傳送出列表，老師端無從得知接受後的階段；沒有同組組員送出的通知與觸發它的模擬控制 | 類別圖新增 `JudgeOutcome`（`submissions`、`activity`），`judge` 改回傳它；`SubmissionService` 新增 `onGroupSubmitted`；新增 mock only 介面 `TeammateMockControl`（`simulateTeammateSubmission`），由 `MockSubmissionService` 實作，`ServiceRegistry` 增加 `teammateControl [0..1]`；組件圖與時序圖同步 |
 | G-7 | FR-056a、S8–S10：加入組別時依階段與本組狀態進入對應頁（spec commit `spec(001): align ui flow with feature split`） | 頁面無法得知本組在加入前是否已送出 | `SubmissionService` 新增 `getGroupSubmission(questionNumber)`；時序圖第 3 段補上加入後依階段決定目的頁（commit `spec(001): align ui flow with feature split`）。理由見 research RD-14 |
+| G-8 | FR-050、FR-051、S11：老師取消活動時，選組頁與等待開放頁回到「目前沒有活動」，由 001 的頁面處理（圖表一致性驗證 F4 後修改，spec commit `spec(001): handle activity cancellation on 001 pages`） | `onPhaseChange` 的 listener 只收 `Activity`，無法表示活動已不存在；004 只改綁定時頁面不會切換 | 類別圖 `onPhaseChange` 的 listener 改為 `(activity: Activity \| null) => void`；時序圖第 2、3 段補上收到 `null` 的處理；畫面流程圖 S11 註明 001 的頁面已處理。理由見 research RD-12 |
 
 ## 替換模擬實作的方式
 

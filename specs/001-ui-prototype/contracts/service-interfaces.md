@@ -37,7 +37,7 @@
 | `joinGroup(n)` | `Promise<Activity>` | S-Join「加入第 n 組」 | 依 `phase` 切換（spec「階段推動的切換」、research RD-14）：`PREPARING` → S-Wait；`OPEN` → 先呼叫 `getGroupSubmission`；`QUESTION_ENDED` → S-QuestionDone；`FINISHED` → S-Results |
 | `leaveGroup()` | `Promise<void>` | S-Wait「選錯組別？重新選擇」 | S-Join；服務不再記住本分頁的組別 |
 | `getCurrentActivity()` | `Promise<Activity \| null>` | Main、S-Join 載入時 | `null`：「目前沒有活動」（FR-010、FR-050）。T-Lobby 不呼叫，改用 `createActivity`、`updateSettings` 回傳的 `Activity`，之後由 `onActivityChange` 更新（時序圖第 2 段） |
-| `onPhaseChange(listener)` | `Unsubscribe` | Main、S-Join、S-Wait、S-Answer、S-Submitted、S-QuestionDone | 依 spec「階段推動的切換」表切換；Main 更新目前活動資訊 |
+| `onPhaseChange(listener)` | `Unsubscribe` | Main、S-Join、S-Wait、S-Answer、S-Submitted、S-QuestionDone | listener 收 `Activity \| null`。`Activity`：依 spec「階段推動的切換」表切換；Main 更新目前活動資訊。`null`（活動被取消，S11）：Main 顯示沒有活動；S-Join 改為沒有活動並清除已選組別，不呼叫任何介面（FR-050）；S-Wait 切換到 S-Join（不帶 `previousGroup`），不呼叫 `leaveGroup`，S-Join 與一般進入時相同，載入時呼叫 `getCurrentActivity()`（FR-051）；S-Answer、S-Submitted、S-QuestionDone 不切換（FR-026）。001 的模擬實作不通知 `null` |
 | `onActivityChange(listener)` | `Unsubscribe` | T-Lobby（以及其他顯示各組人數的老師端頁面） | 以通知的 `Activity` 更新各組已加入人數（spec「階段推動的切換」T-Lobby 列）。001 的模擬實作不會通知 |
 
 ## SubmissionService（005 取代）

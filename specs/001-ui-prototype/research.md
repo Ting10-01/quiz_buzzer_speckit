@@ -141,6 +141,8 @@
 
 - **Decision**: 學生頁面與首頁透過 `ActivityService.onPhaseChange` 訂閱階段，依「階段推動的切換」表切換頁面；`S-Answer` 透過 `SubmissionService.onGroupSubmitted` 得知同組組員送出；`S-Submitted` 透過 `SubmissionService.onJudgement` 訂閱判定（接受時本題結束，頁面切換仍由 `onPhaseChange` 推動，不由判定結果推導階段）；老師端點「接受」後依 `judge` 回傳的 `JudgeOutcome.activity` 切換；老師端 T-Lobby 透過 `onActivityChange`、T-Live 透過 `onSubmissionsChange` 即時更新。001 由模擬控制列（`advancePhase`、`simulateJudgement`、`simulateTeammateSubmission`）觸發這些事件；「模擬：接受」同時推進階段（M6）。
 - **Rationale**: 頁面對事件的反應在 001 就寫好，004、005 只需以真正的實作推送同樣的事件，頁面不改（feature-split 3.3）。頁面只呈現事件帶來的 `Activity`，不自行推導階段（V）。
+- **活動被取消（S11，FR-050、FR-051）**: `onPhaseChange` 的 listener 收 `Activity | null`；`null` 表示活動已不存在，與 `getCurrentActivity()` 回傳 `null` 同義。首頁改為顯示沒有活動；選組頁改為「目前沒有活動」並清除已選組別，不呼叫任何介面；等待開放頁切換到選組頁（不帶 `previousGroup`），不呼叫 `leaveGroup`（活動已不存在），選組頁與一般進入時相同，載入時呼叫 `getCurrentActivity()`；作答頁、等待判定頁、本題結果頁收到 `null` 時不切換（FR-026：開放第 1 題之後不能取消）。001 的模擬實作不發出 `null`（老師端與學生端的模擬活動彼此獨立，M3、M7），頁面的處理以元件測試驗證（SC-002）。
+- **Alternatives considered（活動被取消）**: 通知 `phase` 為 `NO_ACTIVITY` 的 `Activity`：`Activity` 的 `spreadsheet`、`questions`、`groups` 為必填，活動取消後只能填入過時或假的資料，頁面可能誤用；且與 `getCurrentActivity()` 以 `null` 表示沒有活動的約定不一致。`NO_ACTIVITY` 維持只用於 M7 模擬序列與階段文字。
 - **與 FR-006 的關係**: 001 不實作跨分頁的階段同步；同步由 004 的真正實作提供。
 
 ## RD-14 加入組別後的目的頁

@@ -35,6 +35,8 @@ npm run dev
 | `npm test` | Vitest：`tests/unit`、`tests/component` | 全部通過 |
 | `npm run test:e2e` | Playwright：`tests/e2e`。執行前確認 5173 埠沒有其他程式使用；若已有 dev server 在執行，測試會直接使用它，而不是目前資料夾的程式。 | 全部通過 |
 
+S11（老師取消活動時的首頁與學生頁面）在模擬模式不會發生（老師端與學生端的模擬活動彼此獨立），不列入下方的驗證情境，改由 `npm test` 中的元件測試 T149–T152 驗證（SC-002）：以假的 registry 對首頁、選組頁、等待開放頁、作答頁、等待判定頁、本題結果頁的 `onPhaseChange` 通知 `null`，預期首頁顯示沒有活動；選組頁改為「目前沒有活動」、已選組別清除、沒有呼叫任何介面；等待開放頁切換到選組頁（不帶原本的組別）、沒有呼叫 `leaveGroup`；其餘三頁不切換（FR-050、FR-051、FR-026）。
+
 implement 階段每完成一個 Phase，回報上述指令與結果（原則 VIII）。
 
 ## 驗證情境

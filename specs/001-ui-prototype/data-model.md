@@ -35,7 +35,7 @@
 - **題組算一題**：`Question` 是以題號為單位的一題；單題只有一個 `SubQuestion`（spec Key Entities）。`Submission.answers` 的順序對應 `Question.subQuestions` 的順序。
 - **以 Google 登入的人即為老師**（FR-013）：Google 帳號無法提供是否為老師的資訊，`SignInFailure` 只有 `CANCELLED`；其他失敗種類（例如授權失敗）由 002 新增。
 - **活動沒有名稱**（FR-023）：`Activity`、`ActivitySettings` 沒有名稱欄位。
-- **`ActivityPhase` 與題號**：`OPEN`、`QUESTION_ENDED` 時 `currentQuestion` 必有值；沒有活動時 `getCurrentActivity()` 回傳 `null`，頁面據此顯示「目前沒有活動」（FR-010、FR-050）。
+- **`ActivityPhase` 與題號**：`OPEN`、`QUESTION_ENDED` 時 `currentQuestion` 必有值；沒有活動時 `getCurrentActivity()` 回傳 `null`，活動被取消時 `onPhaseChange` 通知 `null`，頁面據此顯示「目前沒有活動」（FR-010、FR-050、FR-051）。介面不以 `phase: NO_ACTIVITY` 的 `Activity` 表示沒有活動；`NO_ACTIVITY` 只用於 M7 模擬序列的起點與階段文字（research RD-12）。
 - **「比第一名慢的秒數」**（FR-040）：由結果介面計算後放在 `QuestionResult.behindFirstMs`，與 `submissions` 同順序、單位為毫秒；頁面只換算成秒顯示，不自行計算（FR-003）。「第一名」的定義由 006 決定（D23）；001 的模擬實作以最早送出（`rank` 1）的 `elapsedMs` 為基準，第一名自己為 0。
 - **判定狀態的種類由 005 定義**（FR-031）：001 的模擬實作使用 `PENDING`、`ACCEPTED`、`REJECTED`；`UNJUDGED` 保留給 005（D12）。
 - **驗證規則**（組數範圍、空白答案等）不在 001 定義；實體本身不帶驗證規則（D4–D7、D14）。
@@ -120,7 +120,7 @@
 依 M3 與 M7，同一個分頁中有兩條互不影響的模擬狀態：
 
 - **老師端**：`createActivity`、`updateSettings`、`openQuestion`、`endQuestion` 與 `judge(ACCEPTED)` 改變 `teacherActivity`；`cancelActivity` 一律成功並清除 `teacherActivity`，不影響 `viewerPhaseIndex`（M3）。題目取自 `lastImport`；沒有 `lastImport` 時取自 `MockFixtures.activity`。`onActivityChange`、`onSubmissionsChange` 接受訂閱但不會通知，因為 M3、M4 的各組人數與送出列表是固定資料。
-- **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 與 `simulateJudgement(ACCEPTED)` 時改變（兩者都經 `onPhaseChange` 通知），使用 `MockFixtures.activity`（4 題、6 組）。
+- **首頁與學生端**：`getCurrentActivity`、`onPhaseChange` 只反映 `viewerPhaseIndex`，只在 `advancePhase` 與 `simulateJudgement(ACCEPTED)` 時改變（兩者都經 `onPhaseChange` 通知），使用 `MockFixtures.activity`（4 題、6 組）。`onPhaseChange` 不會通知 `null`：序列只往前推進，不回到 `NO_ACTIVITY`，老師端的 `cancelActivity` 也不影響這條狀態（S11 由 004 觸發）。
 
 ### 狀態轉換
 
