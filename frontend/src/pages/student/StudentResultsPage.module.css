@@ -1,0 +1,63 @@
+/* Student pages sit in the centred 390 px column set by AppRouter (research RD-09). */
+.main {
+  flex: 1;
+  padding: 24px 16px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phase {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.summary {
+  margin: 0;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.summary dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.summary dd {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface);
+  /* The submission table is wider than a phone column; scroll it inside the card. */
+  overflow-x: auto;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
