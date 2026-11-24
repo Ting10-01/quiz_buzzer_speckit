@@ -1,5 +1,5 @@
-// ConsolePage: the teacher console. T-Lobby (FR-025, FR-026) and T-Live (FR-030–FR-032a);
-// T-EndConfirm and T-QuestionEnd are added by T075.
+// ConsolePage: the teacher console. T-Lobby (FR-025, FR-026), T-Live (FR-030–FR-032a) with
+// T-EndConfirm (FR-033), and T-QuestionEnd (FR-034).
 // Each page id renders its own view component, so moving between them starts a fresh view.
 // T-Lobby uses the Activity returned by createActivity / updateSettings and then the
 // onActivityChange snapshots; it never calls getCurrentActivity (contract C-1).
@@ -25,7 +25,7 @@ import { PHASE_LABEL } from '../../components/phaseLabels';
 import { QuestionProgress } from '../../components/QuestionProgress';
 import { questionTypeLabel } from '../../components/questionLabels';
 import { SubmissionTable } from '../../components/SubmissionTable';
-import { groupsLabel } from '../../components/submissionLabels';
+import { answersLabel, groupsLabel, noWinnerLabel } from '../../components/submissionLabels';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import styles from './ConsolePage.module.css';
 
@@ -182,12 +182,20 @@ function LobbyView({ navigate, activity: initial }: ViewProps) {
 }
 
 function LiveView({ navigate, activity }: ViewProps) {
-  const { submission: submissionService, result: resultService } = useServiceRegistry();
+  const {
+    activity: activityService,
+    submission: submissionService,
+    result: resultService,
+  } = useServiceRegistry();
   const questionNumber = activity.currentQuestion ?? 1;
   const question = activity.questions.find((q) => q.number === questionNumber);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [results, setResults] = useState<QuestionResult[]>([]);
   const [error, setError] = useState<string>();
+  const [endOpen, setEndOpen] = useState(false);
+  // Stable, so ConfirmDialog keeps one entry for browser back (FR-014).
+  const closeEnd = useCallback(() => setEndOpen(false), [setEndOpen]);
+  const isLast = activity.questions.at(-1)?.number === questionNumber;
   // A pushed snapshot is newer than the initial list, so a late list must not overwrite it.
   const gotSnapshot = useRef(false);
 
@@ -222,6 +230,18 @@ function LiveView({ navigate, activity }: ViewProps) {
       } else {
         navigateAfterEnd(navigate, outcome.activity);
       }
+    } catch (reason) {
+      setError(errorMessage(reason));
+    }
+  };
+
+  const endQuestion = async () => {
+    // The dialog closes first, so an error shows on T-Live (FR-009).
+    setEndOpen(false);
+    try {
+      const ended = await activityService.endQuestion(questionNumber);
+      setError(undefined);
+      navigateAfterEnd(navigate, ended);
     } catch (reason) {
       setError(errorMessage(reason));
     }
@@ -286,11 +306,132 @@ function LiveView({ navigate, activity }: ViewProps) {
 
       <ActionBar
         primary={
-          <button type="button" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={() => setEndOpen(true)}>
             結束這一題
           </button>
         }
       />
+
+      <ConfirmDialog
+        open={endOpen}
+        title={`結束第 ${questionNumber} 題？`}
+        onClose={closeEnd}
+        actions={[
+          { label: '繼續作答', onClick: closeEnd },
+          { label: '結束並公布結果', variant: 'primary', onClick: () => void endQuestion() },
+        ]}
+      >
+        <dl className={styles.dialogStats}>
+          <div>
+            <dt>本題已送出</dt>
+            <dd>{submissions.length} 組</dd>
+          </div>
+          <div>
+            <dt>還沒送出</dt>
+            <dd>{unsubmittedText(activity, submissions)}</dd>
+          </div>
+        </dl>
+        <p>
+          {isLast
+            ? '這是最後一題，結束後活動一併結束，會進入結果頁。'
+            : `結束後不再接受第 ${questionNumber} 題的送出，並公布本題結果。`}
+        </p>
+      </ConfirmDialog>
+    </Shell>
+  );
+}
+
+function QuestionEndView({ navigate, activity }: ViewProps) {
+  const { activity: activityService, result: resultService } = useServiceRegistry();
+  const questionNumber = activity.currentQuestion ?? 1;
+  const isLast = activity.questions.at(-1)?.number === questionNumber;
+  const [result, setResult] = useState<QuestionResult>();
+  const [results, setResults] = useState<QuestionResult[]>([]);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    let active = true;
+    resultService
+      .getQuestionResult(questionNumber)
+      .then((loaded) => active && setResult(loaded))
+      .catch((reason: unknown) => active && setError(errorMessage(reason)));
+    resultService
+      .getAllResults()
+      .then((all) => active && setResults(all))
+      .catch((reason: unknown) => active && setError(errorMessage(reason)));
+    return () => {
+      active = false;
+    };
+  }, [resultService, questionNumber]);
+
+  const openNext = async () => {
+    try {
+      const opened = await activityService.openQuestion(questionNumber + 1);
+      setError(undefined);
+      navigate({ id: 'T-Live', activity: opened });
+    } catch (reason) {
+      setError(errorMessage(reason));
+    }
+  };
+
+  return (
+    <Shell navigate={navigate}>
+      <div className={styles.intro}>
+        <span className={styles.phase}>{PHASE_LABEL[activity.phase]}</span>
+        <h1 className={styles.title}>第 {questionNumber} 題已結束</h1>
+      </div>
+
+      <ErrorArea message={error} />
+
+      <div className={styles.columns}>
+        <div className={styles.stack}>
+          <section aria-label="本題結果" className={styles.card}>
+            <h2 className={styles.cardTitle}>本題結果</h2>
+            {result &&
+              (result.winner ? (
+                <p className={styles.winner}>
+                  <span className={styles.winnerGroup}>第 {result.winner.groupNumber} 組</span>
+                  <span>{answersLabel(result.winner.answers)}</span>
+                </p>
+              ) : (
+                <p className={styles.lead}>{noWinnerLabel(result)}</p>
+              ))}
+          </section>
+          <dl className={styles.stats}>
+            <div>
+              <dt>本題已送出</dt>
+              <dd>{result ? `${result.submissionCount} 組` : ''}</dd>
+            </div>
+            <div>
+              <dt>已結束</dt>
+              <dd>
+                {questionNumber} / {activity.questions.length} 題
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <section className={styles.card}>
+          <QuestionProgress
+            questions={activity.questions}
+            results={results}
+            currentQuestion={questionNumber}
+            currentEnded
+            groups={activity.groups}
+          />
+        </section>
+      </div>
+
+      {/* The last question never ends here: the activity finishes and goes to T-Results. */}
+      {!isLast && (
+        <ActionBar
+          primary={
+            <button type="button" className="btn btn-primary" onClick={() => void openNext()}>
+              開放第 {questionNumber + 1} 題
+            </button>
+          }
+        />
+      )}
     </Shell>
   );
 }
@@ -304,8 +445,13 @@ export function ConsolePage({ navigate, page }: { navigate: Navigate; page: Cons
       return (
         <LiveView key={page.activity.currentQuestion} navigate={navigate} activity={page.activity} />
       );
-    default:
-      // T-QuestionEnd is added by T075.
-      return null;
+    case 'T-QuestionEnd':
+      return (
+        <QuestionEndView
+          key={page.activity.currentQuestion}
+          navigate={navigate}
+          activity={page.activity}
+        />
+      );
   }
 }
