@@ -1,7 +1,8 @@
 import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
+import { isImportError } from '@quiz-buzzer/shared/guards';
 import { HeaderLocator } from './HeaderLocator.js';
 import type { BlankMarkers } from './ImportStore.js';
-import { invalidNumbering, isImportError, noHeader, noQuestions, tooManyQuestions } from './importErrors.js';
+import { invalidNumbering, noHeader, noQuestions, tooManyQuestions } from './importErrors.js';
 import { QuestionScanner } from './QuestionScanner.js';
 import { columnLetters, type SheetGrid } from './SheetGrid.js';
 

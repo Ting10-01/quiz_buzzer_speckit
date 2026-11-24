@@ -1,5 +1,5 @@
 // Type guards used by pages to tell apart union return values of the service interfaces.
-import type { ImportError, ImportSuccess, UnexpectedError, ValidationError } from './entities';
+import type { ImportError, ImportSuccess, UnexpectedError, ValidationError } from './entities.js';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

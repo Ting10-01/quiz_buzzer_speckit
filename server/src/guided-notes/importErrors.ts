@@ -29,11 +29,6 @@ function importError(code: ImportErrorCode, reason: string, fixSteps: string[]):
   return { code, reason, foundHeaders: [], acceptedHeaders: [], fixSteps };
 }
 
-// Server-side stand-in for 001's `isImportError` (shared/src/guards.ts is not written yet).
-export function isImportError(value: object): value is ImportError {
-  return 'code' in value;
-}
-
 export function noHeader(worksheet: string, foundHeaders: string[]): ImportError {
   return {
     code: ImportErrorCode.NO_HEADER,
