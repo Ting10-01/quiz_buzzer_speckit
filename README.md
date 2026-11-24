@@ -9,10 +9,51 @@
 
 本專案以 SpecKit 進行規格驅動開發，並導入 Diagram First Development。
 
+## 快速開始
+
+需要 Node.js 24（見 `.nvmrc`）與 npm。
+
+1. 安裝套件（第一次執行）：
+
+   ```bash
+   npm install
+   ```
+
+2. 設定 Google：在 `server/` 建立 `.env`，填入四個值（變數名稱見 `server/.env.example`）。值由本組另外提供，或依下方「Google 登入設定」自行建立。沒有設定也能啟動，但無法登入。
+3. 啟動伺服器與前端：
+
+   ```bash
+   npm run dev
+   ```
+
+4. 用瀏覽器開 <http://localhost:5173>。老師按「我是老師」→「用 Google 登入」→「從 Google 雲端硬碟挑選」選擇學習單；學生在其他分頁按「我是學生」。按 Ctrl+C 停止。
+
+### 目前完成的範圍
+
+| 功能 | 狀態 |
+| --- | --- |
+| 老師以 Google 登入（002） | 連線真正的 Google |
+| 從 Google 雲端硬碟挑選並匯入學習單（003） | 連線真正的 Google 試算表 |
+| 建立活動、搶答、判定、公布結果、寫回（004–006） | 仍是模擬實作，畫面上方標示「模擬模式」，以模擬控制列推進流程 |
+
+### 測試
+
+```bash
+npm test          # 前端與伺服器的單元、整合測試
+npm run test:e2e  # 瀏覽器端對端測試（第一次執行前先 npx playwright install chromium）
+npm run typecheck
+```
+
+自動化測試以替身取代 Google，不需要 `.env`。
+
 ## Repo 內容
 
 | 路徑 | 用途 |
 | --- | --- |
+| `frontend/` | 前端（React + Vite），老師與學生的所有頁面 |
+| `server/` | 伺服器（Fastify + Socket.IO），Google 登入與試算表讀寫 |
+| `shared/` | 前端與伺服器共用的資料型別 |
+| `specs/`、`diagrams/` | 各子功能的規格、設計、任務，以及 PlantUML 圖 |
 | `.specify/` | SpecKit 設定與範本；專案憲法在 `memory/constitution.md` |
 | `.claude/` | Claude Code 的 SpecKit 指令、commit 檢查 skill 與專案共用設定 |
 | `docs/assignment.md` | 作業說明中與系統相關段落的原文摘錄，以及助教補充的原文 |
@@ -26,7 +67,7 @@
 老師以 Google 帳號登入，同一次登入取得讀寫老師挑選的試算表的授權（`drive.file`）。執行系統的人需先在 Google Cloud 完成下列設定（只需做一次）：
 
 1. 在 Google Cloud 建立專案，啟用 **Google Sheets API**、**Google Drive API**、**Google Picker API**。
-2. OAuth 同意畫面：類型「外部」、狀態「測試」；範圍加入 `openid`、`email`、`.../auth/drive.file`；測試使用者加入老師帳號與助教測試用帳號。
+2. OAuth 同意畫面：類型「外部」；範圍加入 `openid`、`email`、`.../auth/drive.file`。狀態為「測試」時，只有加入測試使用者的 Google 帳號能登入；發布為「正式版」後任何 Google 帳號都能登入（這三個範圍都不屬於需要 Google 審查的範圍）。
 3. 憑證 → 建立 OAuth 用戶端 ID，類型「網頁應用程式」，**已授權的 JavaScript 來源**填 `http://localhost:5173`（不需要重新導向 URI）。
 4. 憑證 → 建立 API 金鑰，限制為「Google Picker API」、網站來源 `http://localhost:5173/*`。
 5. 專案編號（數字）就是 `GOOGLE_APP_ID`。
