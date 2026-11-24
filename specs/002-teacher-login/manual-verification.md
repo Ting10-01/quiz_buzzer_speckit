@@ -26,3 +26,7 @@
 
 1. M11：開發環境經 Vite 代理時，伺服器沒開的提示不符合 AC-23。已修正並加測試。
 2. M4：第一次登入幾乎都會遇到 `SCOPE_DENIED`（Google 預設不勾選雲端硬碟），原訊息沒有說明下一步。已先改 spec 再改訊息（T058）。
+
+## T056 機密檢查（2026-11-25）
+
+由使用者執行 `npm run check:secrets`：在 518 個 commit 中（不含 `server/.env`）搜尋 `server/.env` 的 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`GOOGLE_API_KEY`、`GOOGLE_APP_ID` 的實際值，以及 access token（`ya29.`）、refresh token（`1//`）、client secret（`GOCSPX-`）、API key（`AIza`）的格式，全部 0 筆，結果為「通過」。指令只印出名稱與筆數，值沒有出現在畫面或對話中。
