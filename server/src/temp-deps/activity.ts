@@ -3,7 +3,7 @@
 // 004 (server/src/activity/) is not implemented yet; 006 depends only on these shapes so it can
 // be built and tested with substitutes. When 004 lands, import ActivityStore, ActivityState and
 // GroupMembership from server/src/activity/ instead and delete this file. Types only, no code.
-import type { ActivityPhase, Question, Spreadsheet } from '../temp-shared/entities.js';
+import type { ActivityPhase, Question, Spreadsheet } from '@quiz-buzzer/shared/entities';
 
 export type Unsubscribe = () => void;
 

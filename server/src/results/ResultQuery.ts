@@ -1,6 +1,6 @@
 import type { ActivityState, ActivityStore } from '../temp-deps/activity.js';
 import type { SubmissionStore } from '../temp-deps/submission.js';
-import type { QuestionResult, Submission } from '../temp-shared/entities.js';
+import type { QuestionResult, Submission } from '@quiz-buzzer/shared/entities';
 
 export const ResultQueryErrorCode = {
   NO_ACTIVITY: 'NO_ACTIVITY',

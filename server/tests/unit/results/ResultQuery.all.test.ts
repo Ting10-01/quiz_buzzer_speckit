@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ResultQuery, ResultQueryError } from '../../../src/results/ResultQuery.js';
-import type { QuestionResult, Submission } from '../../../src/temp-shared/entities.js';
+import type { QuestionResult, Submission } from '@quiz-buzzer/shared/entities';
 import {
   FakeActivityStore,
   finishedActivityScenario,
