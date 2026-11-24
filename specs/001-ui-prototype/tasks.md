@@ -30,7 +30,7 @@ description: "001 畫面與流程原型的實作任務"
 
 ## 已解決的文件衝突
 
-產生任務時發現下列衝突，經使用者決定後處理：C-1、C-2（2026-11-21）修改 `contracts/service-interfaces.md`；C-3、C-4（2026-11-22）見表。
+產生任務時發現下列衝突，經使用者決定後處理：C-1、C-2（2026-11-21）修改 `contracts/service-interfaces.md`；C-3、C-4（2026-11-22）、C-5（2026-11-24）見表。
 
 | 編號 | 衝突 | 決定 | 影響的任務 |
 | --- | --- | --- | --- |
@@ -38,6 +38,7 @@ description: "001 畫面與流程原型的實作任務"
 | C-2 | FR-057 要求 S-QuestionDone 顯示題目進度，但 contract 的 `getAllResults()` 呼叫頁面沒有列 S-QuestionDone | 修改 contract：S-QuestionDone 呼叫 `getAllResults()`。學生頁面呼叫結果介面時只取得可公開的內容，公開範圍由 006 決定，在伺服器端過濾；頁面不自行過濾，001 的模擬實作不過濾 | T083、T089 |
 | C-3 | data-model 的 `MockSession` 欄位表把 `teacherActivity`、`viewerPhaseIndex` 的寫入者只列為 MockActivityService；但 M4、M6 與時序圖第 3 段要求 MockSubmissionService 在接受時結束老師端的題目、推進學生端的階段 | 修改 data-model：寫入者補上 MockSubmissionService（`judge(ACCEPTED)`、`simulateJudgement(ACCEPTED)`），兩條模擬狀態的說明一併補上 | T113、T114、T124–T126 |
 | C-4 | FR-032 規定按鈕是否可用依送出介面回傳的結果呈現，但 `Submission` 沒有「可判定」欄位 | 不改類別圖：依修訂後的 FR-032（spec commit `spec(001): align ui flow with feature split`），`SubmissionTable` 只讓 `rank` 最小的 `PENDING` 列可按；規則已由 feature-split 3.2 定案，變更須先改 spec（原則 II），不屬於 005 的擴充點 | T068、T073 |
+| C-5 | FR-040 要求寫回預覽（T076 指定 `SheetPreview`，需要 `ImportSuccess` 的 `headerRow`、`headerColumns`），FR-041 要求目標試算表與工作表；但 `PageState` 的 T-Results 沒有參數，`QuestionResult` 也不含試算表 | 不改 spec、圖表與介面：T-Results 的頁面參數改為 `{ id: 'T-Results', activity }`，由 ConsolePage 以 `judge`、`endQuestion` 回傳的 `Activity` 切換；試算表、工作表、題數與格數取自 `activity`。`SheetPreview` 的 props 放寬為只需題目，表頭資訊可省略（省略時不顯示表頭列） | T070、T074、T075、T076、T077 |
 
 ---
 
@@ -295,8 +296,8 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - [ ] T073 [P] [US3] 在 `frontend/src/components/SubmissionTable.tsx`（與 `.module.css`）實作答案列表：props `submissions: Submission[]`、`onJudge?: (group, judgement) => void`；依 `rank` 顯示順位、組別、`answers`、經過時間、判定狀態（待判定／已接受／不接受）；`onJudge` 存在時只有 `rank` 最小的 `PENDING` 列「接受」「不接受」可用（M4，見 C-4）
 - [ ] T074 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-Lobby「開放第 1 題」與 T-Live 檢視：`openQuestion(n)` → `listSubmissions(n)`、`onSubmissionsChange(n, …)`、`getAllResults()`（題目進度）；顯示 FR-030；以 `SubmissionTable` 列出答案；`judge` 回傳 `JudgeOutcome` 後以 `submissions` 更新列表，並依 `activity.phase` 切換：`OPEN` 留在 T-Live、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → `navigate` 到 `T-Results`（FR-032a）；不出現剩餘時間、連線分頁（SC-004）
 - [ ] T075 [US3] 在 `frontend/src/pages/teacher/ConsolePage.tsx` 實作 T-EndConfirm（以 `ConfirmDialog`，內容只列本題已送出組數與還沒送出的組別，FR-033）與 T-QuestionEnd：依 T069 的規則；T-QuestionEnd 顯示本題送出組數，以 `QuestionProgress` 顯示進度，「開放第 n+1 題」呼叫 `openQuestion(n+1)` 回到 T-Live；最後一題結束 → `navigate` 到 `T-Results`
-- [ ] T076 [US3] 在 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）實作 T-Results 與 T-WriteBack：載入 `getAllResults()`，顯示每題所有送出組別的答案、順位與判定（FR-040）；比第一名慢的秒數只把 `behindFirstMs` 換算成秒顯示，不由 `elapsedMs` 自行計算（FR-003）；不顯示結束時間與總耗時（SC-004）；以 `SheetPreview` 顯示寫回預覽；「寫回 Google Sheets」開啟 `ConfirmDialog`；「寫回」關閉視窗後呼叫 `writeBack()` 並顯示寫回結果（尚未寫回／成功／失敗）；`ErrorArea`
-- [ ] T077 [US3] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Live`、`T-QuestionEnd`、`T-Results`
+- [ ] T076 [US3] 在 `frontend/src/pages/teacher/TeacherResultsPage.tsx`（與 `.module.css`）實作 T-Results 與 T-WriteBack：載入 `getAllResults()`，顯示每題所有送出組別的答案、順位與判定（FR-040）；比第一名慢的秒數只把 `behindFirstMs` 換算成秒顯示，不由 `elapsedMs` 自行計算（FR-003）；不顯示結束時間與總耗時（SC-004）；以 `SheetPreview` 顯示寫回預覽（依 C-5 放寬 `SheetPreview` 的 props，表頭資訊可省略）；「寫回 Google Sheets」開啟 `ConfirmDialog`；「寫回」關閉視窗後呼叫 `writeBack()` 並顯示寫回結果（尚未寫回／成功／失敗）；`ErrorArea`
+- [ ] T077 [US3] 在 `frontend/src/app/AppRouter.tsx` 接上 `T-Live`、`T-QuestionEnd`、`T-Results`（`T-Results` 的頁面參數帶 `activity`，C-5）
 - [ ] T078 [US3] 執行 `npm test`、`npm run test:e2e`，確認 T068–T071 通過；依 quickstart Q5、Q6 人工驗證並記錄於 `manual-verification.md`
 
 **Checkpoint**: 老師端流程完整。
