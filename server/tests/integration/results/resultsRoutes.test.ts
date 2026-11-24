@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resultsRoutes } from '../../../src/results/resultsRoutes.js';
 import { WriteBackFailure } from '../../../src/results/WriteBackService.js';
-import type { WriteBackResult } from '../../../src/temp-shared/entities.js';
+import type { WriteBackResult } from '@quiz-buzzer/shared/entities';
 import { signInFor } from '../../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../../helpers/testApp.js';
 

@@ -6,7 +6,7 @@ import type { BlankMarkers, ImportStore } from '../guided-notes/ImportStore.js';
 import { isImportError } from '../guided-notes/importErrors.js';
 import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from '../guided-notes/SpreadsheetReader.js';
 import type { ActivityStore } from '../temp-deps/activity.js';
-import type { ImportError, ImportSuccess, QuestionResult, WriteBackResult } from '../temp-shared/entities.js';
+import type { ImportError, ImportSuccess, QuestionResult, WriteBackResult } from '@quiz-buzzer/shared/entities';
 import { backupName, composeCellText } from './cellText.js';
 import type { ResultQuery } from './ResultQuery.js';
 import type { CellText, SpreadsheetWriter } from './SpreadsheetWriter.js';

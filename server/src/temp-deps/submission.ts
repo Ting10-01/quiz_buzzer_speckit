@@ -3,7 +3,7 @@
 // 005 (server/src/submission/SubmissionStore.ts) is not implemented yet; 006 depends only on this
 // shape so it can be built and tested with a substitute. When 005 lands, import SubmissionStore
 // from server/src/submission/ instead and delete this file. Types only, no code.
-import type { Submission } from '../temp-shared/entities.js';
+import type { Submission } from '@quiz-buzzer/shared/entities';
 
 // The only authoritative source of submissions, ranks and judgements. 006 only reads.
 export interface SubmissionStore {

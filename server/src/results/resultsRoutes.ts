@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { sendError } from '../http/errors.js';
-import type { WriteBackResult } from '../temp-shared/entities.js';
+import type { WriteBackResult } from '@quiz-buzzer/shared/entities';
 import { WriteBackFailure, type WriteBackService } from './WriteBackService.js';
 
 export interface ResultsRoutesOptions {
