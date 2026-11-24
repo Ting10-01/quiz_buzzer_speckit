@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fakeTeacherApi, googleWill } from './googleSignIn';
 import {
   GROUP,
   SHEET_BAD,
@@ -258,8 +259,9 @@ test.describe('US5 screen flow: coded arrows H1–H4', () => {
 test.describe('US5 screen flow: coded arrows T1–T17', () => {
   test('T1: T-Login → T-Login: 用 Google 登入（取消）', async ({ page }) => {
     await toLogin(page);
+    await fakeTeacherApi(page);
+    await googleWill(page, { error: 'popup_closed' });
     await page.getByRole('button', { name: '用 Google 登入' }).click();
-    await page.getByRole('dialog', { name: '模擬帳號選擇' }).getByRole('button', { name: '取消' }).click();
     await expectOn(page, 'T-Login');
     await expect(page.getByText('已取消登入')).toBeVisible();
   });
