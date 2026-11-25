@@ -54,8 +54,8 @@ export class ApiClient {
     if (!isErrorBody(data)) throw new ApiError(response.status, 'NETWORK', SERVER_UNREACHABLE);
     const { code, message } = data;
     if (response.status === 401 && code === 'UNAUTHORIZED' && token) {
-      // Another sign-in replaced this tab's credential (REQ-AUTH-11).
-      this.credentials.clear();
+      // Another sign-in replaced this tab's credential (REQ-AUTH-11). It is kept, so every later
+      // teacher request gets this same answer instead of the server's "需要老師登入" (#18).
       throw new ApiError(401, code, SIGN_IN_AGAIN);
     }
     throw new ApiError(response.status, code, message);
