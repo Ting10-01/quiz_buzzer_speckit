@@ -174,13 +174,13 @@ describe('HttpAuthService', () => {
       await expect(service(fakeGoogle({})).getCurrentAccount()).resolves.toEqual(ACCOUNT);
     });
 
-    it('rejects "sign in again" and clears the credential once it was replaced (AC-08)', async () => {
+    it('rejects "sign in again" and keeps the credential once it was replaced (AC-08, #18)', async () => {
       fakeServer({ 'GET /api/auth/me': () => json(401, { code: 'UNAUTHORIZED', message: '需要老師登入' }) });
       store.set('token-a');
       await expect(service(fakeGoogle({})).getCurrentAccount()).rejects.toMatchObject({
         message: '老師登入已失效，請回首頁重新登入',
       });
-      expect(store.get()).toBeNull();
+      expect(store.get()).toBe('token-a');
     });
   });
 });
