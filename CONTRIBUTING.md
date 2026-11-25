@@ -108,6 +108,8 @@ SpecKit 每個階段都會一次產生好幾個檔案，以下規定 commit 的�
 | `/speckit-analyze` 後的修正 | 依報告修改的 spec、plan 或 tasks | `spec(001): add acceptance criteria for import failures` |
 | `/speckit-implement` | **每個 Phase 一組 commit**，見下表 | `test(001): cover the teacher setup flow`、`feat(001): let teachers prepare an activity`，`Refs: T020–T031, US2, REQ-IMP-01` |
 
+本規則適用於本規則合併後新增的 commit；之前已依「每個任務一筆」完成的 commit（001、002、003）維持原樣，不需改寫。
+
 implement 階段每個 Phase 的 commit：
 
 | commit | 類型 | 包含 | 數量 |
