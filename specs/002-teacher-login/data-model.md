@@ -20,7 +20,7 @@
 | `GisGoogleIdentityClient` | — | 載入 GIS、以 popup 取得授權碼（research RD-10） |
 | `GoogleCodeResult` | `code?: string`、`error?: GoogleCodeError` | 兩者恰有一個 |
 | `GoogleCodeError`（enum） | `CANCELLED`、`POPUP_BLOCKED`、`LOAD_FAILED` | `CANCELLED` 包含關閉視窗與 `access_denied` |
-| `TeacherCredentialStore` | `get(): string \| null`、`set(token: string): void`、`clear(): void` | 只存在 `sessionStorage` 的 `teacherToken`；不得使用 `localStorage` 或 cookie（REQ-AUTH-06） |
+| `TeacherCredentialStore` | `get(): string \| null`、`set(token: string): void` | 只存在 `sessionStorage` 的 `teacherToken`；不得使用 `localStorage` 或 cookie（REQ-AUTH-06） |
 | `ApiClient` | `request<T>(method: string, path: string, body?: unknown): Promise<T>` | 有憑證就帶 `Authorization: Bearer`；錯誤以 `ApiError` reject（research RD-10） |
 | `ApiError`（符合 `UnexpectedError`） | `status: number`、`code: string`、`message: string` | `status = 0`、`code = 'NETWORK'` 表示連不上伺服器 |
 
@@ -77,6 +77,6 @@ TEACHER(A, tokenN)
 有憑證
   --重新整理--> 有憑證（不變）
   --同分頁再登入成功--> 有新的憑證
-  --請求回 401--> 沒有憑證（ApiClient 清除）
+  --被取代（有人登入）--> 憑證作廢但保留：之後每次老師請求都回 401，顯示「老師登入已失效，請回首頁重新登入」（#18）
   --分頁關閉--> 消失
 ```

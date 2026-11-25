@@ -69,4 +69,4 @@
 | --- | --- |
 | 本分頁沒有憑證 | `null`，不呼叫伺服器 |
 | `GET /api/auth/me` 200 | `TeacherAccount` |
-| 401 `UNAUTHORIZED` | 清除本分頁憑證；reject `ApiError`「老師登入已失效，請回首頁重新登入」 |
+| 401 `UNAUTHORIZED` | 保留本分頁憑證（之後的請求同樣回 401）；reject `ApiError`「老師登入已失效，請回首頁重新登入」 |

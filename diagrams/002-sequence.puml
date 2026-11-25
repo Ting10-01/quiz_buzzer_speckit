@@ -102,7 +102,6 @@ else 有老師憑證
   else 憑證已作廢（之後有人登入取代了這個老師）
     TAuth --> Guard : false
     Guard --> Api : 401 UNAUTHORIZED
-    Api -> Cred : clear()
     Api --> Auth : reject ApiError「老師登入已失效，請回首頁重新登入」
     Auth --> Page : reject ApiError
   end

@@ -49,7 +49,7 @@ description: "Task list for 002 老師登入"
 - [X] T012 實作 `server/src/app.ts` 的 `buildApp(config, deps)`：建立 Fastify（`loggerOptions`）、註冊錯誤處理；預留 `authRoutes`、`requireTeacher`、`app.googleClients`、Socket.IO 的註冊位置（後續任務補上）；依 T006–T009
 - [X] T013 實作 `server/src/main.ts`：`loadConfig(process.env)` → `buildApp` → `listen({ host: '127.0.0.1', port })`；`missingGoogleVars` 非空時以 `warn` 只列出變數名稱（REQ-AUTH-13）
 - [X] T014 建立 `server/tests/helpers/testApp.ts`：以 `fakeGoogleGateway` 建立 `buildApp`；提供 `inject` 與 listen 隨機埠兩種用法；依 T010、T012
-- [x] T015 [P] `frontend/tests/unit/http/TeacherCredentialStore.test.ts`：`set` 後 `get` 回同一個值；`clear` 後為 `null`；只寫入 `sessionStorage` 的 `teacherToken`，`localStorage` 與 `document.cookie` 不變；`sessionStorage` 丟例外時 `get` 回 `null`（REQ-AUTH-06）
+- [x] T015 [P] `frontend/tests/unit/http/TeacherCredentialStore.test.ts`：`set` 後 `get` 回同一個值；只寫入 `sessionStorage` 的 `teacherToken`，`localStorage` 與 `document.cookie` 不變；`sessionStorage` 丟例外時 `get` 回 `null`（REQ-AUTH-06）
 - [x] T016 [P] 實作 `frontend/src/services/http/TeacherCredentialStore.ts`（research RD-10）
 - [x] T017 [P] `frontend/tests/unit/http/ApiClient.test.ts`：有憑證時帶 `Authorization: Bearer <token>`、沒有時不帶；2xx 回傳 body；錯誤回應以 `ApiError { status, code, message }` reject，`message` 取 `ErrorBody.message`；有憑證時收到 `401 UNAUTHORIZED` 改為「老師登入已失效，請回首頁重新登入」並清除憑證；收到 `401 GOOGLE_AUTH_EXPIRED` 時保留憑證、message 取伺服器的訊息；`fetch` 失敗以 `status 0`、`code 'NETWORK'`「連不上伺服器，請確認伺服器已啟動」reject（REQ-AUTH-13、AC-23）
 - [x] T018 實作 `frontend/src/services/http/ApiClient.ts`：`ApiClient.request<T>(method, path, body?)`、`ApiError`；依 T016
@@ -177,6 +177,8 @@ description: "Task list for 002 老師登入"
 
 - [X] T054 在 `README.md` 新增「Google 登入設定」一節：依 quickstart 第 1 節列出 Google Cloud 設定步驟與四個環境變數**名稱**，不含任何值
 - [x] T058 [US1] 依 spec Session 2026-11-24 修改 `SCOPE_DENIED` 的訊息：`frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照改為「需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。」，並更新 `frontend/tests/component/TeacherLoginPage.test.tsx` 的案例（AC-04）
+- [ ] T059 [US2] 依 issue #18 補測試：`frontend/tests/unit/http/ApiClient.test.ts` 被取代後連續兩次老師請求都 reject「老師登入已失效，請回首頁重新登入」且憑證仍在；`frontend/tests/e2e/teacher-login.spec.ts` 被取代的分頁連按兩次「從 Google 雲端硬碟挑選」都顯示同一句（AC-08、AC-26）
+- [ ] T060 [US2] 依 issue #18 修正 `frontend/src/services/http/ApiClient.ts`：401 `UNAUTHORIZED` 時不再清除本分頁憑證，並移除不再使用的 `TeacherCredentialStore.clear()` 與其測試（AC-08、AC-26、REQ-AUTH-11）
 - [ ] T055 依 `specs/002-teacher-login/quickstart.md` 第 4 節以真正的 Google 執行 M1–M13，結果記錄在 `specs/002-teacher-login/manual-verification.md`（原則 VIII；SC-001、SC-006、AC-19 等只能人工驗證的項目）
 - [x] T056 機密檢查：以 `git grep` 搜尋 `ya29`、`1//`、`GOCSPX-`、`AIza` 與本機四個環境變數的值，確認 repo 與 commit 紀錄 0 筆，結果記在 `manual-verification.md`（AC-25、SC-004）
 - [x] T057 圖表一致性驗證：逐一對照 `diagrams/002-component.puml`、`002-class.puml`、`002-sequence.puml` 與程式碼的組件、類別、方法與呼叫順序，結果寫在 `specs/002-teacher-login/diagram-verification.md`（原則 I）
@@ -215,7 +217,7 @@ description: "Task list for 002 老師登入"
 | --- | --- | --- |
 | REQ-AUTH-01 用 Google 登入、結果與訊息 | AC-01、AC-03、AC-04 | T021、T022、T023、T058、T029、T030、T031、T032 |
 | REQ-AUTH-02 以 Google 登入的人即為老師、同一時間一個老師 | AC-01、AC-26、AC-27 | T019、T020、T026、T033、T034 |
-| REQ-AUTH-03 任何登入取代前一個老師、舊憑證作廢、活動不變 | AC-07、AC-08、AC-09、AC-26、AC-27 | T034、T035、T036、T037、T038、T040、T042 |
+| REQ-AUTH-03 任何登入取代前一個老師、舊憑證作廢、活動不變 | AC-07、AC-08、AC-09、AC-26、AC-27 | T034、T035、T036、T037、T038、T040、T042、T059、T060 |
 | REQ-AUTH-04 取消 | AC-03 | T021、T022、T030 |
 | REQ-AUTH-05 一次取得 `drive.file`、缺權限失敗 | AC-04 | T019、T020、T023、T058、T024、T026、T030 |
 | REQ-AUTH-06 憑證只在本分頁、Bearer、不用 cookie | AC-09、AC-11 | T015、T016、T017、T018、T039、T041 |
@@ -223,7 +225,7 @@ description: "Task list for 002 老師登入"
 | REQ-AUTH-08 即時連線的老師檢查 | AC-13、AC-14、AC-15 | T040、T042 |
 | REQ-AUTH-09 伺服器端 Google 授權 | AC-17、AC-18 | T025、T044、T046 |
 | REQ-AUTH-10 檔案選擇器資料 | AC-16、AC-19 | T045、T047 |
-| REQ-AUTH-11 取得目前登入的帳號 | AC-01、AC-08 | T020、T021、T028、T031、T036 |
+| REQ-AUTH-11 取得目前登入的帳號 | AC-01、AC-08 | T020、T021、T028、T031、T036、T059、T060 |
 | REQ-AUTH-12 金鑰、授權、log 不外流 | AC-20、AC-25 | T002、T003、T005、T006、T007、T048、T056 |
 | REQ-AUTH-13 錯誤訊息、缺變數仍啟動 | AC-21～AC-24 | T005、T008、T013、T017、T049、T050、T051、T052、T053 |
 

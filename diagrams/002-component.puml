@@ -60,7 +60,7 @@ HAuth --> IGis
 Gis -up-|> IGis
 HAuth --> Api
 HAuth --> Cred
-Api --> Cred : 讀取老師憑證\n401 UNAUTHORIZED 時清除
+Api --> Cred : 讀取老師憑證
 Gis --> GIS : 授權碼（popup）
 
 Api --> Routes : HTTP（Authorization: Bearer）

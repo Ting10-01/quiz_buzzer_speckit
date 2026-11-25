@@ -58,7 +58,6 @@ package "Frontend（frontend/src/services/）" {
   class TeacherCredentialStore {
     +get(): string | null
     +set(token: string): void
-    +clear(): void
   }
   class ApiClient {
     +request<T>(method: string, path: string, body?: unknown): Promise<T>
