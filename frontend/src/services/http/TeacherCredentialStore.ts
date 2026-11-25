@@ -18,12 +18,4 @@ export class TeacherCredentialStore {
       // Storage disabled: the tab simply stays signed out.
     }
   }
-
-  clear(): void {
-    try {
-      sessionStorage.removeItem(KEY);
-    } catch {
-      // Nothing stored, nothing to clear.
-    }
-  }
 }
