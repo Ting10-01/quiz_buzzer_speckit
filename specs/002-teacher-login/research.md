@@ -101,8 +101,8 @@
 ## RD-10 前端：`ApiClient`、`TeacherCredentialStore`、`HttpAuthService`
 
 - **Decision**:
-  - `TeacherCredentialStore`：`get`、`set`、`clear`，包裝 `sessionStorage` 的 `teacherToken`；讀寫失敗（例如被瀏覽器停用）時視為沒有憑證。
-  - `ApiClient.request(method, path, body?)`：有憑證就帶 `Authorization: Bearer`；JSON 進出。成功回傳 body；HTTP 錯誤以 `ApiError { status, code, message }` reject，`message` 取伺服器的 `ErrorBody.message`；`401 UNAUTHORIZED` 且本分頁有憑證時，message 改為「老師登入已失效，請回首頁重新登入」並清除本分頁的憑證；`fetch` 失敗以 `ApiError { status: 0, code: 'NETWORK' }`「連不上伺服器，請確認伺服器已啟動」reject。`ApiError` 具有 `message`，符合 001 的 `UnexpectedError`，可直接往上丟（001 RD-13）。003–006 的 `Http*Service` 共用它。
+  - `TeacherCredentialStore`：`get`、`set`，包裝 `sessionStorage` 的 `teacherToken`；讀寫失敗（例如被瀏覽器停用）時視為沒有憑證。
+  - `ApiClient.request(method, path, body?)`：有憑證就帶 `Authorization: Bearer`；JSON 進出。成功回傳 body；HTTP 錯誤以 `ApiError { status, code, message }` reject，`message` 取伺服器的 `ErrorBody.message`；`401 UNAUTHORIZED` 且本分頁有憑證時，message 改為「老師登入已失效，請回首頁重新登入」，不清除本分頁的憑證，所以被取代後的每一次老師請求都顯示同一句（#18）；`fetch` 失敗以 `ApiError { status: 0, code: 'NETWORK' }`「連不上伺服器，請確認伺服器已啟動」reject。`ApiError` 具有 `message`，符合 001 的 `UnexpectedError`，可直接往上丟（001 RD-13）。003–006 的 `Http*Service` 共用它。
   - `HttpAuthService.signInWithGoogle()`：`GET /api/auth/config` → `requestCode` → `POST /api/auth/google` → `TeacherCredentialStore.set` → `SignInResult`。`POST /api/auth/google` 以 200 回傳 `{ ok: false, failure: 'SCOPE_DENIED' }` 時轉成登入失敗（預期中的失敗用 200 回傳，與 003–006 的慣例一致；2026-11-22 由 403 改為 200）；Google 視窗取消轉成 `CANCELLED`；彈出視窗被擋、元件載入失敗轉成 `UnexpectedError`。進行中時再次呼叫，回傳同一個 Promise（spec Edge Cases：連續快速點擊）。
   - `HttpAuthService.getCurrentAccount()`：本分頁沒有憑證回 `null`；否則 `GET /api/auth/me`；憑證作廢時由 `ApiClient` reject「老師登入已失效，請回首頁重新登入」（REQ-AUTH-11）。
   - `GisGoogleIdentityClient`：第一次使用時插入 GIS `<script>`；`initCodeClient` 的 `callback` 回 `code` 或 `error`（`access_denied` → `CANCELLED`）；`error_callback` 的 `popup_closed` → `CANCELLED`、`popup_failed_to_open` → `POPUP_BLOCKED`；script 載入失敗 → `LOAD_FAILED`。
