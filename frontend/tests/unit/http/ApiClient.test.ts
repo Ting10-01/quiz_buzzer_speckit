@@ -48,15 +48,18 @@ describe('ApiClient', () => {
     expect(error).toMatchObject({ status: 502, code: 'GOOGLE_UNAVAILABLE', message: '連不上 Google，請稍後再試' });
   });
 
-  it('turns 401 UNAUTHORIZED into "sign in again" and clears the tab credential', async () => {
-    vi.stubGlobal('fetch', respond(401, { code: 'UNAUTHORIZED', message: '需要老師登入' }));
+  it('turns every 401 UNAUTHORIZED after a replacement into "sign in again" and keeps the credential (#18)', async () => {
+    const unauthorized = { code: 'UNAUTHORIZED', message: '需要老師登入' };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(unauthorized), { status: 401 })));
     store.set('old-token');
-    await expect(client.request('GET', '/api/auth/me')).rejects.toMatchObject({
-      status: 401,
-      code: 'UNAUTHORIZED',
-      message: '老師登入已失效，請回首頁重新登入',
-    });
-    expect(store.get()).toBeNull();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await expect(client.request('GET', '/api/auth/me')).rejects.toMatchObject({
+        status: 401,
+        code: 'UNAUTHORIZED',
+        message: '老師登入已失效，請回首頁重新登入',
+      });
+    }
+    expect(store.get()).toBe('old-token');
   });
 
   it('keeps the credential on 401 GOOGLE_AUTH_EXPIRED and passes the server message on', async () => {

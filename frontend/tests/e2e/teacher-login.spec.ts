@@ -104,7 +104,14 @@ test.describe('002 signing in again (T036)', () => {
     // Back on T-Pick, tab 1 asks for its account again and learns it was replaced.
     await page.getByRole('button', { name: '取消' }).click();
     await expect(page.getByRole('alert')).toHaveText(SIGN_IN_AGAIN);
-    expect(await page.evaluate(() => sessionStorage.getItem('teacherToken'))).toBeNull();
+    // Every later teacher request gets the same answer, not the server's "需要老師登入" (#18).
+    await page.unroute('**/api/auth/picker-token');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const answer = page.waitForResponse('**/api/auth/picker-token');
+      await pickButton(page).click();
+      expect((await answer).status()).toBe(401);
+      await expect(page.getByRole('alert')).toHaveText(SIGN_IN_AGAIN);
+    }
     await other.close();
   });
 });

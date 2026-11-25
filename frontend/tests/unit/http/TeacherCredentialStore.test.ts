@@ -8,13 +8,11 @@ describe('TeacherCredentialStore', () => {
     localStorage.clear();
   });
 
-  it('returns the stored token and null after clear', () => {
+  it('returns null before set and the stored token after', () => {
     const store = new TeacherCredentialStore();
     expect(store.get()).toBeNull();
     store.set('token-a');
     expect(store.get()).toBe('token-a');
-    store.clear();
-    expect(store.get()).toBeNull();
   });
 
   it('writes only sessionStorage teacherToken, never localStorage or cookies', () => {

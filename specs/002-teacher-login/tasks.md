@@ -177,7 +177,7 @@ description: "Task list for 002 老師登入"
 
 - [X] T054 在 `README.md` 新增「Google 登入設定」一節：依 quickstart 第 1 節列出 Google Cloud 設定步驟與四個環境變數**名稱**，不含任何值
 - [x] T058 [US1] 依 spec Session 2026-11-24 修改 `SCOPE_DENIED` 的訊息：`frontend/src/pages/teacher/TeacherLoginPage.tsx` 的失敗訊息對照改為「需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。」，並更新 `frontend/tests/component/TeacherLoginPage.test.tsx` 的案例（AC-04）
-- [ ] T059 [US2] 依 issue #18 補測試：`frontend/tests/unit/http/ApiClient.test.ts` 被取代後連續兩次老師請求都 reject「老師登入已失效，請回首頁重新登入」且憑證仍在；`frontend/tests/e2e/teacher-login.spec.ts` 被取代的分頁連按兩次「從 Google 雲端硬碟挑選」都顯示同一句（AC-08、AC-26）
+- [x] T059 [US2] 依 issue #18 補測試：`frontend/tests/unit/http/ApiClient.test.ts` 被取代後連續兩次老師請求都 reject「老師登入已失效，請回首頁重新登入」且憑證仍在；`frontend/tests/e2e/teacher-login.spec.ts` 被取代的分頁連按兩次「從 Google 雲端硬碟挑選」都顯示同一句（AC-08、AC-26）
 - [ ] T060 [US2] 依 issue #18 修正 `frontend/src/services/http/ApiClient.ts`：401 `UNAUTHORIZED` 時不再清除本分頁憑證，並移除不再使用的 `TeacherCredentialStore.clear()` 與其測試（AC-08、AC-26、REQ-AUTH-11）
 - [ ] T055 依 `specs/002-teacher-login/quickstart.md` 第 4 節以真正的 Google 執行 M1–M13，結果記錄在 `specs/002-teacher-login/manual-verification.md`（原則 VIII；SC-001、SC-006、AC-19 等只能人工驗證的項目）
 - [x] T056 機密檢查：以 `git grep` 搜尋 `ya29`、`1//`、`GOCSPX-`、`AIza` 與本機四個環境變數的值，確認 repo 與 commit 紀錄 0 筆，結果記在 `manual-verification.md`（AC-25、SC-004）
