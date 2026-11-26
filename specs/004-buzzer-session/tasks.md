@@ -151,7 +151,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 - [ ] T045 [P] [US5] 建立 `server/tests/load/phaseSync.load.ts`（research RA-15）：1 個老師與 200 個學生連線（20 組 × 10，只用 WebSocket）；200 個學生在 1 秒內同時 `group:join`，檢查每個都恰好一次 ack、人數總和 200、老師連線在最後一個加入後 1 秒內收到相同人數（AC-29、NFR-02）；老師依序開放並結束 4 題，檢查每次階段改變 1 秒內送達全部 201 個連線、每條連線版本嚴格遞增、結束時所有連線與伺服器狀態相同（AC-28、NFR-01）
 - [ ] T046 [US5] 在 `server/package.json` 加入 `test:load:activity` script：重複執行 T045 共 20 次並輸出彙整（SC-002）
-- [ ] T047 [US5] 執行 T046；若未通過，調整 `server/src/activity/ActivityBroadcaster.ts`（例如序列化一次、對兩個房間重用），直到 20 次全部通過；結果記在 `specs/004-buzzer-session/manual-verification.md`
+- [ ] T047 [US5] 執行 T046；若未通過，調整 `server/src/activity/ActivityBroadcaster.ts`（例如序列化一次、對兩個房間重用），直到 20 次全部通過；結果記在 `specs/004-buzzer-session/load-test.md`（自動量測，不記在人工驗證的 `manual-verification.md`）
 
 **Checkpoint**: 高併發下的階段同步經過量測
 
