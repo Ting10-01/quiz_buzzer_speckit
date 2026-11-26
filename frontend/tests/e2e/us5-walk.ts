@@ -113,16 +113,12 @@ export const STUDENT_ACTIVITY: ImportSuccess = {
 };
 
 /**
- * Advances the phase seen by the home page and student pages one step at a time (M7). Once 004
- * binds the real activity service the mock button is gone, so the walk teacher advances the phase
- * through the test server's teacher API instead, without opening a teacher page (004 T061).
+ * Advances the phase seen by the home page and student pages one step at a time, like 001's mock
+ * M7: the walk teacher calls the test server's teacher API, without opening a teacher page (004 T061).
  */
 export async function advance(page: Page, times = 1) {
-  for (let i = 0; i < times; i += 1) {
-    const mockAdvance = button(page, '模擬：推進到下一個階段');
-    if ((await mockAdvance.count()) > 0) await mockAdvance.click();
-    else await advanceActivity(STUDENT_ACTIVITY);
-  }
+  void page;
+  for (let i = 0; i < times; i += 1) await advanceActivity(STUDENT_ACTIVITY);
 }
 
 /** Clicks `name` and picks `sheet` in the stubbed Google Picker (googlePicker.ts). */
