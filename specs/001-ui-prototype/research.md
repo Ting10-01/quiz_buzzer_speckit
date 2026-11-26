@@ -72,7 +72,7 @@
 - **金鑰位置**：OAuth client secret 與 token 只放在伺服器端的 `.env`、`credentials/`（已列入 `.gitignore`）。
 - **Google Picker 的 API key**：「從 Google 雲端硬碟挑選」使用的 Picker API 需要一把瀏覽器端的 API key，執行時在瀏覽器中一定看得到。可經由 `frontend/.env.local` 注入而不進 repo，但它不是祕密，應在 Google Cloud 主控台限制可用的網域與 API。由 002、003 處理。
 - **學生組別由伺服器判斷**：學生加入組別後，伺服器依連線身分記住該連線的組別；送出答案與接收判定時，前端不傳組別，避免任何分頁冒用其他組別（原則 VI）。介面已依此設計（`submitAnswer`、`onJudgement`、`leaveGroup` 不帶組別），具體的連線身分做法由 004、005 決定。
-- **老師重新整理頁面**：活動進行中老師重新整理時，活動要結束還是回到控制台，由 004 決定（spec D21）；001 目前重新整理一律回到首頁（RD-11）。
+- **老師重新整理頁面**：活動進行中老師重新整理時活動繼續（004 已決定，spec D21）；重新整理仍回到首頁（RD-11），老師重新登入後由登入頁依目前活動回到控制台（spec FR-015）。
 - 001 不使用任何金鑰。
 
 ## RD-07 Logging
@@ -126,7 +126,7 @@
 
 ## RD-11 頁面切換
 
-- **Decision**: `AppRouter` 以 React state 保存目前的頁面與頁面參數，不使用 URL 路由，也不使用路由套件。開啟或重新整理分頁一律回到首頁。
+- **Decision**: `AppRouter` 以 React state 保存目前的頁面與頁面參數，不使用 URL 路由，也不使用路由套件。開啟或重新整理分頁一律回到首頁。老師重新登入後，登入頁以 `getCurrentActivity()` 取得目前活動，依階段直接切換到 T-Lobby、T-Live、T-QuestionEnd 或 T-Results，沒有活動時到 T-Pick（spec FR-015、D21）；這些頁面本來就以 `activity` 為參數，`AppRouter` 不需新增頁面狀態，也不需要 URL 路由。
 - **瀏覽器上一頁（FR-014）**: `AppRouter` 每次切換頁面時以 History API（`pushState`）加入一筆不改變網址的紀錄，並監聽 `popstate`：
   - 有確認視窗或模擬選擇器開啟時，只關閉它（等同按其取消類按鈕）。
   - 目前頁面有不呼叫介面的返回類按鈕（T-Login、S-Join 的「返回首頁」，T-Pick、T-Import、T-Setup 修改模式的「取消」，T-Setup 建立模式的「上一步」）時，執行與該按鈕相同的切換。

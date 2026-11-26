@@ -72,6 +72,7 @@ Router --> StudentPages : renderPage()\n依 PageState 渲染
 Router --> Badge
 
 PLogin ..> IAuth
+PLogin ..> IActivity
 PPick ..> IAuth
 PPick ..> INotes
 PImport ..> INotes

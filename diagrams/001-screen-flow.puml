@@ -18,7 +18,7 @@ legend bottom left
   箭頭上寫文字的是一位老師與一組學生走完一輪活動的路徑，以及答案被接受、不接受；其他轉換以代號標示，見下表。
   老師接受某一組後本題自動結束；最後一題結束時活動直接結束，不經過「本題已結束」。每組每題只能送出一次，被拒絕後不能再送出。
   確認視窗（T-EndConfirm、T-CancelConfirm、T-WriteBack）不畫成節點，併入觸發它的轉換。
-  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）；S10、S11 在 001 的模擬實作中不會發生（SC-002 除外項）。
+  老師端各頁頁首「搶答板」連回首頁，圖中省略。001 中，橘線、綠線與驗證失敗的箭頭（T10、S5）由「模擬模式」旁的模擬控制列觸發（FR-061）；S10、S11 在 001 的模擬實作中不會發生；T18–T21 依活動階段決定登入後的目的頁，以元件測試驗證（SC-002 除外項）。
   學生端「判定：接受」同時結束本題（M6）。
   任何介面呼叫回傳非預期錯誤時停留在原頁面，在共通錯誤訊息區顯示（FR-009）；此自我轉換在每頁都可能發生，圖中省略，以「模擬：非預期錯誤」觸發（M9）。
 
@@ -44,6 +44,10 @@ legend bottom left
   | <color:#1F5FAD>**T15**</color> | <color:#1F5FAD>點擊</color> | T-Results → T-Results | 寫回 Google Sheets，在確認視窗按「取消」 |
   | <color:#1F5FAD>**T16**</color> | <color:#1F5FAD>點擊</color> | T-Lobby → T-Lobby | 取消活動，在確認視窗按「繼續準備」 |
   | <color:#1F5FAD>**T17**</color> | <color:#1F5FAD>點擊</color> | T-Lobby → T-Pick | 取消活動，在確認視窗按「確定取消活動」 |
+  | <color:#1F5FAD>**T18**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Lobby | 用 Google 登入（成功，活動準備中；FR-015） |
+  | <color:#1F5FAD>**T19**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Live | 用 Google 登入（成功，搶答中，第 n 題；FR-015） |
+  | <color:#1F5FAD>**T20**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-QuestionEnd | 用 Google 登入（成功，本題已結束，第 n 題；FR-015） |
+  | <color:#1F5FAD>**T21**</color> | <color:#1F5FAD>點擊</color> | T-Login → T-Results | 用 Google 登入（成功，活動已結束；FR-015） |
   | <color:#1F5FAD>**S1**</color> | <color:#1F5FAD>點擊</color> | S-Join → S-Join | 選擇組別 |
   | <color:#1F5FAD>**S2**</color> | <color:#1F5FAD>點擊</color> | S-Wait → S-Join | 選錯組別？重新選擇 |
   | <color:#C05621>**S3**</color> | <color:#C05621>階段</color> | S-Join（沒有活動）→ S-Join | 老師建立活動 |
@@ -88,7 +92,7 @@ state "學生端" as Student {
 
 ' ===== 寫在圖上：老師走一輪 =====
 Main -[#1F5FAD]-> T_Login : <color:#1F5FAD>點擊：我是老師</color>
-T_Login -[#1F5FAD]-> T_Pick : <color:#1F5FAD>點擊：用 Google 登入（成功）</color>
+T_Login -[#1F5FAD]-> T_Pick : <color:#1F5FAD>點擊：用 Google 登入（成功，沒有活動）</color>
 T_Pick -[#1F5FAD]-> T_Import : <color:#1F5FAD>點擊：從雲端硬碟挑選</color>\n<color:#1F5FAD>（辨識成功）</color>
 T_Import -[#1F5FAD]-> T_Setup : <color:#1F5FAD>點擊：確認匯入，下一步</color>
 T_Setup -[#1F5FAD]-> T_Lobby : <color:#1F5FAD>點擊：建立活動（驗證通過）</color>
@@ -134,6 +138,10 @@ T_Live -[#1F5FAD]-> T_Live : <color:#1F5FAD>**T14**</color>
 T_Results -[#1F5FAD]-> T_Results : <color:#1F5FAD>**T15**</color>
 T_Lobby -[#1F5FAD]-> T_Lobby : <color:#1F5FAD>**T16**</color>
 T_Lobby -[#1F5FAD]-> T_Pick : <color:#1F5FAD>**T17**</color>
+T_Login -[#1F5FAD]-> T_Lobby : <color:#1F5FAD>**T18**</color>
+T_Login -[#1F5FAD]-> T_Live : <color:#1F5FAD>**T19**</color>
+T_Login -[#1F5FAD]-> T_QuestionEnd : <color:#1F5FAD>**T20**</color>
+T_Login -[#1F5FAD]-> T_Results : <color:#1F5FAD>**T21**</color>
 S_Join -[#1F5FAD]-> S_Join : <color:#1F5FAD>**S1**</color>
 S_Wait -[#1F5FAD]-> S_Join : <color:#1F5FAD>**S2**</color>
 S_JoinEmpty -[#C05621,dashed]-> S_Join : <color:#C05621>**S3**</color>
