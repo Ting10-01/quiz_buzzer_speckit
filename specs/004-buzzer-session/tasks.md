@@ -136,6 +136,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 - [ ] T041 [US3] 在 `frontend/src/services/HttpActivityService.ts` 實作 `openQuestion`、`endQuestion`，依 T028
 - [ ] T042 [US3] 修改 `frontend/src/services/createServiceRegistry.ts`：`activity` 綁定 `HttpActivityService`；移除 `phaseControl` 與 `activityValidationControl`；`submission` 或 `result` 仍是模擬實作時，把 `onActivityChange` 的活動寫進 `MockSession.teacherActivity`、`joinGroup` 成功的組別寫進 `MockSession.joinedGroup`、`leaveGroup` 成功時清除，`onPhaseChange(null)`（活動被取消）時清除 `teacherActivity` 與 `joinedGroup`；保留 003 留下的 `readWorksheet` 包裝（`MockResultService` 在老師分頁仍讀 `lastImport`）；並包一層模擬的 `judge`：`JudgeOutcome.activity` 不是 `OPEN` 時呼叫 `HttpActivityService.endQuestion(q)`，以其回傳的活動取代 `JudgeOutcome.activity`（RA-14）；更新 `frontend/tests/unit/createServiceRegistry.test.ts`（`isMockMode()` 仍為 true、`phaseControl` 不存在）
 - [ ] T043 [US3] 在 `server/src/activity/ActivityManager.ts` 與 `ActivityGateway.ts` 加入 pino 事件 `activity.created`、`activity.cancelled`、`question.opened`、`question.ended`、`group.joined`、`group.left`（RA-12），不記錄 `studentToken`；在 002 的 `server/src/logger.ts` `loggerOptions.redact.paths` 加上 `*.studentToken`；不記錄 handshake 物件；`server/tests/integration/activity/logging.test.ts` 檢查 log 輸出中沒有任何 `studentToken`
+- [ ] T062 [US3] （由 T050 提前，2026-11-26）在 `frontend/src/services/RealtimeClient.ts` 與 `HttpActivityService.ts` 實作「憑證改變就重新連線」（contracts/activity-service.md）：`getCurrentActivity()` 與五個老師指令執行前，若 `TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同、且不是 `rejectedTeacherToken`，先 `reconnect()`。理由：老師分頁在登入前就以學生身分連線，沒有這一步時收到的是學生版快照（`spreadsheet` 為空白值），版本相同的推送比老師指令的回應先到時，老師端會採用學生版，T044 與 001 的主持流程（模擬判定依試算表 ID 取答案）無法通過。T050 只保留它的 e2e，依 T042
 - [X] T044 [US3] `frontend/tests/e2e/activity-sync.spec.ts`：1 個老師與 3 個學生分頁走完「建立 → 加入 → 開放並結束 4 題 → 已結束」，學生頁面隨階段自動切換（S-Join 沒有活動 → 有活動、S-Wait → S-Answer → S-QuestionDone → S-Answer → … → 最後一題直接 S-Results），不需重新整理（AC-15、AC-17～20、SC-001、SC-004）；在 `QUESTION_ENDED`、`FINISHED` 時加入的分頁分別進入 S-QuestionDone、S-Results（001 RD-14）；學生分頁的 WebSocket 訊息中 `spreadsheet` 的 `id`、`title` 為空、沒有 `transport=polling` 的請求（AC-16、REQ-ACT-20、SC-003）；準備中老師取消活動：老師進入 T-Pick，S-Wait 的分頁切到 S-Join 並顯示「目前沒有活動，請等老師建立活動」、已選組別的 S-Join 清除選擇、首頁顯示沒有活動；老師重新建立活動後各組人數從 0 開始（AC-33、AC-34、SC-007）；開放第 1 題後控制台沒有「取消活動」；學生重新整理後選別組，共通錯誤訊息區顯示「第 1 題開放後不能換組，你在第 3 組」、停留在 S-Join；選回原組回到作答頁（AC-12、AC-14）；S-Wait 顯示 spec「說明文字」的內容（AC-09）先 `test.skip`，註明需 001 完成 C2
 
 **Checkpoint**: 完整活動流程可以展示；MVP 完成
@@ -169,7 +170,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] 在 `frontend/src/services/HttpActivityService.ts` 與 `RealtimeClient.ts` 實作「憑證改變就重新連線」；在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：（現在測）`OPEN(2)` 時老師重新整理並登入（002 的測試替身），進入 T-Pick，學生分頁的階段不變；再走到 T-Setup 按「建立活動」，共通錯誤訊息區顯示暫時限制的說明（AC-25、AC-32、SC-005）；沒有活動時登入進入 T-Pick（AC-27）；（需 001 C1，先 `test.skip`）登入後直接回到 T-Live（第 2 題），`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → T-Results（AC-26）
+- [ ] T050 [US4] （實作已移到 T062，Phase 5）在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：（現在測）`OPEN(2)` 時老師重新整理並登入（002 的測試替身），進入 T-Pick，學生分頁的階段不變；再走到 T-Setup 按「建立活動」，共通錯誤訊息區顯示暫時限制的說明（AC-25、AC-32、SC-005）；沒有活動時登入進入 T-Pick（AC-27）；（需 001 C1，先 `test.skip`）登入後直接回到 T-Live（第 2 題），`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → T-Results（AC-26）
 
 **Checkpoint**: 老師誤重新整理不會毀掉活動
 
@@ -187,7 +188,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 - Phase 1 → Phase 2 → US1 → US2 → US3 → US5；US4 在 US3 之後。
 - US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2 與 T061；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1；T028、T044 中頁面規則與說明文字的 e2e 依賴 001 C2。
-- 同一檔案的任務依序執行：`ActivityManager.ts`（T015 → T026 → T058 → T032 → T039 → T043）、`HttpActivityService.ts`（T022 → T028 → T060 → T034 → T041 → T050）、`activityRoutes.ts`（T027 → T059 → T040）、`ActivityGateway.ts`（T017 → T033 → T043）。
+- 同一檔案的任務依序執行：`ActivityManager.ts`（T015 → T026 → T058 → T032 → T039 → T043）、`HttpActivityService.ts`（T022 → T028 → T060 → T034 → T041 → T062）、`activityRoutes.ts`（T027 → T059 → T040）、`ActivityGateway.ts`（T017 → T033 → T043）。
 
 ### Parallel Opportunities
 
@@ -235,7 +236,7 @@ T056 frontend/tests/unit/HttpActivityService.cancel.test.ts
 | REQ-ACT-18 | AC-30 | T008、T039 | T007、T035 |
 | REQ-ACT-19 | AC-16 | T014、T016、T017 | T013、T030、T044 |
 | REQ-ACT-20 | AC-31 | T018、T020 | T019、T044 |
-| REQ-ACT-21 | AC-25～27、AC-32 | T050 | T048、T049、T050 |
+| REQ-ACT-21 | AC-25～27、AC-32 | T062 | T048、T049、T050 |
 | REQ-ACT-22 | AC-33～36 | T010、T012、T058、T059、T060、T042 | T009、T011、T054、T055、T056、T044 |
 | REQ-ACT-23 | AC-01、AC-02、AC-09 | T002 | T002、T028、T044（頁面部分依賴 001 C2） |
 | REQ-ACT-NFR-01 | AC-28 | T016、T047 | T045、T046 |
