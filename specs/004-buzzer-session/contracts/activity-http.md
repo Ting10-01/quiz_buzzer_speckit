@@ -8,7 +8,7 @@
 
 | 狀態碼 | Body | 何時 |
 | --- | --- | --- |
-| `200` | `ActivitySnapshot`（`Audience.TEACHER`） | 成功，包含重複要求（REQ-ACT-07） |
+| `200` | `ActivitySnapshot`（`Audience.TEACHER`） | 成功，包含重複要求（REQ-ACT-07、REQ-ACT-22） |
 | `200` | `ValidationError`（`field: "groupCount"`） | 組數不合法（預期中的失敗一律用 `200` 回傳，前端以 `isValidationError` 區分）；`message` 見 data-model「ValidationError 的內容」；活動不變 |
 | `409` | `{ code: string, message: string }` | 規則不允許（data-model `ActivityRuleError`） |
 | `401` | `{ code: "UNAUTHORIZED", message }`（002） | 沒有老師身分 |
