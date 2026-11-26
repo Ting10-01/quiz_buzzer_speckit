@@ -41,13 +41,18 @@ package "001 Entities 與介面（001 最終版，不修改）" #EEEEEE {
   interface ActivityService {
     +createActivity(settings: ActivitySettings): Promise<Activity | ValidationError>
     +updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError>
+    +cancelActivity(): Promise<void>
     +openQuestion(questionNumber: number): Promise<Activity>
     +endQuestion(questionNumber: number): Promise<Activity>
     +joinGroup(groupNumber: number): Promise<Activity>
     +leaveGroup(): Promise<void>
     +getCurrentActivity(): Promise<Activity | null>
-    +onPhaseChange(listener: (activity: Activity) => void): Unsubscribe
+    +onPhaseChange(listener: (activity: Activity [0..1]) => void): Unsubscribe
     +onActivityChange(listener: (activity: Activity) => void): Unsubscribe
+  }
+  class SetupPage <<001 頁面，004 套用規則>> {
+    組數初始值、「−」「+」何時不可用
+    「學生加入」說明文字
   }
   Activity --> ActivityPhase
   Activity "1" *-- "2..20" Group
@@ -72,6 +77,7 @@ package "shared（004 新增）" {
   }
   ActivitySnapshot o-- "0..1" Activity
   GroupAck *-- ActivitySnapshot
+  SetupPage ..> activityRules : REQ-ACT-23
 }
 
 package "frontend/src/services（004 新增）" {
@@ -80,7 +86,7 @@ package "frontend/src/services（004 新增）" {
     -api: ApiClient
     -latest: ActivitySnapshot [0..1]
     -lastPhaseKey: string [0..1]
-    +（ActivityService 的 9 個方法）
+    +（ActivityService 的 10 個方法）
     -apply(snapshot: ActivitySnapshot): boolean
   }
   class RealtimeClient {
@@ -133,7 +139,7 @@ package "server/src/activity（004 新增）" {
     -version: number
     +current(): ActivityState [0..1]
     +version(): number
-    +commit(next: ActivityState): number
+    +commit(next: ActivityState [0..1]): number
     +subscribe(listener: (version: number) => void): Unsubscribe
   }
   class GroupMembership {
@@ -146,6 +152,7 @@ package "server/src/activity（004 新增）" {
     +leave(socket: SocketRef): void
     +memberCounts(groupCount: number): number[]
     +highestOccupiedGroup(): number
+    +reset(): void
   }
   class SocketRef <<type>> {
     id: string
@@ -161,6 +168,7 @@ package "server/src/activity（004 新增）" {
   class ActivityManager {
     +createActivity(settings: ActivitySettings): ActivitySnapshot | ValidationError
     +updateSettings(settings: ActivitySettings): ActivitySnapshot | ValidationError
+    +cancelActivity(): ActivitySnapshot
     +openQuestion(questionNumber: number): ActivitySnapshot
     +endQuestion(questionNumber: number): ActivitySnapshot
     +joinGroup(socket: SocketRef, groupNumber: number): GroupAck
@@ -191,6 +199,7 @@ package "server/src/activity（004 新增）" {
   class activityRoutes <<Fastify plugin>> {
     POST /api/activity
     PUT /api/activity/settings
+    DELETE /api/activity
     POST /api/activity/questions/:n/open
     POST /api/activity/questions/:n/end
   }
@@ -236,6 +245,7 @@ note bottom of ActivityStore
   包含只有組別人數改變的 commit。
   subscribe 的 listener 在 commit 當下同步呼叫，
   只做排程，不做網路傳送。
+  取消活動時 commit(null)，版本照樣遞增。
 end note
 
 note bottom of CommandQueue
@@ -251,10 +261,14 @@ note right of GroupMembership
   重新連線時放在 handshake auth.studentToken。
   memberCounts 依 studentToken 計算，
   同一個 token 不重複計算（REQ-ACT-13）。
+  reset() 在取消活動時清除所有組別對應，
+  連線與 token 的對應保留（REQ-ACT-22）。
 end note
 
 note bottom of ActivityView
-  PUBLIC：spreadsheet.id 換成空字串（REQ-ACT-19）；
+  PUBLIC：spreadsheet 換成空白的 Spreadsheet
+  （id、title、selectedWorksheet 為空字串，
+  worksheets 為空陣列，REQ-ACT-19）；
   兩種都不含任何送出資料。
   FINISHED 時 currentQuestion 為最後一題的題號。
 end note
