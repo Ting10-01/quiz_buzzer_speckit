@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { createActivityModule } from './activity/index.js';
 import { authRoutes } from './auth/authRoutes.js';
 import { GoogleAuthLibraryGateway } from './auth/GoogleAuthLibraryGateway.js';
 import { GoogleClientProvider } from './auth/GoogleClientProvider.js';
@@ -54,6 +55,8 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   app.register(authRoutes, { config, teacherAuth, googleClients });
   app.register(guidedNotesRoutes);
   attachSocketServer(app, teacherAuth);
+  // 004: activity state, pushes and student group events on app.io.
+  app.register(createActivityModule, { importStore: app.importStore });
 
   return app;
 }
