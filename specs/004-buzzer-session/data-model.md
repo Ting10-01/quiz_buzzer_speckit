@@ -10,11 +10,13 @@
 
 | 常數 | 值 | 用途 |
 | --- | --- | --- |
-| `GROUP_COUNT_MIN` | 2 | T-Setup「−」何時不可用（001 spec US2 AC-7 已交給 004，004 套用）；伺服器驗證（REQ-ACT-02） |
+| `GROUP_COUNT_MIN` | 2 | T-Setup「−」何時不可用（001 spec US2 AC-7 已交給 004，001 依 C2 引用）；伺服器驗證（REQ-ACT-02） |
 | `GROUP_COUNT_MAX` | 20 | T-Setup「+」何時不可用（同上）；伺服器驗證 |
 | `GROUP_COUNT_DEFAULT` | 6 | T-Setup 建立模式的初始值（001 spec FR-023 把預設值交給 004） |
+| `JOIN_METHOD_TEXT` | spec「說明文字」的活動設定頁文字 | T-Setup「學生加入」 |
+| `WAIT_ROUND_TEXT` | spec「說明文字」的等待開放頁文字 | S-Wait「這一輪」題數下方 |
 
-001 已完成但 T-Setup 沒有引用這些常數，由 004 修改 `SetupPage.tsx` 套用（REQ-ACT-23、research RA-16）。
+001 已完成但頁面沒有引用這些常數；頁面由 001 依 spec「需請 001 修改」C2 修改，004 不修改 001 的頁面（REQ-ACT-23、research RA-16）。伺服器只用三個組數常數。
 
 ### `activitySync.ts`
 
@@ -194,13 +196,6 @@ n 不是 1..groupCount 的整數       → error NO_SUCH_GROUP「沒有第 n 組
 | `+on<T>(event, listener)`、`+onConnect(listener)` | 訂閱任一伺服器事件（004 用 `activity:snapshot`，005、006 註冊自己的事件）與連線成功；都回傳 `Unsubscribe` |
 | `+emitWithAck<T>(event, payload)` | 送出事件並等 ack（004 用 `group:join`、`group:leave`，005 用自己的事件）；5 秒逾時以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject |
 | `+studentToken()`、`+setStudentToken(token)` | 讀寫 `sessionStorage` 的 `quizBuzzer.studentToken` |
-
-### 001 頁面中屬於 004 的部分（research RA-16）
-
-| 頁面 | 004 套用的內容 |
-| --- | --- |
-| `SetupPage`（T-Setup） | 建立模式的組數初始值 `GROUP_COUNT_DEFAULT`；「−」在 `GROUP_COUNT_MIN`、「+」在 `GROUP_COUNT_MAX` 時不可用；「學生加入」文字（spec「說明文字」） |
-| `StudentPlayPage` 的 `WaitView`（S-Wait） | 「這一輪」在題數下方加上 spec「說明文字」的等待開放頁文字 |
 
 ### 002 提供的前端模組
 

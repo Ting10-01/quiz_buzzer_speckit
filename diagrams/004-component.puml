@@ -10,9 +10,9 @@ actor "老師" as Teacher
 actor "學生（各組，每組可多個分頁）" as Student
 
 package "前端（瀏覽器分頁）" {
-  package "001 頁面（001 最終版；004 只套用組數規則與說明文字，REQ-ACT-23；D21 見 spec「需請 001 修改」C1）" #EEEEEE {
-    component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage\n（S-Wait「這一輪」：004 的說明文字）" as StudentPages
-    component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup：004 的組數規則與說明文字)\nConsolePage (T-Lobby「取消活動」/ T-Live / T-QuestionEnd)" as TeacherPages
+  package "001 頁面（001 最終版，004 不修改；D21、組數規則與說明文字見 spec「需請 001 修改」C1、C2）" #EEEEEE {
+    component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage\n（S-Wait「這一輪」：C2 後引用 004 的文字）" as StudentPages
+    component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup：C2 後引用 004 的規則與文字)\nConsolePage (T-Lobby「取消活動」/ T-Live / T-QuestionEnd)" as TeacherPages
     component "ActivityService" <<interface>> as IActivity
     component "createServiceRegistry()\n組合根：只改 activity 的綁定" as Registry
   }
@@ -22,7 +22,7 @@ package "前端（瀏覽器分頁）" {
 }
 
 package "shared" {
-  component "activityRules\n組數 2–20、預設 6" as Rules
+  component "activityRules\n組數 2–20、預設 6、說明文字" as Rules
   component "activitySync\nActivitySnapshot（版本號 + Activity）\nGroupAck" as SyncTypes
 }
 
@@ -49,7 +49,8 @@ Teacher --> TeacherPages
 Student --> StudentPages
 StudentPages ..> IActivity
 TeacherPages ..> IActivity
-TeacherPages ..> Rules : 組數範圍與預設\n（001 spec 交給 004 定義，004 套用）
+TeacherPages ..> Rules : 組數範圍、預設與說明文字\n（001 依 C2 引用）
+StudentPages ..> Rules : 等待開放頁的說明文字\n（001 依 C2 引用）
 Registry --> HttpAct : 綁定
 HttpAct -up-|> IActivity
 HttpAct --> Realtime : 推送、加入與離開組別

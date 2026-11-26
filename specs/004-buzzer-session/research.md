@@ -75,7 +75,7 @@
 - **Decision**:
   - `getCurrentActivity()`：連線後伺服器立即送一份目前狀態（REQ-ACT-15）；手上已有快照時直接回傳，否則等下一份 `activity:snapshot`。5 秒內沒收到以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject。不另設 `GET` 端點。依 001 最終版，只有 Main 與 S-Join 載入時呼叫；T-Lobby 用 `createActivity`、`updateSettings` 的回傳值，之後靠 `onActivityChange`。
   - `onActivityChange(listener)`：每採用一份新版本就通知（`activity` 不是 `null` 時）。
-  - `onPhaseChange(listener)`：只在 `phase`、`currentQuestion` 或 `groupCount` 與上一次通知的不同時（含從沒有活動變成有活動）通知。採用的快照 `activity` 為 `null`、而上一次通知的是活動時（活動被取消），通知 `null`（001 RD-12、REQ-ACT-16）。`lastPhaseKey` 在重新連線時不清除，所以斷線期間被取消的活動，重新連線後也會通知 `null`。
+  - `onPhaseChange(listener)`：只在 `phase`、`currentQuestion` 或 `groupCount` 與上一次通知的不同時（含從沒有活動變成有活動）通知。採用的快照 `activity` 為 `null`、而上一次通知的是活動時（活動被取消），通知 `null`（001 RD-12、REQ-ACT-16）。`lastPhaseKey` 在重新連線時不清除，所以斷線期間被取消的活動，或伺服器重新啟動後沒有活動，重新連線後也會通知 `null`；頁面依 001 RD-12 決定是否切換（spec Edge Cases）。
 - **Rationale**: 狀態只有一個來源（Socket.IO 推送），初次載入也走同一條，不會出現 GET 與推送不一致。`onPhaseChange` 不因人數改變而通知，避免作答頁因為別組有人加入就被重畫；`groupCount` 改變只發生在準備中，讓選組頁能更新組別清單。
 - **Alternatives considered**: 另設 `GET /api/activity`（兩個來源，要處理順序）；`onPhaseChange` 每個版本都通知（作答頁可能被不相干的人數變化重畫）。
 
@@ -125,14 +125,11 @@
 - **Decision**: `server/tests/load/phaseSync.load.ts`：在隨機埠啟動伺服器（Google 與匯入以替身取代），以 `socket.io-client` 建立 1 個老師與 200 個學生連線（20 組 × 10，只用 WebSocket）。先讓 200 個學生在 1 秒內同時加入（NFR-02），再由老師依序開放並結束 4 題。每個連線記錄收到每個版本的時間。通過條件：每次階段改變 1 秒內送達全部 201 個連線、每個連線的版本號嚴格遞增、結束時所有連線的狀態與伺服器相同、每個加入都恰好一次 ack、各組人數總和為 200。`npm run test:load:activity -w server` 重複 20 次。
 - **Rationale**: 沿用舊設計 R8 的做法，改成量測階段同步；送出的壓力測試（1 秒 1,000 筆）屬於 005。
 
-## RA-16 001 頁面上屬於 004 的規則與文字（REQ-ACT-23）
+## RA-16 001 頁面上屬於 004 的規則與文字（REQ-ACT-23、spec「需請 001 修改」C2）
 
-- **Decision**: 001 spec FR-023、FR-051 把組數的預設值、「−」「+」何時不可用與說明文字交給 004，001 已完成但只保留位置。004 直接修改這兩個頁面中屬於 004 的部分，不增減欄位、按鈕或頁面：
-  - `frontend/src/pages/teacher/SetupPage.tsx`：建立模式的初始值改用 `GROUP_COUNT_DEFAULT`；「−」在 `groupCount <= GROUP_COUNT_MIN` 時 `disabled`，「+」在 `groupCount >= GROUP_COUNT_MAX` 時 `disabled`，點擊時也限制在範圍內；`JOIN_METHOD` 改為 spec「說明文字」的內容。修改模式的初始值仍是目前活動的組數。
-  - `frontend/src/pages/student/StudentPlayPage.tsx` 的 `WaitView`：「這一輪」保留題數，下方加上 spec「說明文字」的等待開放頁文字。
-  - 按鈕的位置、順序不變，所以不牽涉 001 research RD-09 的按鈕規則；實作前仍依 CLAUDE.md 第 2 節步驟 6 列出這兩頁的按鈕與文字給使用者確認。
-- **Rationale**: 001 spec 的範圍原則明說後續子功能決定規則時不需要修改 001 的 spec，除非要增減欄位、按鈕或頁面；這裡只填入 004 的規則與文字。
-- **Alternatives considered**: 請 001 補做（001 已完成並通過圖表一致性驗證，要重開 001 的流程）；只做伺服器驗證、頁面不限制（違反 AC-02，老師可以按到 0 組再被拒絕）。
+- **Decision**: 001 spec FR-023、FR-051 把組數的預設值、「−」「+」何時不可用與說明文字交給 004，001 已完成但只保留位置。004 只在 `shared/src/activityRules.ts` 提供 `GROUP_COUNT_MIN`、`GROUP_COUNT_MAX`、`GROUP_COUNT_DEFAULT`、`JOIN_METHOD_TEXT`、`WAIT_ROUND_TEXT`，不修改 001 的頁面與測試；`SetupPage.tsx` 與 `StudentPlayPage.tsx`（`WaitView`）引用這些常數，由 001 依 C2 修改。C2 完成前，頁面維持 001 現況，超出範圍的組數由伺服器以 `ValidationError` 拒絕（AC-04）。
+- **Rationale**: 憲法 III 規定新增規則時不得為此修改既有且已驗證的實作；001 plan「替換模擬實作的方式」也只允許後續子功能修改 `ServiceRegistry` 的綁定。頁面屬於 001，由 001 修改才能讓 001 的 spec、測試與圖表一致性驗證一起更新。
+- **Alternatives considered**: 004 直接修改兩個頁面（2026-11-26 第一版的做法；analyze 第 5 次 C1 判定違反原則 III）；修改憲法加上例外（影響所有子功能，需另外提出）；透過 `ActivityService` 回傳規則（要改 001 的介面，一樣要請 001 修改，且文字不是活動狀態）。
 
 ## RA-17 取消活動（REQ-ACT-22）
 

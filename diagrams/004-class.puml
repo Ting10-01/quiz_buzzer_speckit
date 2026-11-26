@@ -50,10 +50,8 @@ package "001 Entities 與介面（001 最終版，不修改）" #EEEEEE {
     +onPhaseChange(listener: (activity: Activity [0..1]) => void): Unsubscribe
     +onActivityChange(listener: (activity: Activity) => void): Unsubscribe
   }
-  class SetupPage <<001 頁面，004 套用規則>> {
-    組數初始值、「−」「+」何時不可用
-    「學生加入」說明文字
-  }
+  class SetupPage <<001 頁面，C2 由 001 修改>>
+  class StudentPlayPage <<001 頁面，C2 由 001 修改>>
   Activity --> ActivityPhase
   Activity "1" *-- "2..20" Group
   Activity --> Spreadsheet
@@ -74,10 +72,13 @@ package "shared（004 新增）" {
     +GROUP_COUNT_MIN = 2
     +GROUP_COUNT_MAX = 20
     +GROUP_COUNT_DEFAULT = 6
+    +JOIN_METHOD_TEXT: string
+    +WAIT_ROUND_TEXT: string
   }
   ActivitySnapshot o-- "0..1" Activity
   GroupAck *-- ActivitySnapshot
-  SetupPage ..> activityRules : REQ-ACT-23
+  SetupPage ..> activityRules : 組數規則、JOIN_METHOD_TEXT（C2）
+  StudentPlayPage ..> activityRules : WAIT_ROUND_TEXT（C2）
 }
 
 package "frontend/src/services（004 新增）" {
