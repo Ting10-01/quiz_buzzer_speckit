@@ -1,8 +1,8 @@
 # Specification Analysis Report: 004 活動與階段同步
 
-**Date**: 2026-11-21 | **Artifacts**: `spec.md`、`plan.md`、`tasks.md`（另參考 `research.md`、`data-model.md`、`contracts/`、`diagrams/004-*.puml`、constitution 1.0.0）
+**Date**: 2026-11-21（第 5、6 次：2026-11-26） | **Artifacts**: `spec.md`、`plan.md`、`tasks.md`（另參考 `research.md`、`data-model.md`、`contracts/`、`diagrams/004-*.puml`、constitution 1.0.0）
 
-分析跑了四次。第 1 次找到的 CRITICAL 與 MEDIUM 已修正；第 2 次只剩 LOW。之後依主對話比對 002 交界的結果修改（第 3 次），再配合 001 最終版（PR #10）修改（第 4 次），重跑後都只有 LOW。
+分析跑了六次。第 1 次找到的 CRITICAL 與 MEDIUM 已修正；第 2 次只剩 LOW。之後依主對話比對 002 交界的結果修改（第 3 次），再配合 001 最終版（PR #10）修改（第 4 次），重跑後都只有 LOW。2026-11-26 依 main 上的 feature-split（取消活動）、001 最終版與 002 #18 修訂後跑第 5 次，找到 1 個 CRITICAL、2 個 MEDIUM，修正後第 6 次只剩 LOW。
 
 ## 第 1 次分析（已修正）
 
@@ -74,46 +74,81 @@
 
 其餘 L2–L7 不變。檢查項目：所有檔案中已沒有「需請 001 修改」C2–C5、`Promise<Activity | ValidationError>` 形式的 `joinGroup`、「同一個帳號重新登入」的老師規則、T-Lobby 呼叫 `getCurrentActivity` 的描述；`data-model.md` 與 `diagrams/004-class.puml`（`joinGroup` 簽章、`GroupAck.error`）一致；三張 PNG 已重新產生且未被截掉（最大寬度 3017 px）。
 
+## 第 5 次分析（依 main 修訂後，2026-11-26）
+
+修訂內容：取消活動（REQ-ACT-22、AC-33～36、SC-007）、組數規則與說明文字（REQ-ACT-23）、學生資料不含學習單資訊（REQ-ACT-19）、`onPhaseChange(null)`（001 RD-12）、002 #18 的重新連線判斷。
+
+| ID | Category | Severity | Location(s) | Summary | 處理 |
+| --- | --- | --- | --- | --- | --- |
+| C1 | Constitution（III） | CRITICAL | tasks T057、T061；research RA-16；plan 憲法檢查 III；spec Session 2026-11-26；class 圖 `SetupPage` | 004 要直接修改 001 已驗證的 `SetupPage.tsx`、`StudentPlayPage.tsx` 與其測試，違反「新增規則時不得為此修改既有且已驗證的實作」與 001 plan「後續子功能只修改 `ServiceRegistry` 的綁定」；plan 的憲法檢查 III 卻標示通過 | 使用者決定採建議做法：列為 spec「需請 001 修改」C2；004 只在 `shared/src/activityRules.ts` 提供組數常數與 `JOIN_METHOD_TEXT`、`WAIT_ROUND_TEXT`（T002）；REQ-ACT-23 改寫；刪除 T057、T061；AC-01、02、09 的頁面部分標明需 001 完成 C2，T028、T044 對應的 e2e 先 `test.skip`；RA-16、plan、data-model、quickstart、component 與 class 圖同步 |
+| M1 | Inconsistency | MEDIUM | spec Edge Cases「伺服器重新啟動」；contracts/activity-service.md `apply` | edge case 寫「已開著的頁面不會自動切換」，但重新連線時 `lastPhaseKey` 保留，伺服器重啟後收到 `{ version: 0, activity: null }` 會通知 `onPhaseChange(null)` | edge case 改寫成實際行為：首頁、選組頁、等待開放頁切到「目前沒有活動」，作答頁、等待判定頁、本題結果頁依 001 RD-12 不切換，全部結果頁也不切換；新增對應的 Clarification；RA-09、T056 補上伺服器重啟的情況 |
+| M2 | 流程 | MEDIUM | tasks T057 | 改寫 001 既有測試會讓 Red commit 中原本的測試失敗（CONTRIBUTING 2.4） | 隨 C1 刪除 T057 |
+| L1 | Organization | LOW | spec Functional Requirements | REQ-ACT-22、23 放在 REQ-ACT-04 與 05 之間，編號不連續 | 使用者決定不動 |
+| L2 | Duplication | LOW | spec REQ-ACT-07、REQ-ACT-22 | 「沒有活動時取消視為成功」寫在兩條 | REQ-ACT-07 改為「重複取消依 REQ-ACT-22」 |
+| L3 | Dependency | LOW | spec C1（D21）；tasks T050 | 001 已完成但沒有納入 C1，AC-26 仍依賴 001 | 維持暫時限制（見 L10） |
+
+另外：`.specify/feature.json` 原本指向 `specs/001-ui-prototype`，`check-prerequisites.sh` 因此回傳 001；已改為 `specs/004-buzzer-session`（該檔案在 `.specify/.gitignore` 中，不進版本紀錄）。
+
+## 第 6 次分析（重跑）
+
+| ID | Category | Severity | Location(s) | Summary | Recommendation |
+| --- | --- | --- | --- | --- | --- |
+| L10 | Dependency | LOW | spec「需請 001 修改」C1、C2；tasks「依賴 001 的修改」、T028、T044、T050 | 取代 L1、L8：AC-26 依賴 001 C1；AC-01、AC-02、AC-09 的頁面部分依賴 001 C2，對應的 e2e 先 `test.skip`。004 本身可測的部分（常數值、伺服器驗證 AC-04）現在就測 | 001 依自己的流程修改 spec 後處理；完成後解除 skip |
+| L11 | Inconsistency | LOW | contracts/activity-http.md「回應格式」 | `200` 列寫「成功，包含重複要求（REQ-ACT-07）」；L2 修正後重複取消改依 REQ-ACT-22，這裡沒有一起引用 | 已修正：改為「（REQ-ACT-07、REQ-ACT-22）」 |
+| L12 | Wording | LOW | spec Clarification Session 2026-11-26、Edge Cases「取消後學生分頁保留原本的學生身分」；data-model `GroupMembership.attach` | spec 說取消後學生「保留原本的學生身分」；但 `reset()` 後伺服器不再認得舊 token，分頁重新整理再連線時 `attach` 會忽略它，下一次加入發新的 token。只有沒有重新整理的連線沿用同一個 token（RA-06）。兩種情況都視為第一次加入，行為與 AC-34 相同 | 已修正：spec 改為「學生分頁不再屬於任何組別，之後加入都視為第一次加入」，不提身分是否保留 |
+| L13 | Organization | LOW | tasks.md | 刪除 T057、T061 後任務編號有空號（T054–T056、T058–T060） | 依專案慣例不重新編號 |
+
+其餘 L2–L7、L9（第 2～4 次）不變；L1、L8 由 L10 取代。
+
+檢查項目：所有檔案中已沒有「由 004 在活動設定頁與等待開放頁套用」與 T057、T061 的引用（`checklists/requirements.md` 的歷史紀錄除外，後面一行已記錄改法）；`data-model.md` 與 `diagrams/004-class.puml` 一致（`activityRules` 的五個常數、`cancelActivity`、`reset()`、`commit(null)`、`DELETE /api/activity`、`SetupPage`／`StudentPlayPage` 只依賴 `activityRules`）；`plan.md` 的時序圖對照為 7 段，與 `004-sequence.puml` 相同；quickstart 17 個情境，與 plan、T051 一致；PNG 已重新產生，最大寬度 3102 px，未被截掉。
+
+**Constitution Alignment Issues:** 無（第 5 次的 C1 已修正）。004 對其他子功能檔案的修改只剩 001 的 `createServiceRegistry.ts`（001 plan 開放的組合根）、002 的 `app.ts`、`logger.ts` 與 `requireTeacher.test.ts` 的路由清單（002 contracts 開放的擴充點），見 L6。
+
+**Unmapped Tasks:** 無。
+
 ## Coverage Summary
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 | --- | --- | --- | --- |
 | REQ-ACT-01 | Yes | T023、T024、T026、T027 | |
-| REQ-ACT-02 | Yes | T002、T023、T024、T026、T028 | 頁面部分由 001 實作時照 004 的常數（L8） |
-| REQ-ACT-03 | Yes | T023、T026 | |
+| REQ-ACT-02 | Yes | T002、T023、T024、T026、T028 | 頁面的「−」「+」依賴 001 C2（L10） |
+| REQ-ACT-03 | Yes | T023、T026、T054、T058 | |
 | REQ-ACT-04 | Yes | T023、T026 | |
 | REQ-ACT-05 | Yes | T035–T037、T039、T040 | |
-| REQ-ACT-06 | Yes | T035、T036、T039、T044 | 學生頁面切換 001 最終版已完成 |
-| REQ-ACT-07 | Yes | T035、T039 | |
+| REQ-ACT-06 | Yes | T035、T036、T039、T044 | |
+| REQ-ACT-07 | Yes | T035、T039 | 重複取消改依 REQ-ACT-22 |
 | REQ-ACT-08 | Yes | T005、T006、T018、T035、T039 | |
-| REQ-ACT-09 | Yes | T024、T027、T037、T040 | |
+| REQ-ACT-09 | Yes | T024、T027、T037、T040、T055、T059 | |
 | REQ-ACT-10 | Yes | T011、T012、T029、T030、T032、T033 | |
-| REQ-ACT-11 | Yes | T029–T034 | 被拒絕以 `UnexpectedError` 顯示（第 4 次 X1） |
+| REQ-ACT-11 | Yes | T029–T034 | |
 | REQ-ACT-12 | Yes | T011、T012、T017、T018、T030 | |
 | REQ-ACT-13 | Yes | T011、T012、T020、T030、T034、T044 | |
-| REQ-ACT-14 | Yes | T009、T010、T016、T019、T021、T022、T038 | |
+| REQ-ACT-14 | Yes | T009、T010、T016、T019、T021、T022、T038、T055、T058 | |
 | REQ-ACT-15 | Yes | T017、T019、T036 | |
-| REQ-ACT-16 | Yes | T016、T022、T036、T044 | |
+| REQ-ACT-16 | Yes | T016、T022、T036、T044、T056、T060 | 含伺服器重啟後的 `null` 通知（M1） |
 | REQ-ACT-17 | Yes | T005、T006、T026、T032、T035、T039、T045 | |
-| REQ-ACT-18 | Yes | T007、T008、T035、T039 | AC-30 |
-| REQ-ACT-19 | Yes | T013、T014、T016、T017、T030、T044 | |
-| REQ-ACT-20 | Yes | T018、T019、T020、T044 | AC-31 |
-| REQ-ACT-21 | Yes | T023、T048–T050 | AC-32（暫時限制）現在測；AC-26 依賴 001 C1 |
+| REQ-ACT-18 | Yes | T007、T008、T035、T039 | |
+| REQ-ACT-19 | Yes | T013、T014、T016、T017、T030、T044 | 學生版 `spreadsheet` 整個留白 |
+| REQ-ACT-20 | Yes | T018、T019、T020、T044 | |
+| REQ-ACT-21 | Yes | T023、T048–T050 | AC-26 依賴 001 C1 |
+| REQ-ACT-22 | Yes | T009–T012、T042、T044、T054–T056、T058–T060 | |
+| REQ-ACT-23 | Yes | T002、T028、T044 | 004 只提供常數；頁面依賴 001 C2（L10） |
 | REQ-ACT-NFR-01 | Yes | T016、T045–T047 | |
 | REQ-ACT-NFR-02 | Yes | T032、T045–T047 | |
-| SC-001～SC-006 | Yes | T024、T030、T037、T044–T047、T050、T051 | |
+| SC-001～SC-007 | Yes | T024、T030、T037、T044–T047、T050、T051、T055、T058、T060 | |
 
 ## Metrics
 
-- Total Requirements：23（REQ-ACT-01～21、NFR-01～02）；Acceptance Criteria：32（AC-01～32）；Success Criteria：6
-- Total Tasks：53
-- Coverage：100%（23 / 23 條需求至少有一個任務與一個測試任務）
-- Ambiguity Count：0（第 1 次 1 個，已修正）
-- Duplication Count：0
-- Critical Issues Count：0（第 1 次 1 個，已修正）
-- 各嚴重度（第 4 次）：CRITICAL 0、HIGH 0、MEDIUM 0、LOW 9（L1–L9）
+- Total Requirements：25（REQ-ACT-01～23、NFR-01～02）；Acceptance Criteria：36（AC-01～36）；Success Criteria：7
+- Total Tasks：59（T001～T060，缺 T057）
+- Coverage：100%（25 / 25 條需求至少有一個任務與一個測試任務）
+- Ambiguity Count：0
+- Duplication Count：0（第 5 次的 L2 已修正）
+- Critical Issues Count：0（第 5 次 1 個，已修正）
+- 各嚴重度（第 6 次）：CRITICAL 0、HIGH 0、MEDIUM 0、LOW 11（L2–L7、L9–L13；其中 L11、L12 已修正，未處理的剩 9 個）
 
 ## Next Actions
 
 - 沒有 CRITICAL、HIGH、MEDIUM，可以在人工審查（原則 X）後進入 `/speckit-implement`。
-- 「需請 001 修改」只剩 C1（D21），已在 PR #10 留言；在那之前 AC-26 的 e2e 先 skip，其餘都可以實作與測試（L1）。
+- L11、L12 已在 analyze 後修正。
+- 「需請 001 修改」有 C1（D21）與 C2（組數規則與說明文字），需要另外修改 001 的 spec；在那之前對應的 e2e 先 skip（L10）。
