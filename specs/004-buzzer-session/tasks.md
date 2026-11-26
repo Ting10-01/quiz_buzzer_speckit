@@ -82,12 +82,12 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ### Implementation for User Story 1
 
-- [ ] T026 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `createActivity`、`updateSettings`，都在 `CommandQueue.run` 內；組數驗證用 `activityRules`（data-model「ValidationError 的內容」），依 T015、T002
-- [ ] T027 [US1] 實作 `server/src/activity/activityRoutes.ts` 的 `POST /api/activity`、`PUT /api/activity/settings`：`{ preHandler: app.requireTeacher }`；JSON schema 只要求 body 是物件，`groupCount` 由 `ActivityManager` 驗證；`ValidationError` → `200` 回傳 `ValidationError`；`ActivityRuleError` → `409 { code, message }`（002 的 `ErrorBody`，contracts/activity-http.md），依 T026
-- [ ] T028 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `createActivity`、`updateSettings`（經 002 的 `ApiClient`），依 T022；並在 `frontend/tests/e2e/activity-sync.spec.ts` 加入「活動設定頁」情境：組數預設 6；組數超出範圍時建立被拒絕並在欄位旁顯示「組數必須是 2 到 20 之間的整數」（AC-01、AC-04）；「−」「+」不可用與「學生加入」的說明文字（AC-01、AC-02）先 `test.skip`，註明需 001 完成 C2
-- [ ] T058 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `cancelActivity()`，在 `CommandQueue.run` 內；`GroupMembership.reset()`、`ActivityStore.commit(null)`（data-model「狀態轉換」、research RA-17），依 T026
-- [ ] T059 [US1] 在 `server/src/activity/activityRoutes.ts` 加入 `DELETE /api/activity`：`{ preHandler: app.requireTeacher }`；`ActivityRuleError` → `409`（contracts/activity-http.md），依 T027、T058
-- [ ] T060 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `cancelActivity()`（經 002 的 `ApiClient`，套用回應後 resolve），依 T028
+- [X] T026 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `createActivity`、`updateSettings`，都在 `CommandQueue.run` 內；組數驗證用 `activityRules`（data-model「ValidationError 的內容」），依 T015、T002
+- [X] T027 [US1] 實作 `server/src/activity/activityRoutes.ts` 的 `POST /api/activity`、`PUT /api/activity/settings`：`{ preHandler: app.requireTeacher }`；JSON schema 只要求 body 是物件，`groupCount` 由 `ActivityManager` 驗證；`ValidationError` → `200` 回傳 `ValidationError`；`ActivityRuleError` → `409 { code, message }`（002 的 `ErrorBody`，contracts/activity-http.md），依 T026
+- [X] T028 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `createActivity`、`updateSettings`（經 002 的 `ApiClient`），依 T022；並在 `frontend/tests/e2e/activity-sync.spec.ts` 加入「活動設定頁」情境：組數預設 6；組數超出範圍時建立被拒絕並在欄位旁顯示「組數必須是 2 到 20 之間的整數」（AC-01、AC-04）；「−」「+」不可用與「學生加入」的說明文字（AC-01、AC-02）先 `test.skip`，註明需 001 完成 C2
+- [X] T058 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `cancelActivity()`，在 `CommandQueue.run` 內；`GroupMembership.reset()`、`ActivityStore.commit(null)`（data-model「狀態轉換」、research RA-17），依 T026
+- [X] T059 [US1] 在 `server/src/activity/activityRoutes.ts` 加入 `DELETE /api/activity`：`{ preHandler: app.requireTeacher }`；`ActivityRuleError` → `409`（contracts/activity-http.md），依 T027、T058
+- [X] T060 [US1] 在 `frontend/src/services/HttpActivityService.ts` 實作 `cancelActivity()`（經 002 的 `ApiClient`，套用回應後 resolve），依 T028
 
 **Checkpoint**: 老師可以建立、修改、取消活動，學生連線同步收到
 

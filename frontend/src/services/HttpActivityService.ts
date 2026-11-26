@@ -2,7 +2,8 @@
 // 002's ApiClient, pushes and student events through RealtimeClient. Only snapshots with a newer
 // version are taken, so the page never goes back to an older state (REQ-ACT-14, AC-24).
 import type { ActivitySnapshot } from '@quiz-buzzer/shared/activitySync';
-import type { Activity, ValidationError } from '@quiz-buzzer/shared/entities';
+import type { Activity, ActivitySettings, ValidationError } from '@quiz-buzzer/shared/entities';
+import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { ApiClient } from './http/ApiClient';
 import type { ActivityService, Unsubscribe } from './interfaces';
 import type { RealtimeClient } from './RealtimeClient';
@@ -35,16 +36,17 @@ export class HttpActivityService implements ActivityService {
     realtime.on<ActivitySnapshot>('activity:snapshot', (snapshot) => this.apply(snapshot));
   }
 
-  createActivity(): Promise<Activity | ValidationError> {
-    return notYet();
+  createActivity(settings: ActivitySettings): Promise<Activity | ValidationError> {
+    return this.saveSettings('POST', '/api/activity', settings);
   }
 
-  updateSettings(): Promise<Activity | ValidationError> {
-    return notYet();
+  updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError> {
+    return this.saveSettings('PUT', '/api/activity/settings', settings);
   }
 
-  cancelActivity(): Promise<void> {
-    return notYet();
+  /** Applies { activity: null } before resolving, so onPhaseChange(null) has run (001 RD-12). */
+  async cancelActivity(): Promise<void> {
+    this.apply(await this.api.request<ActivitySnapshot>('DELETE', '/api/activity'));
   }
 
   openQuestion(): Promise<Activity> {
@@ -93,6 +95,24 @@ export class HttpActivityService implements ActivityService {
     };
   }
 
+  /** A ValidationError comes back as a 200 body and changes nothing; ApiError rejects as it is (RA-10). */
+  private async saveSettings(method: string, path: string, settings: ActivitySettings): Promise<Activity | ValidationError> {
+    const body = await this.api.request<ActivitySnapshot | ValidationError>(method, path, settings);
+    if (isValidationError(body)) return body;
+    return this.activityAfter(body);
+  }
+
+  /**
+   * The command's own result, applied when newer. The page needs the activity the command made even
+   * when a newer push already arrived; that push stays the latest snapshot (AC-24).
+   */
+  private activityAfter(snapshot: ActivitySnapshot): Activity {
+    this.apply(snapshot);
+    // Every successful command but cancelActivity answers an activity.
+    if (!snapshot.activity) throw new Error('伺服器回應格式錯誤');
+    return snapshot.activity;
+  }
+
   /** Takes the snapshot when it is newer (or the first since connecting) and notifies; see the contract. */
   private apply(snapshot: ActivitySnapshot): boolean {
     if (this.latest && snapshot.version <= this.latest.version) return false;
@@ -118,7 +138,7 @@ export class HttpActivityService implements ActivityService {
   }
 }
 
-// Commands arrive with the user stories that own them (tasks T028, T034, T041, T060); their
+// Commands arrive with the user stories that own them (tasks T034, T041); their
 // parameters are added then.
 function notYet<T>(): Promise<T> {
   return Promise.reject(new Error('尚未實作'));
