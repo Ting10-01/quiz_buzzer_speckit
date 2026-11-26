@@ -6,7 +6,7 @@
 
 ## Summary
 
-004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、在準備中取消活動、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，改 `createServiceRegistry()` 的綁定；001 頁面只在活動設定頁與等待開放頁套用 004 的組數規則與說明文字（REQ-ACT-23、research RA-16），不增減欄位、按鈕或頁面。004 配合 001 最終版（PR #10）：`joinGroup` 的預期失敗以 `UnexpectedError` reject；仍需 001 修改的只有 D21（spec「需請 001 修改」C1；001 已完成但沒有納入），修改前是暫時限制。2026-11-26 依 main 上的 feature-split、001 最終版（取消活動、RD-12 的 `onPhaseChange(null)`）與 002 #18 修訂。
+004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、在準備中取消活動、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，只改 `createServiceRegistry()` 的綁定，頁面不改。組數規則與說明文字由 004 以 `shared/src/activityRules.ts` 提供，001 的頁面依 spec「需請 001 修改」C2 引用（REQ-ACT-23、research RA-16）。004 配合 001 最終版（PR #10）：`joinGroup` 的預期失敗以 `UnexpectedError` reject；仍需 001 修改的是 C1（D21，001 已完成但沒有納入）與 C2（組數規則與說明文字），修改前是暫時限制。2026-11-26 依 main 上的 feature-split、001 最終版（取消活動、RD-12 的 `onPhaseChange(null)`）與 002 #18 修訂。
 
 **以三張圖為藍圖**：本計畫的組件、類別、方法與呼叫順序一律依 [`diagrams/004-component.puml`](../../diagrams/004-component.puml)、[`diagrams/004-class.puml`](../../diagrams/004-class.puml)、[`diagrams/004-sequence.puml`](../../diagrams/004-sequence.puml)。下方「藍圖對照」把圖中每個組件與類別對應到一個檔案；[data-model.md](./data-model.md) 與類別圖一一對應；時序圖的 7 段各對應 User Story 與測試（見「時序圖與測試」）。
 
@@ -26,9 +26,9 @@
 
 **Performance Goals**: 1 個老師 + 200 個學生連線時，階段改變 1 秒內送達全部連線（NFR-01）；200 個學生 1 秒內同時加入，每個都恰好一次回覆（NFR-02）
 
-**Constraints**: 狀態只在伺服器（原則 V）；改變狀態的程式碼內不得 `await`（RA-02）；只用 WebSocket（D22）；學生收到的資料不含學習單資訊（REQ-ACT-19）；001 的頁面只套用 004 的規則與文字（RA-16），其餘只改組合根
+**Constraints**: 狀態只在伺服器（原則 V）；改變狀態的程式碼內不得 `await`（RA-02）；只用 WebSocket（D22）；學生收到的資料不含學習單資訊（REQ-ACT-19）；不改 001 的頁面，只改組合根（原則 III、RA-16）
 
-**Scale/Scope**: 2–20 組、每組最多 10 個分頁；5 個 REST 端點、2 個 Socket.IO 學生事件、1 個推送事件；伺服器 10 個檔案、shared 2 個、frontend 2 個新增與 2 個 001 頁面的修改
+**Scale/Scope**: 2–20 組、每組最多 10 個分頁；5 個 REST 端點、2 個 Socket.IO 學生事件、1 個推送事件；伺服器 10 個檔案、shared 2 個、frontend 2 個
 
 ## Constitution Check
 
@@ -38,13 +38,13 @@
 | --- | --- | --- |
 | I. PlantUML 設計優先 | 三張圖與 PNG 都在；「藍圖對照」把每個組件、類別對應到檔案；實作後依圖表做一致性驗證（tasks 最後一個 Phase） | 通過 |
 | II. 規格先行與可追溯 | 每條 REQ-ACT 有 AC（checklist Notes）；tasks 的追溯表對應每條 REQ 到任務與測試；需要 001 改的地方先列在 spec，不直接改 001 | 通過 |
-| III. 分層與依賴抽象 | 前端：頁面 → `ActivityService` ← `HttpActivityService`，服務只改組合根，頁面只引用 `shared/activityRules`；伺服器：`activityRoutes`、`ActivityGateway`（邊界）→ `ActivityManager`（規則）→ `ActivityStore`、`GroupMembership`（狀態）；`GroupMembership` 只依賴 `SocketRef`，不引用 Socket.IO；模擬實作的橋接只在組合根（RA-14） | 通過 |
+| III. 分層與依賴抽象 | 前端：頁面 → `ActivityService` ← `HttpActivityService`，只改組合根，不修改 001 已驗證的頁面（規則與文字以 `shared/activityRules` 提供，頁面由 001 依 C2 引用）；伺服器：`activityRoutes`、`ActivityGateway`（邊界）→ `ActivityManager`（規則）→ `ActivityStore`、`GroupMembership`（狀態）；`GroupMembership` 只依賴 `SocketRef`，不引用 Socket.IO；模擬實作的橋接只在組合根（RA-14） | 通過 |
 | IV. 外部資料於執行期解析 | 題數、小題數取自 003 的匯入結果，不寫死 | 通過 |
 | V. 單一權威狀態來源 | 階段、題號、組數、人數只在 `ActivityStore` 與 `GroupMembership`；前端只採用推送或回應中的快照，以版本號丟掉舊的（RA-03）；`getCurrentActivity` 也來自同一個推送（RA-09） | 通過 |
 | VI. 最小揭露與機敏資料 | 學生版快照不含試算表 ID（RA-08）；組別由伺服器依連線判斷（RA-06）；學生身分在 `sessionStorage`，同瀏覽器其他分頁拿不到；`studentToken` 不進 log（RA-12）；004 不使用任何金鑰 | 通過 |
-| VII. 輸入驗證與錯誤訊息 | 組數在頁面限制範圍（RA-16），組數、題號、組別編號都在伺服器驗證；組數錯誤以 `ValidationError` 指出欄位與原因；加入組別被拒絕以 `UnexpectedError` 說明原因（001 的 `joinGroup` 沒有預期失敗的回傳值）；規則不允許時狀態不變（data-model） | 通過 |
+| VII. 輸入驗證與錯誤訊息 | 組數、題號、組別編號都在伺服器驗證（頁面限制範圍由 001 依 C2 完成）；組數錯誤以 `ValidationError` 指出欄位與原因；加入組別被拒絕以 `UnexpectedError` 說明原因（001 的 `joinGroup` 沒有預期失敗的回傳值）；規則不允許時狀態不變（data-model） | 通過 |
 | VIII. 自動化測試與人工驗證 | 每個 User Story 有正常與邊界測試（tasks）；Google、匯入、老師驗證以替身取代；quickstart 列出 17 個人工情境；壓力測試 | 通過 |
-| IX. 程式碼規範 | 不新增頁面或元件，001 頁面只改規則值與文字；`RealtimeClient` 只寫一次，005、006 共用；英文命名 | 通過 |
+| IX. 程式碼規範 | 不新增頁面或元件；`RealtimeClient` 只寫一次，005、006 共用；英文命名 | 通過 |
 | X. 人工把關 | 本 plan 需人工審查後才能進入 tasks | 待審查 |
 | XI. 簡潔 | 不做 `Outbox`、不另設 GET 端點、不做連線狀態、不存檔、不另建 Socket.IO 伺服器（RA-04、RA-09、RA-13）；唯一的抽象 `SocketRef` 是為了讓 `GroupMembership` 能不靠 Socket.IO 測試 | 通過 |
 
@@ -52,11 +52,11 @@
 
 | 圖中的組件或類別 | 檔案 | 來源圖 |
 | --- | --- | --- |
-| `activityRules` | `shared/src/activityRules.ts` | component、class |
+| `activityRules`（組數常數與說明文字） | `shared/src/activityRules.ts` | component、class |
+| `SetupPage`、`StudentPlayPage` 引用 `activityRules` | 001 依 spec「需請 001 修改」C2 修改，004 不改 | component、class |
 | `ActivitySnapshot`、`GroupAck` | `shared/src/activitySync.ts` | component、class |
 | `HttpActivityService` | `frontend/src/services/HttpActivityService.ts` | component、class、sequence |
 | `RealtimeClient` | `frontend/src/services/RealtimeClient.ts` | component、class |
-| `SetupPage`、`StudentPlayPage`（`WaitView`）中屬於 004 的規則與文字（001 頁面） | `frontend/src/pages/teacher/SetupPage.tsx`、`frontend/src/pages/student/StudentPlayPage.tsx`（research RA-16） | component、class |
 | `createServiceRegistry()` 的綁定 | `frontend/src/services/createServiceRegistry.ts`（只改 `activity` 綁定、移除 `phaseControl` 與 `activityValidationControl`、加上 RA-14 的暫時橋接） | component |
 | `ApiClient`、`ApiError`、`TeacherCredentialStore`（002） | `frontend/src/services/http/`（002 提供） | component、class |
 | `ActivityState`、`ActivityStore` | `server/src/activity/ActivityStore.ts` | component、class、sequence |
@@ -93,7 +93,8 @@
 
 | 方向 | 內容 | 依據 |
 | --- | --- | --- |
-| 004 使用 001 | `ActivityService`（含 `cancelActivity`、`onPhaseChange(null)`，001 RD-12）；活動設定頁、等待開放頁中交給 004 的規則與文字（001 FR-023、FR-051） | 001 spec、research RD-12 |
+| 004 使用 001 | `ActivityService`（含 `cancelActivity`、`onPhaseChange(null)`，001 RD-12） | 001 spec、research RD-12 |
+| 001 使用 004 | `activityRules` 的組數常數與說明文字（001 FR-023、FR-051；spec「需請 001 修改」C2） | research RA-16 |
 | 004 使用 002 | `buildApp(config, deps)`、`app.requireTeacher`、`app.io`（已設 `transports: ['websocket']`；handshake 老師驗證、`TEACHER_ROOM`、`socket.data.isTeacher`；換發憑證時中斷舊老師連線）、`ErrorBody`、`loggerOptions.redact.paths`；前端 `ApiClient`、`TeacherCredentialStore`（#18：401 時不清除憑證） | 002 `contracts/server-extension.md`、`socket-handshake.md`、`auth-http.md`；RA-07、RA-13 |
 | 004 使用 003 | `ImportStore.latest()`（建立活動時取題目與 `Spreadsheet`） | 跨子功能交界表 |
 | 005 使用 004 | `ActivityStore`、`GroupMembership.groupOf(socket)`、`ActivityManager.endQuestion(n)`、`CommandQueue`、`SequenceClock`、Socket.IO 伺服器與 `RealtimeClient` | [contracts/server-modules.md](./contracts/server-modules.md) |
@@ -125,7 +126,7 @@ specs/004-buzzer-session/
 
 ```text
 shared/src/
-├── activityRules.ts           # 004：組數範圍與預設
+├── activityRules.ts           # 004：組數範圍與預設、說明文字
 └── activitySync.ts            # 004：ActivitySnapshot、GroupAck
 server/
 ├── src/
@@ -148,8 +149,6 @@ server/
     ├── integration/activity/
     └── load/phaseSync.load.ts
 frontend/
-├── src/pages/teacher/SetupPage.tsx          # 001 頁面：套用組數規則與說明文字（RA-16）
-├── src/pages/student/StudentPlayPage.tsx    # 001 頁面：WaitView 的說明文字（RA-16）
 ├── src/services/
 │   ├── HttpActivityService.ts # 004
 │   ├── RealtimeClient.ts      # 004（005、006 共用）
