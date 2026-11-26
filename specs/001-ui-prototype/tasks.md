@@ -428,6 +428,27 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 8.6: 規格修訂（2026-11-27）：老師登入後回到控制台（issue #17）
+
+**Purpose**: 套用 D21 的決定與 004 spec「需請 001 修改」C1（commit `spec(001): ...`）：老師登入成功後，登入頁呼叫 `ActivityService.getCurrentActivity()`，依階段進入 T-Pick、T-Lobby、T-Live、T-QuestionEnd 或 T-Results；取得失敗時依 FR-009 留在登入頁（spec FR-015、US1 AC-3、AC-8、AC-9；畫面流程圖 T18–T21；時序圖第 1 段）。
+
+- **只改登入頁**：`AppRouter` 的 `PageState` 已讓這些頁面以 `activity` 為參數，不需修改；重新整理仍回到首頁（RD-11）。
+- **模擬實作不變**：001 的模擬實作中老師端與首頁、學生端的模擬活動彼此獨立（M3、M7），T18–T21 以元件測試驗證（SC-002 除外項）。004 把活動介面換成真正的實作後只有一份活動。
+- **既有測試的斷言不修改**。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T157 [US1] 擴充 `frontend/tests/component/TeacherLoginPage.test.tsx`：登入成功後 `getCurrentActivity` 回傳 `null` 時 `navigate` 參數為 `{ id: 'T-Pick' }`；回傳 `PREPARING`、`OPEN`（第 2 題）、`QUESTION_ENDED`（第 2 題）、`FINISHED` 的活動時，`navigate` 參數分別為 `{ id: 'T-Lobby', activity }`、`{ id: 'T-Live', activity }`、`{ id: 'T-QuestionEnd', activity }`、`{ id: 'T-Results', activity }`，`activity` 為介面回傳的活動（FR-015、US1 AC-3、AC-8、T18–T21）；登入失敗時不呼叫 `getCurrentActivity`（FR-013）；`getCurrentActivity` reject 時停留在登入頁、`ErrorArea` 顯示訊息、`navigate` 不被呼叫，再點一次成功時訊息清除並依階段切換（FR-015、FR-009、US1 AC-9）
+
+### Implementation
+
+- [ ] T158 [US1] 修改 `frontend/src/pages/teacher/TeacherLoginPage.tsx`：`signInWithGoogle()` 成功後呼叫 `activity.getCurrentActivity()`，依 `phase` 呼叫 `navigate`；`getCurrentActivity` reject 時以 `errorMessage()` 顯示於 `ErrorArea`；更新檔頭註解（FR-015；依賴 T157）
+- [ ] T159 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T157 通過，且其他測試沒有退步（SC-002）
+
+**Checkpoint**: 老師在活動進行中重新整理後重新登入，回到控制台目前的階段；004 Phase 7 依賴 C1 的 E2E 不需再 skip。
+
+---
+
 ## 需求與任務對照
 
 | 需求 | 任務 |
@@ -443,6 +464,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-009 共通錯誤訊息區 | T017、T036、T039、T045、T057、T058、T069、T081、T095、T136 |
 | FR-014 瀏覽器上一頁 | T060、T066a、T069、T080、T118、T119、T131、T132、T137、T138 |
 | FR-010–FR-013 | T044、T045、T050、T051、T105、T110、T149、T153 |
+| FR-015 | T157–T159 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
 | FR-023、FR-024 | T058、T064、T066a |
@@ -460,7 +482,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-058 | T083、T090 |
 | FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、T135/T140、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
 | FR-061 | T037、T041、T094、T107、T111、T116、T128 |
-| SC-001、SC-002 | T093、T095、T149–T152、T156 |
+| SC-001、SC-002 | T093、T095、T149–T152、T156、T157、T159 |
 | SC-003 | T037、T093、T097 |
 | SC-004 | T096 |
 | SC-005、SC-006 | T055、T092（人工驗證計時）、T134 |

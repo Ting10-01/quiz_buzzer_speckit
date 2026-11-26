@@ -31,9 +31,19 @@ Bar -> Sess : answer(choiceId)
 Sess --> Auth : choiceId
 alt 選擇模擬老師帳號
   Auth --> Page : SignInResult(ok, account)
-  Page -> Auth : getCurrentAccount()（挑選學習單頁載入時）
-  Auth --> Page : TeacherAccount
-  Page --> Teacher : 挑選學習單頁（顯示已登入的帳號）
+  Page -> Act : getCurrentActivity()（FR-015）
+  alt 沒有活動
+    Act --> Page : null
+    Page -> Auth : getCurrentAccount()（挑選學習單頁載入時）
+    Auth --> Page : TeacherAccount
+    Page --> Teacher : 挑選學習單頁（顯示已登入的帳號）
+  else 有活動（D21：老師重新整理後重新登入）
+    Act --> Page : Activity
+    Page --> Teacher : 依 phase：PREPARING 控制台・準備中；OPEN 控制台・搶答中（第 n 題）；\nQUESTION_ENDED 控制台・本題已結束（第 n 題）；FINISHED 結果與寫回頁
+  else 非預期錯誤
+    Act --> Page : reject(UnexpectedError)
+    Page --> Teacher : 登入頁的共通錯誤訊息區顯示訊息（FR-009）
+  end
 else 取消
   Auth --> Page : SignInResult(failure)
   Page --> Teacher : 登入頁顯示失敗訊息
