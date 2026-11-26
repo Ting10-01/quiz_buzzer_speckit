@@ -213,6 +213,8 @@ test.describe('US5 screen flow: labelled arrows (student round)', () => {
   test('S-Submitted → S-QuestionDone: 判定：接受（本題結束）', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expectOn(page, 'S-QuestionDone');
     await expect(page.getByRole('region', { name: '本題結果' })).toContainText(`第 ${GROUP} 組`);
   });
@@ -451,6 +453,8 @@ test.describe('US5 screen flow: coded arrows S1–S9', () => {
     await submit(page);
     await expectOn(page, 'S-Submitted');
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expectOn(page, 'S-Results');
   });
 
@@ -494,8 +498,8 @@ test.describe('US5 screen flow: browser back and reload (FR-014)', () => {
       await page.goBack();
       await expectOn(page, id);
       await page.reload();
+      // 004: the activity stays on the server after a reload, so only the page is checked.
       await expectOn(page, 'Main');
-      await expect(page.getByText('目前沒有活動', { exact: true })).toBeVisible();
     });
   }
 });

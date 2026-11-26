@@ -2,7 +2,7 @@ import { GROUP_COUNT_MAX, GROUP_COUNT_MIN } from '@quiz-buzzer/shared/activityRu
 import type { ActivitySnapshot, GroupAck } from '@quiz-buzzer/shared/activitySync';
 import type { ActivitySettings, ValidationError } from '@quiz-buzzer/shared/entities';
 import type { ImportStore } from '../guided-notes/ImportStore.js';
-import type { ActivityStore } from './ActivityStore.js';
+import type { ActivityState, ActivityStore } from './ActivityStore.js';
 import { Audience, toActivity } from './ActivityView.js';
 import type { CommandQueue } from './CommandQueue.js';
 import type { GroupMembership, SocketRef } from './GroupMembership.js';
@@ -35,6 +35,23 @@ function checkGroupCount(settings: unknown, lowest: number): number | Validation
 }
 
 const noActivity = () => new ActivityRuleError('NO_ACTIVITY', '目前沒有活動');
+const notNext = (n: number | string) => new ActivityRuleError('QUESTION_NOT_NEXT', `現在不能開放第 ${n} 題`);
+const notOpen = (n: number | string) => new ActivityRuleError('QUESTION_NOT_OPEN', `第 ${n} 題目前沒有開放，不能結束`);
+
+/** The part of 002's pino logger 004 writes to (research RA-12). Never given a studentToken. */
+export interface ActivityLog {
+  info(fields: Record<string, unknown>, message: string): void;
+}
+
+const silentLog: ActivityLog = { info: () => {} };
+
+/** The question that may open next: the first while PREPARING, the one after an ended question. */
+function nextQuestion(state: Readonly<ActivityState>): number | undefined {
+  const numbers = state.questions.map((question) => question.number);
+  if (state.phase === 'PREPARING') return numbers[0];
+  if (state.phase === 'QUESTION_ENDED') return numbers[numbers.indexOf(state.currentQuestion!) + 1];
+  return undefined;
+}
 const groupLocked = (group: number) => `第 1 題開放後不能換組，你在第 ${group} 組`;
 
 // The activity rules (data-model "ActivityManager"). Every command runs inside CommandQueue.run.
@@ -45,6 +62,7 @@ export class ActivityManager {
     private readonly membership: GroupMembership,
     private readonly clock: SequenceClock,
     private readonly importStore: ImportStore,
+    private readonly log: ActivityLog = silentLog,
   ) {}
 
   /** null -> PREPARING with the questions of the latest import (AC-03). */
@@ -65,6 +83,10 @@ export class ActivityManager {
         openedAt: new Map(),
         endedAt: new Map(),
       });
+      this.log.info(
+        { event: 'activity.created', groupCount, questionCount: imported.questions.length, version: this.store.version() },
+        'activity.created',
+      );
       return this.snapshot(Audience.TEACHER);
     });
   }
@@ -89,7 +111,8 @@ export class ActivityManager {
       if (state) {
         if (state.phase !== 'PREPARING') throw new ActivityRuleError('CANCEL_LOCKED', '第 1 題開放後不能取消活動');
         this.membership.reset();
-        this.store.commit(null);
+        const version = this.store.commit(null);
+        this.log.info({ event: 'activity.cancelled', version }, 'activity.cancelled');
       }
       return this.snapshot(Audience.TEACHER);
     });
@@ -113,6 +136,7 @@ export class ActivityManager {
       const studentToken = this.membership.join(socket, groupNumber);
       // Members are not part of ActivityState, so the same state is committed to add 1 to the version.
       this.store.commit(state);
+      this.logGroup('group.joined', groupNumber, state.groupCount);
       return { snapshot: this.snapshot(Audience.PUBLIC), studentToken };
     });
   }
@@ -126,8 +150,57 @@ export class ActivityManager {
         return this.refuse('GROUP_LOCKED', groupLocked(current));
       }
       this.membership.leave(socket);
-      if (state) this.store.commit(state);
+      if (state) {
+        this.store.commit(state);
+        if (current !== null) this.logGroup('group.left', current, state.groupCount);
+      }
       return { snapshot: this.snapshot(Audience.PUBLIC) };
+    });
+  }
+
+  /**
+   * PREPARING -> OPEN(first) or QUESTION_ENDED(n) -> OPEN(next), stamping openedAt[n] (REQ-ACT-05, 18).
+   * Opening the open question again answers the current snapshot without a change (REQ-ACT-07).
+   */
+  openQuestion(questionNumber: number): ActivitySnapshot {
+    return this.queue.run(() => {
+      const state = this.store.current();
+      if (!state) throw noActivity();
+      if (state.phase === 'OPEN' && state.currentQuestion === questionNumber) return this.snapshot(Audience.TEACHER);
+      if (questionNumber !== nextQuestion(state)) throw notNext(questionNumber);
+      const version = this.store.commit({
+        ...state,
+        phase: 'OPEN',
+        currentQuestion: questionNumber,
+        openedAt: new Map(state.openedAt).set(questionNumber, this.clock.stamp()),
+      });
+      this.log.info({ event: 'question.opened', question: questionNumber, version }, 'question.opened');
+      return this.snapshot(Audience.TEACHER);
+    });
+  }
+
+  /**
+   * OPEN(n) -> QUESTION_ENDED(n), or FINISHED for the last question (REQ-ACT-06), stamping endedAt[n].
+   * Ending an already ended question answers the current snapshot, so the teacher and 005's
+   * judgement end it only once (REQ-ACT-07, 08). 005 may call this inside its own CommandQueue.run.
+   */
+  endQuestion(questionNumber: number): ActivitySnapshot {
+    return this.queue.run(() => {
+      const state = this.store.current();
+      if (!state) throw noActivity();
+      const ended = state.phase === 'QUESTION_ENDED' || state.phase === 'FINISHED';
+      if (ended && Number.isInteger(questionNumber) && questionNumber >= 1 && questionNumber <= state.currentQuestion!) {
+        return this.snapshot(Audience.TEACHER);
+      }
+      if (state.phase !== 'OPEN' || state.currentQuestion !== questionNumber) throw notOpen(questionNumber);
+      const isLast = state.questions.at(-1)?.number === questionNumber;
+      const version = this.store.commit({
+        ...state,
+        phase: isLast ? 'FINISHED' : 'QUESTION_ENDED',
+        endedAt: new Map(state.endedAt).set(questionNumber, this.clock.stamp()),
+      });
+      this.log.info({ event: 'question.ended', question: questionNumber, finished: isLast, version }, 'question.ended');
+      return this.snapshot(Audience.TEACHER);
     });
   }
 
@@ -138,6 +211,11 @@ export class ActivityManager {
       version: this.store.version(),
       activity: state && toActivity(state, this.membership.memberCounts(state.groupCount), audience),
     };
+  }
+
+  /** Group and member counts only; the connection and its studentToken are never logged (RA-12). */
+  private logGroup(event: string, group: number, groupCount: number): void {
+    this.log.info({ event, group, memberCounts: this.membership.memberCounts(groupCount), version: this.store.version() }, event);
   }
 
   /** A refused group command: nothing changes and the ack carries the current PUBLIC snapshot. */

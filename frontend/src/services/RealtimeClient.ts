@@ -58,6 +58,19 @@ export class RealtimeClient {
     this.socket.connect();
   }
 
+  /**
+   * Reconnects when the tab's teacher credential is not the one this connection was made with, so a
+   * tab that signed in after connecting joins TEACHER_ROOM and gets the teacher snapshot
+   * (contracts/activity-service.md). A credential 002 refused never counts. True when it reconnected.
+   */
+  followTeacherCredential(): boolean {
+    const stored = this.credentials.get();
+    const wanted = stored && stored !== this.rejectedTeacherToken ? stored : null;
+    if (this.socket && wanted === this.connectedTeacherToken) return false;
+    this.reconnect();
+    return true;
+  }
+
   on<T>(event: string, listener: (payload: T) => void): Unsubscribe {
     const set = this.listeners.get(event) ?? new Set<Listener>();
     this.listeners.set(event, set);

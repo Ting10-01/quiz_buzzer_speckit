@@ -26,7 +26,9 @@ export class HttpActivityService implements ActivityService {
     private readonly realtime: Pick<
       RealtimeClient,
       'on' | 'onConnect' | 'emitWithAck' | 'studentToken' | 'setStudentToken' | 'reconnect'
-    >,
+    > &
+      // Optional until T050's tests (Phase 7) give the unit-test fake this method.
+      Partial<Pick<RealtimeClient, 'followTeacherCredential'>>,
     private readonly api: Pick<ApiClient, 'request'>,
   ) {
     // The server may have restarted and count versions from 0 again, so the next snapshot always wins.
@@ -37,24 +39,28 @@ export class HttpActivityService implements ActivityService {
   }
 
   createActivity(settings: ActivitySettings): Promise<Activity | ValidationError> {
+    this.followTeacherCredential();
     return this.saveSettings('POST', '/api/activity', settings);
   }
 
   updateSettings(settings: ActivitySettings): Promise<Activity | ValidationError> {
+    this.followTeacherCredential();
     return this.saveSettings('PUT', '/api/activity/settings', settings);
   }
 
   /** Applies { activity: null } before resolving, so onPhaseChange(null) has run (001 RD-12). */
   async cancelActivity(): Promise<void> {
+    this.followTeacherCredential();
     this.apply(await this.api.request<ActivitySnapshot>('DELETE', '/api/activity'));
   }
 
-  openQuestion(): Promise<Activity> {
-    return notYet();
+  openQuestion(questionNumber: number): Promise<Activity> {
+    return this.questionCommand(`/api/activity/questions/${questionNumber}/open`);
   }
 
-  endQuestion(): Promise<Activity> {
-    return notYet();
+  /** The answer is QUESTION_ENDED, or FINISHED for the last question (REQ-ACT-06). */
+  endQuestion(questionNumber: number): Promise<Activity> {
+    return this.questionCommand(`/api/activity/questions/${questionNumber}/end`);
   }
 
   /**
@@ -79,6 +85,7 @@ export class HttpActivityService implements ActivityService {
 
   /** From the snapshot the server sends on connect (REQ-ACT-15); no extra request (research RA-09). */
   getCurrentActivity(): Promise<Activity | null> {
+    this.followTeacherCredential();
     if (this.latest) return Promise.resolve(this.latest.activity);
     return new Promise((resolve, reject) => {
       const waiter: Waiter = (activity) => {
@@ -107,11 +114,25 @@ export class HttpActivityService implements ActivityService {
     };
   }
 
+  /**
+   * A tab that signed in after connecting reconnects as the teacher first; what it had is the
+   * student snapshot, so it waits for the next one (contracts/activity-service.md, T062).
+   */
+  private followTeacherCredential(): void {
+    if (this.realtime.followTeacherCredential?.()) this.latest = null;
+  }
+
   /** A ValidationError comes back as a 200 body and changes nothing; ApiError rejects as it is (RA-10). */
   private async saveSettings(method: string, path: string, settings: ActivitySettings): Promise<Activity | ValidationError> {
     const body = await this.api.request<ActivitySnapshot | ValidationError>(method, path, settings);
     if (isValidationError(body)) return body;
     return this.activityAfter(body);
+  }
+
+  /** ApiError (409 QUESTION_NOT_NEXT / QUESTION_NOT_OPEN, 401, NETWORK) rejects as it is (RA-10). */
+  private async questionCommand(path: string): Promise<Activity> {
+    this.followTeacherCredential();
+    return this.activityAfter(await this.api.request<ActivitySnapshot>('POST', path));
   }
 
   /**
@@ -148,10 +169,4 @@ export class HttpActivityService implements ActivityService {
     }
     return true;
   }
-}
-
-// Commands arrive with the user stories that own them (task T041); their
-// parameters are added then.
-function notYet<T>(): Promise<T> {
-  return Promise.reject(new Error('尚未實作'));
 }

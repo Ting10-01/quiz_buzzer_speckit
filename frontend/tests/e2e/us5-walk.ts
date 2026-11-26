@@ -5,7 +5,7 @@ import { pickerWill } from './googlePicker';
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 import { MockFixtures } from '../../src/services/mock/MockFixtures';
 import { signInAsPageTeacher } from './googleSignIn';
-import { advanceActivity, connectTestServer } from './testServer';
+import { advanceActivity, connectTestServer, resetTestServer } from './testServer';
 
 export type PageId =
   | 'Main'
@@ -206,6 +206,8 @@ export async function toResults(page: Page, sheet = SHEET_OK, questions = 4) {
 /** Main → S-Join, advancing `steps` times on S-Join (M7) first. */
 export async function toJoin(page: Page, steps = 0) {
   await connectTestServer(page);
+  // Each student walk starts from no activity, as the 001 mock did on every page load.
+  await resetTestServer();
   await page.goto('/');
   await button(page, /我是學生/).click();
   await expectOn(page, 'S-JoinEmpty');

@@ -35,10 +35,8 @@ async function command(method: 'POST', url: string, payload?: object): Promise<A
 async function expectAllReceive(sockets: Socket[], expected: ActivitySnapshot): Promise<void> {
   const received = await Promise.all(sockets.map((socket) => waitForSnapshot(socket, (s) => s.version === expected.version, 1000)));
   for (const snapshot of received) {
-    expect(snapshot.activity).toMatchObject({
-      phase: expected.activity!.phase,
-      currentQuestion: expected.activity!.currentQuestion,
-    });
+    expect(snapshot.activity?.phase).toBe(expected.activity!.phase);
+    expect(snapshot.activity?.currentQuestion).toBe(expected.activity!.currentQuestion);
   }
 }
 

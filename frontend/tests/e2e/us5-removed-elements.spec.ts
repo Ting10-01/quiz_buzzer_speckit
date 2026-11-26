@@ -148,6 +148,8 @@ test.describe('US5 removed elements (SC-004)', () => {
     await toLastAnswer(page);
     await submit(page);
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await check(page, 'S-Results');
   });
 });

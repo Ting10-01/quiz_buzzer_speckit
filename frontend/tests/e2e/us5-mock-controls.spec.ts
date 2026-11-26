@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  advance,
   expectOn,
   mockBar,
   submit,
@@ -93,6 +94,8 @@ test.describe('US5 mock control behaviour', () => {
   test('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: ACCEPT }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expectOn(page, 'S-QuestionDone');
   });
 
@@ -100,6 +103,8 @@ test.describe('US5 mock control behaviour', () => {
     await toLastAnswer(page);
     await submit(page);
     await page.getByRole('button', { name: ACCEPT }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expectOn(page, 'S-Results');
   });
 

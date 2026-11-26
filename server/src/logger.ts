@@ -17,6 +17,8 @@ export const loggerOptions = {
       '*.code',
       '*.clientSecret',
       '*.apiKey',
+      // 004: a student's identity (research RA-12).
+      '*.studentToken',
     ],
     censor: '[Redacted]',
   },
