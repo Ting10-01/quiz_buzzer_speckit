@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectTestServer } from './testServer';
+import { connectTestServer, resetTestServer } from './testServer';
 // 004 (T061): the shared step also works once the mock advance control is gone.
 import { advance } from './us5-walk';
 
@@ -21,6 +21,8 @@ async function expectMockBadge(page: Page) {
 
 /** Main → S-Join, then advances `steps` times on S-Join (M7) before joining GROUP. */
 async function joinAfter(page: Page, steps: number) {
+  // 004 (T061): each walk starts from no activity, as the 001 mock did on every page load.
+  await resetTestServer();
   await page.goto('/');
   await page.getByRole('button', { name: /我是學生/ }).click();
   await expect(page.getByText('目前沒有活動，請等老師建立活動')).toBeVisible();
@@ -98,6 +100,8 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(myAnswers(page)).toContainText('作業系統');
     await expectNoOtherGroups(page);
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expect(questionResult(page)).toContainText(`第 ${GROUP} 組`);
     await expectMockBadge(page);
 
@@ -125,6 +129,8 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(myAnswers(page)).toContainText('0');
     await expect(submitButton(page)).toHaveCount(0);
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expect(questionResult(page)).toContainText(`第 ${GROUP} 組`);
 
     // Question 4 (last): accepting goes straight to S-Results.
@@ -132,6 +138,8 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expectAnswerPage(page, 4);
     await answer(page, ['IP']);
     await page.getByRole('button', { name: '模擬：接受' }).click();
+    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
+    await advance(page);
     await expect(page.getByText('本組搶到')).toBeVisible();
     await expect(page.getByText('3 題', { exact: true })).toBeVisible();
     await expect(questionResult(page)).toHaveCount(0);

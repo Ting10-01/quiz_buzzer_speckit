@@ -41,7 +41,7 @@ export async function createActivityModule(app: FastifyInstance, deps: ActivityM
   const store = new ActivityStore();
   const membership = new GroupMembership();
   const clock = new SequenceClock();
-  const manager = new ActivityManager(queue, store, membership, clock, deps.importStore);
+  const manager = new ActivityManager(queue, store, membership, clock, deps.importStore, app.log);
 
   new ActivityBroadcaster(app.io, store, membership).start();
   new ActivityGateway(manager, membership).attach(app.io);

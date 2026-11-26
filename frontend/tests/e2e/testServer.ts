@@ -119,6 +119,14 @@ export async function connectTestServer(page: Page): Promise<string> {
   return url;
 }
 
+/**
+ * No activity and no group members again. A student walk starts with this, like 001's mock, which
+ * started from no activity on every page load (004 T061).
+ */
+export async function resetTestServer(): Promise<void> {
+  await fetch(`${testServerUrl()}/test/reset`, { method: 'POST' });
+}
+
 /** Every Socket.IO frame the server has sent to pages of this browser context so far. */
 export function socketFramesOf(context: BrowserContext): string[] {
   return [...(framesByContext.get(context) ?? [])];

@@ -37,4 +37,21 @@ export const activityRoutes: FastifyPluginAsync<ActivityRoutesOptions> = async (
   );
 
   app.delete('/api/activity', teacherOnly, async (_request, reply) => answer(reply, () => manager.cancelActivity()));
+
+  // :n that is not a whole number is a question that cannot be opened or ended (409).
+  app.post<{ Params: { n: string } }>('/api/activity/questions/:n/open', teacherOnly, async (request, reply) => {
+    const { n } = request.params;
+    if (!isWholeNumber(n)) return sendError(reply, 409, 'QUESTION_NOT_NEXT', `現在不能開放第 ${n} 題`);
+    return answer(reply, () => manager.openQuestion(Number(n)));
+  });
+
+  app.post<{ Params: { n: string } }>('/api/activity/questions/:n/end', teacherOnly, async (request, reply) => {
+    const { n } = request.params;
+    if (!isWholeNumber(n)) return sendError(reply, 409, 'QUESTION_NOT_OPEN', `第 ${n} 題目前沒有開放，不能結束`);
+    return answer(reply, () => manager.endQuestion(Number(n)));
+  });
 };
+
+function isWholeNumber(value: string): boolean {
+  return /^\d{1,9}$/.test(value);
+}

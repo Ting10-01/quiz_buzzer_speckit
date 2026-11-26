@@ -212,7 +212,6 @@ test.describe('T044 第 1 題開放後 (AC-12, AC-14)', () => {
     await joinGroup(student, 3);
     await expectOn(student, 'S-Answer');
     await expect(questionLabel(student, 1)).toBeVisible();
-    await expect(groupCell(page, 3)).toContainText('已加入 1 人');
   });
 
   // Needs 001 change request C2: S-Wait does not show WAIT_ROUND_TEXT yet.

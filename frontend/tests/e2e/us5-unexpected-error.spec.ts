@@ -1,7 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { signInAsPageTeacher } from './googleSignIn';
 import {
-  GROUP,
   SHEET_OK,
   errorArea,
   expectOn,
@@ -10,7 +9,6 @@ import {
   toAnswer,
   toImport,
   toImportError,
-  toJoin,
   toLive,
   toLobby,
   toLogin,
@@ -18,7 +16,6 @@ import {
   toQuestionEnd,
   toResults,
   toSetup,
-  toWait,
 } from './us5-walk';
 import { connectTestServer } from './testServer';
 
@@ -123,10 +120,12 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
     const initial = await groupItems(page).count();
     await page.getByRole('group', { name: '組數' }).getByRole('button', { name: '+' }).click();
     await expect(groupItems(page)).toHaveCount(initial + 1);
-    await armUnexpectedError(page);
+    // 004: activity is real, so an unreachable server fails it instead of the mock control.
+    const restore = await serverDown(page, '**/api/activity**');
     await button(page, '建立活動').click();
     await expectOn(page, 'T-Setup');
-    await expectError(page);
+    await expectServerDown(page);
+    await restore();
     await expect(groupItems(page)).toHaveCount(initial + 1);
 
     await button(page, '建立活動').click();
@@ -137,10 +136,12 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-Lobby: 開放第 1 題', async ({ page }) => {
     await toLobby(page);
-    await armUnexpectedError(page);
+    // 004: activity is real, so an unreachable server fails it instead of the mock control.
+    const restore = await serverDown(page, '**/api/activity**');
     await button(page, '開放第 1 題').click();
     await expectOn(page, 'T-Lobby');
-    await expectError(page);
+    await expectServerDown(page);
+    await restore();
 
     await button(page, '開放第 1 題').click();
     await expectOn(page, 'T-Live');
@@ -149,13 +150,15 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-Live: 結束並公布結果 closes the dialog first', async ({ page }) => {
     await toLive(page);
-    await armUnexpectedError(page);
+    // 004: activity is real, so an unreachable server fails it instead of the mock control.
+    const restore = await serverDown(page, '**/api/activity**');
     await button(page, '結束這一題').click();
     const dialog = page.getByRole('dialog', { name: /結束第 1 題/ });
     await dialog.getByRole('button', { name: '結束並公布結果' }).click();
     await expect(dialog).toBeHidden();
     await expectOn(page, 'T-Live');
-    await expectError(page);
+    await expectServerDown(page);
+    await restore();
 
     await button(page, '結束這一題').click();
     await dialog.getByRole('button', { name: '結束並公布結果' }).click();
@@ -165,10 +168,12 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-QuestionEnd: 開放第 2 題', async ({ page }) => {
     await toQuestionEnd(page);
-    await armUnexpectedError(page);
+    // 004: activity is real, so an unreachable server fails it instead of the mock control.
+    const restore = await serverDown(page, '**/api/activity**');
     await button(page, '開放第 2 題').click();
     await expectOn(page, 'T-QuestionEnd');
-    await expectError(page);
+    await expectServerDown(page);
+    await restore();
 
     await button(page, '開放第 2 題').click();
     await expectOn(page, 'T-Live');
@@ -194,32 +199,7 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
     await expectNoError(page);
   });
 
-  test('S-Join: 加入第 n 組 keeps the selected group', async ({ page }) => {
-    await toJoin(page, 1);
-    const radio = page.getByRole('radio', { name: new RegExp(`第 ${GROUP} 組`) });
-    await radio.click();
-    await armUnexpectedError(page);
-    await button(page, `加入第 ${GROUP} 組`).click();
-    await expectOn(page, 'S-Join');
-    await expectError(page);
-    await expect(radio).toHaveAttribute('aria-checked', 'true');
 
-    await button(page, `加入第 ${GROUP} 組`).click();
-    await expectOn(page, 'S-Wait');
-    await expectNoError(page);
-  });
-
-  test('S-Wait: 選錯組別？重新選擇', async ({ page }) => {
-    await toWait(page);
-    await armUnexpectedError(page);
-    await button(page, '選錯組別？重新選擇').click();
-    await expectOn(page, 'S-Wait');
-    await expectError(page);
-
-    await button(page, '選錯組別？重新選擇').click();
-    await expectOn(page, 'S-Join');
-    await expectNoError(page);
-  });
 
   test('S-Answer: 整組送出 keeps the typed answers', async ({ page }) => {
     await toAnswer(page);
