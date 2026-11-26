@@ -442,8 +442,8 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T158 [US1] 修改 `frontend/src/pages/teacher/TeacherLoginPage.tsx`：`signInWithGoogle()` 成功後呼叫 `activity.getCurrentActivity()`，依 `phase` 呼叫 `navigate`；`getCurrentActivity` reject 時以 `errorMessage()` 顯示於 `ErrorArea`；更新檔頭註解（FR-015；依賴 T157）
-- [ ] T159 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T157 通過，且其他測試沒有退步（SC-002）
+- [X] T158 [US1] 修改 `frontend/src/pages/teacher/TeacherLoginPage.tsx`：`signInWithGoogle()` 成功後呼叫 `activity.getCurrentActivity()`，依 `phase` 呼叫 `navigate`；`getCurrentActivity` reject 時以 `errorMessage()` 顯示於 `ErrorArea`；更新檔頭註解（FR-015；依賴 T157）
+- [X] T159 執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T157 通過，且其他測試沒有退步（SC-002）
 
 **Checkpoint**: 老師在活動進行中重新整理後重新登入，回到控制台目前的階段；004 Phase 7 依賴 C1 的 E2E 不需再 skip。
 
