@@ -97,8 +97,7 @@ describe('ActivityManager.cancelActivity', () => {
     expect(store.version()).toBe(2);
   });
 
-  // Needs joinGroup (T032, Phase 4); unskip in Phase 4's Red.
-  it.skip('refuses joinGroup with NO_ACTIVITY after cancelling', () => {
+  it('refuses joinGroup with NO_ACTIVITY after cancelling', () => {
     manager.createActivity({ groupCount: 4 });
     manager.cancelActivity();
     const ack = manager.joinGroup({ id: 's1' }, 1);
