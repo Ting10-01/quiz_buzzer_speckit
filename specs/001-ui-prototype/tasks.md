@@ -438,7 +438,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T157 [US1] 擴充 `frontend/tests/component/TeacherLoginPage.test.tsx`：登入成功後 `getCurrentActivity` 回傳 `null` 時 `navigate` 參數為 `{ id: 'T-Pick' }`；回傳 `PREPARING`、`OPEN`（第 2 題）、`QUESTION_ENDED`（第 2 題）、`FINISHED` 的活動時，`navigate` 參數分別為 `{ id: 'T-Lobby', activity }`、`{ id: 'T-Live', activity }`、`{ id: 'T-QuestionEnd', activity }`、`{ id: 'T-Results', activity }`，`activity` 為介面回傳的活動（FR-015、US1 AC-3、AC-8、T18–T21）；登入失敗時不呼叫 `getCurrentActivity`（FR-013）；`getCurrentActivity` reject 時停留在登入頁、`ErrorArea` 顯示訊息、`navigate` 不被呼叫，再點一次成功時訊息清除並依階段切換（FR-015、FR-009、US1 AC-9）
+- [X] T157 [US1] 擴充 `frontend/tests/component/TeacherLoginPage.test.tsx`：登入成功後 `getCurrentActivity` 回傳 `null` 時 `navigate` 參數為 `{ id: 'T-Pick' }`；回傳 `PREPARING`、`OPEN`（第 2 題）、`QUESTION_ENDED`（第 2 題）、`FINISHED` 的活動時，`navigate` 參數分別為 `{ id: 'T-Lobby', activity }`、`{ id: 'T-Live', activity }`、`{ id: 'T-QuestionEnd', activity }`、`{ id: 'T-Results', activity }`，`activity` 為介面回傳的活動（FR-015、US1 AC-3、AC-8、T18–T21）；登入失敗時不呼叫 `getCurrentActivity`（FR-013）；`getCurrentActivity` reject 時停留在登入頁、`ErrorArea` 顯示訊息、`navigate` 不被呼叫，再點一次成功時訊息清除並依階段切換（FR-015、FR-009、US1 AC-9）
 
 ### Implementation
 
