@@ -4,7 +4,7 @@
 
 | 提供什麼 | 簽章 | 使用者 | 規則 |
 | --- | --- | --- | --- |
-| `ActivityStore` | `current(): ActivityState \| null`、`version(): number`、`subscribe(listener): Unsubscribe` | 005、006 | 唯一權威的活動狀態（階段、目前題號、組數、題目、每題 `openedAt`、`endedAt`）。005、006 只讀，不得 `commit` |
+| `ActivityStore` | `current(): ActivityState \| null`、`version(): number`、`subscribe(listener): Unsubscribe` | 005、006 | 唯一權威的活動狀態（階段、目前題號、組數、題目、每題 `openedAt`、`endedAt`）。005、006 只讀，不得 `commit`。準備中取消活動後 `current()` 回到 `null`（這時還沒有任何送出） |
 | `GroupMembership.groupOf(socket)` | `groupOf(socket: { id: string }): number \| null` | 005 | 伺服器依連線判斷組別（原則 VI）；`null` 表示這條連線還沒加入 |
 | `ActivityManager.endQuestion(n)` | `endQuestion(n: number): ActivitySnapshot` | 005 | 老師接受某組後自動結束；與老師按鈕效果相同。已結束時不改變、不報錯（REQ-ACT-07）；不是目前開放的題目時丟出 `ActivityRuleError(QUESTION_NOT_OPEN)` |
 | `CommandQueue.run(command)` | `run<T>(command: () => T): T` | 005 | 005 的送出與判定必須放在這裡面，與 004 的開放、結束共用同一個順序（REQ-ACT-17）。`command` 不得 `await`；在裡面呼叫 `endQuestion` 會就地執行 |

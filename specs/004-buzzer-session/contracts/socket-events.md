@@ -22,7 +22,7 @@
 
 | 事件 | Payload | 送給誰 | 前端要做的事 |
 | --- | --- | --- | --- |
-| `activity:snapshot` | `ActivitySnapshot` | `TEACHER_ROOM`：`Audience.TEACHER`；`students` 房間：`Audience.PUBLIC` | `HttpActivityService.apply`：版本比手上大才採用（REQ-ACT-14） |
+| `activity:snapshot` | `ActivitySnapshot` | `TEACHER_ROOM`：`Audience.TEACHER`；`students` 房間：`Audience.PUBLIC` | `HttpActivityService.apply`：版本比手上大才採用（REQ-ACT-14）。`activity: null` 表示沒有活動（還沒建立或已取消），活動被取消時通知 `onPhaseChange(null)` |
 
 推送在 `CommandQueue` 處理完之後排程；同一輪事件迴圈內多次改變只送最新一份（research RA-04）。版本號嚴格遞增但可能跳號。
 
@@ -34,7 +34,7 @@
 | `group:leave` | `{}` | `GroupAck` | 第 1 題開放後回 `error` |
 
 - `GroupAck.snapshot` 一律是處理後的 `Audience.PUBLIC` 快照（被拒絕時是目前狀態）。
-- 被拒絕時 `error` 為 `{ code, message }`（`NO_ACTIVITY`、`NO_SUCH_GROUP`、`GROUP_LOCKED`，data-model「加入與離開組別被拒絕」）；payload 不是物件、`groupNumber` 不是整數時回 `NO_SUCH_GROUP`。前端以 `UnexpectedError(error.message)` reject。
+- 被拒絕時 `error` 為 `{ code, message }`（`NO_ACTIVITY`（包括老師剛取消活動）、`NO_SUCH_GROUP`、`GROUP_LOCKED`，data-model「加入與離開組別被拒絕」）；payload 不是物件、`groupNumber` 不是整數時回 `NO_SUCH_GROUP`。前端以 `UnexpectedError(error.message)` reject。
 - 老師連線也可以送這兩個事件，效果與學生相同；頁面流程不會這樣做。
 
 ## 給 005 的規則
