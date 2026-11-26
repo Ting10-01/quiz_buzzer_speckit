@@ -3,6 +3,7 @@ import type { ImportStore } from '../guided-notes/ImportStore.js';
 import { ActivityBroadcaster } from './ActivityBroadcaster.js';
 import { ActivityGateway } from './ActivityGateway.js';
 import { ActivityManager } from './ActivityManager.js';
+import { activityRoutes } from './activityRoutes.js';
 import { ActivityStore } from './ActivityStore.js';
 import { CommandQueue } from './CommandQueue.js';
 import { GroupMembership } from './GroupMembership.js';
@@ -44,6 +45,8 @@ export async function createActivityModule(app: FastifyInstance, deps: ActivityM
 
   new ActivityBroadcaster(app.io, store, membership).start();
   new ActivityGateway(manager, membership).attach(app.io);
+
+  await app.register(activityRoutes, { manager });
 
   app.decorate('activity', { store, membership, manager, queue, clock });
 }
