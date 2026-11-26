@@ -20,6 +20,12 @@ import {
   toSetup,
   toWait,
 } from './us5-walk';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T095: "模擬：非預期錯誤" on each of the 12 FR-061 pages (US5 AC-9–AC-11, quickstart Q12).
 // The first service call fails: stay on the page, ErrorArea shows "模擬：連不上伺服器", and what

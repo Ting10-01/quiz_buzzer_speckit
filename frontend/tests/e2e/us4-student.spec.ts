@@ -1,4 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
+import { connectTestServer } from './testServer';
+// 004 (T061): the shared step also works once the mock advance control is gone.
+import { advance } from './us5-walk';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T084: quickstart Q7 (accepted, not accepted, groupmate submits), Q8 (every phase) and
 // Q13 (where joining leads) with the mock services (M5–M7), plus SC-007 / FR-054.
@@ -9,12 +17,6 @@ const OTHER_GROUP = /第 [1245-9] 組/;
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
-}
-
-async function advance(page: Page, times = 1) {
-  for (let i = 0; i < times; i += 1) {
-    await page.getByRole('button', { name: '模擬：推進到下一個階段' }).click();
-  }
 }
 
 /** Main → S-Join, then advances `steps` times on S-Join (M7) before joining GROUP. */

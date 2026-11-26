@@ -1,6 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T071, T144: quickstart Q5 (hosting and judging) and Q6 (write-back) with the mock services (M4, M8).
 

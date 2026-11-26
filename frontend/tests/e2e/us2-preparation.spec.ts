@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
@@ -33,6 +39,16 @@ async function expectImportCounts(page: Page, questions: string, groups: string,
 
 const groupField = (page: Page) => page.getByRole('group', { name: '組數' });
 const onLobby = (page: Page) => expect(page.getByRole('button', { name: '修改設定' })).toBeVisible();
+
+// 004 data-model "ValidationError 的內容": the server's answer to an out-of-range group count.
+const GROUP_COUNT_INVALID = '組數必須是 2 到 20 之間的整數';
+
+/** Clicks "−" or "+" until the group count goes from `from` to `to`. */
+async function setGroupCount(page: Page, from: number, to: number) {
+  const step = groupField(page).getByRole('button', { name: to < from ? '−' : '+', exact: true });
+  for (let n = from; n !== to; n += to < from ? -1 : 1) await step.click();
+  await expect(groupField(page)).toContainText(`${to} 組`);
+}
 
 /** T-Pick → 題組＋單題範本 → T-Import → T-Setup (create). */
 async function toSetup(page: Page) {
@@ -100,13 +116,15 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await groupField(page).getByRole('button', { name: '−' }).click();
     await expect(items).toHaveCount(initial);
 
-    // Validation failure stays and shows the message beside the field (US2 AC-9).
-    await page.getByRole('button', { name: '模擬：驗證失敗' }).click();
+    // Validation failure stays and shows the message beside the field (US2 AC-9). 004: the real
+    // server refuses an out-of-range group count (004 AC-04) instead of the removed mock control.
+    await setGroupCount(page, initial, 1);
     await page.getByRole('button', { name: '建立活動' }).click();
-    await expect(groupField(page).getByText('模擬：驗證失敗')).toBeVisible();
+    await expect(groupField(page).getByText(GROUP_COUNT_INVALID)).toBeVisible();
     await expect(page.getByRole('button', { name: '建立活動' })).toBeVisible();
 
     // The second attempt creates the activity (US2 AC-8).
+    await setGroupCount(page, 1, initial);
     await page.getByRole('button', { name: '建立活動' }).click();
     await onLobby(page);
     const groups = page.getByRole('list', { name: '組別' });
@@ -124,10 +142,10 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
 
     // Edit mode: validation failure, then a successful save returns to T-Lobby.
     await page.getByRole('button', { name: '修改設定' }).click();
-    await groupField(page).getByRole('button', { name: '+' }).click();
-    await page.getByRole('button', { name: '模擬：驗證失敗' }).click();
+    await setGroupCount(page, initial, 1);
     await page.getByRole('button', { name: '儲存設定' }).click();
-    await expect(groupField(page).getByText('模擬：驗證失敗')).toBeVisible();
+    await expect(groupField(page).getByText(GROUP_COUNT_INVALID)).toBeVisible();
+    await setGroupCount(page, 1, initial + 1);
     await page.getByRole('button', { name: '儲存設定' }).click();
     await onLobby(page);
     await expect(groups.getByRole('listitem')).toHaveCount(initial + 1);

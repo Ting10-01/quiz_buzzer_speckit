@@ -1,8 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  advance,
   expectOn,
-  join,
   mockBar,
   submit,
   toAnswer,
@@ -23,42 +21,50 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T094: the mock control bar shows only the FR-061 controls on each page (US5 AC-4–AC-8).
 
-const ADVANCE = '模擬：推進到下一個階段';
 const ACCEPT = '模擬：接受';
 const REJECT = '模擬：不接受';
 const TEAMMATE = '模擬：同組組員送出';
 const VALIDATION = '模擬：驗證失敗';
 const UNEXPECTED = '模擬：非預期錯誤';
 
-/** FR-061: the exact set of controls each page (and S-Submitted state) shows. */
+/**
+ * FR-061: the exact set of controls each page (and S-Submitted state) shows. 004 removed the activity
+ * mock, so "模擬：推進到下一個階段" and T-Setup's "模擬：驗證失敗" are gone (004 plan, T042).
+ */
 const EXPECTED: [PageId, (page: Page) => Promise<void>, string[]][] = [
   ['Main', async (page) => {
     await page.goto('/');
     await expectOn(page, 'Main');
-  }, [ADVANCE]],
+  }, []],
   ['T-Login', toLogin, [UNEXPECTED]],
   ['T-Pick', toPick, [UNEXPECTED]],
   ['T-Import', (page) => toImport(page), [UNEXPECTED]],
   ['T-ImportError', toImportError, [UNEXPECTED]],
-  ['T-Setup', (page) => toSetup(page), [VALIDATION, UNEXPECTED]],
+  ['T-Setup', (page) => toSetup(page), [UNEXPECTED]],
   ['T-Lobby', (page) => toLobby(page), [UNEXPECTED]],
   ['T-Live', (page) => toLive(page), [UNEXPECTED]],
   ['T-QuestionEnd', toQuestionEnd, [UNEXPECTED]],
   ['T-Results', (page) => toResults(page), [UNEXPECTED]],
-  ['S-JoinEmpty', (page) => toJoin(page), [ADVANCE, UNEXPECTED]],
-  ['S-Join', (page) => toJoin(page, 1), [ADVANCE, UNEXPECTED]],
-  ['S-Wait', toWait, [ADVANCE, UNEXPECTED]],
-  ['S-Answer', toAnswer, [ADVANCE, TEAMMATE, VALIDATION, UNEXPECTED]],
-  ['S-Submitted', toSubmitted, [ADVANCE, ACCEPT, REJECT]],
+  ['S-JoinEmpty', (page) => toJoin(page), [UNEXPECTED]],
+  ['S-Join', (page) => toJoin(page, 1), [UNEXPECTED]],
+  ['S-Wait', toWait, [UNEXPECTED]],
+  ['S-Answer', toAnswer, [TEAMMATE, VALIDATION, UNEXPECTED]],
+  ['S-Submitted', toSubmitted, [ACCEPT, REJECT]],
   ['S-Rejected', async (page) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: REJECT }).click();
     await expectOn(page, 'S-Rejected');
-  }, [ADVANCE]],
-  ['S-QuestionDone', toStudentQuestionDone, [ADVANCE]],
+  }, []],
+  ['S-QuestionDone', toStudentQuestionDone, []],
   ['S-Results', toStudentResults, []],
 ];
 
@@ -84,13 +90,6 @@ test.describe('US5 mock controls per page (FR-061, US5 AC-6, AC-7)', () => {
 });
 
 test.describe('US5 mock control behaviour', () => {
-  test('AC-4: on S-Wait, advancing goes to S-Answer for question 1', async ({ page }) => {
-    await toWait(page);
-    await page.getByRole('button', { name: ADVANCE }).click();
-    await expectOn(page, 'S-Answer');
-    await expect(page.getByText('第 1 題 / 共 4 題')).toBeVisible();
-  });
-
   test('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: ACCEPT }).click();
@@ -112,26 +111,6 @@ test.describe('US5 mock control behaviour', () => {
     await expect(page.getByRole('button', { name: REJECT })).toHaveCount(0);
   });
 
-  test('AC-8: 模擬：驗證失敗 only affects the next 建立活動', async ({ page }) => {
-    await toSetup(page);
-    await page.getByRole('button', { name: VALIDATION }).click();
-    await page.getByRole('button', { name: '建立活動' }).click();
-    await expectOn(page, 'T-Setup');
-    await expect(page.getByRole('group', { name: '組數' }).getByText(VALIDATION)).toBeVisible();
-    await page.getByRole('button', { name: '建立活動' }).click();
-    await expectOn(page, 'T-Lobby');
-  });
-
-  test('AC-8: 模擬：驗證失敗 only affects the next 儲存設定', async ({ page }) => {
-    await toLobby(page);
-    await page.getByRole('button', { name: '修改設定' }).click();
-    await page.getByRole('button', { name: VALIDATION }).click();
-    await page.getByRole('button', { name: '儲存設定' }).click();
-    await expectOn(page, 'T-Setup');
-    await page.getByRole('button', { name: '儲存設定' }).click();
-    await expectOn(page, 'T-Lobby');
-  });
-
   test('AC-8: 模擬：驗證失敗 only affects the next 整組送出', async ({ page }) => {
     await toAnswer(page);
     await page.getByRole('button', { name: VALIDATION }).click();
@@ -140,25 +119,5 @@ test.describe('US5 mock control behaviour', () => {
     await expect(page.getByRole('textbox').first()).toHaveAccessibleDescription(VALIDATION);
     await submit(page);
     await expectOn(page, 'S-Submitted');
-  });
-
-  test('boundary: advancing after FINISHED changes nothing (M7)', async ({ page }) => {
-    await toJoin(page, 9);
-    await expect(page.getByText('已結束', { exact: true })).toBeVisible();
-    await advance(page);
-    await expectOn(page, 'S-Join');
-    await expect(page.getByText('已結束', { exact: true })).toBeVisible();
-    await join(page);
-    await expectOn(page, 'S-Results');
-    await expect(mockBar(page)).toHaveCount(0);
-  });
-
-  test('boundary: advancing on Main after FINISHED keeps 已結束', async ({ page }) => {
-    await page.goto('/');
-    await advance(page, 9);
-    await expect(page.getByText('已結束', { exact: true })).toBeVisible();
-    await advance(page, 2);
-    await expectOn(page, 'Main');
-    await expect(page.getByText('已結束', { exact: true })).toBeVisible();
   });
 });

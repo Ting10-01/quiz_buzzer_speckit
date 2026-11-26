@@ -28,6 +28,12 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T093: every arrow of diagrams/001-screen-flow.puml, one test per arrow (SC-001, SC-002).
 // Test names start with the arrow's code, or with "from → to" for the arrows labelled on the
@@ -337,23 +343,6 @@ test.describe('US5 screen flow: coded arrows T1–T17', () => {
     await groupField(page).getByRole('button', { name: '−' }).click();
     await expectOn(page, 'T-Setup');
     await expect(groupItems(page)).toHaveCount(initial);
-  });
-
-  test('T10: T-Setup → T-Setup: 建立活動（驗證失敗）', async ({ page }) => {
-    await toSetup(page);
-    await page.getByRole('button', { name: '模擬：驗證失敗' }).click();
-    await page.getByRole('button', { name: '建立活動' }).click();
-    await expectOn(page, 'T-Setup');
-    await expect(groupField(page).getByText('模擬：驗證失敗')).toBeVisible();
-  });
-
-  test('T10: T-Setup → T-Setup: 儲存設定（驗證失敗）', async ({ page }) => {
-    await toLobby(page);
-    await page.getByRole('button', { name: '修改設定' }).click();
-    await page.getByRole('button', { name: '模擬：驗證失敗' }).click();
-    await page.getByRole('button', { name: '儲存設定' }).click();
-    await expectOn(page, 'T-Setup');
-    await expect(groupField(page).getByText('模擬：驗證失敗')).toBeVisible();
   });
 
   test('T11: T-Setup → T-Lobby: 儲存設定（驗證通過）', async ({ page }) => {
