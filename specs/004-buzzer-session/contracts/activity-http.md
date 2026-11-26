@@ -2,7 +2,7 @@
 
 **Owner**: `004-buzzer-session` | **Base**: 002 的 Fastify 伺服器 | **Types**: `shared/src/activitySync.ts`
 
-所有端點都掛 `{ preHandler: app.requireTeacher }`（002；`Authorization: Bearer <老師憑證>`）。沒有或無效的憑證回 `401 UNAUTHORIZED`（由 002 決定內容），活動不變（REQ-ACT-09、AC-07）。四條路由都加進 002 `server/tests/integration/requireTeacher.test.ts` 的「老師專用路由清單」（002 T043）。錯誤回應一律是 002 的 `ErrorBody` `{ code, message }`。每個端點在 `CommandQueue.run` 內處理（REQ-ACT-17）。
+所有端點都掛 `{ preHandler: app.requireTeacher }`（002；`Authorization: Bearer <老師憑證>`）。沒有或無效的憑證回 `401 UNAUTHORIZED`（由 002 決定內容），活動不變（REQ-ACT-09、AC-07）。五條路由都加進 002 `server/tests/integration/requireTeacher.test.ts` 的「老師專用路由清單」（002 T043）。錯誤回應一律是 002 的 `ErrorBody` `{ code, message }`。每個端點在 `CommandQueue.run` 內處理（REQ-ACT-17）。
 
 ## 回應格式
 
@@ -19,6 +19,7 @@
 | --- | --- | --- | --- |
 | `POST /api/activity` | `ActivitySettings`（`{ groupCount }`） | `null` → `PREPARING`；題目取自 `ImportStore.latest()` | `groupCount`；409 `ACTIVITY_EXISTS`、`NO_IMPORT` |
 | `PUT /api/activity/settings` | `ActivitySettings` | `PREPARING` 的 `groupCount` | `groupCount`；409 `NO_ACTIVITY`、`SETTINGS_LOCKED` |
+| `DELETE /api/activity` | — | `PREPARING` → `null`；清除所有組別（`GroupMembership.reset()`）；回應 `{ version, activity: null }`。沒有活動時不改變，回傳目前快照 | 409 `CANCEL_LOCKED` |
 | `POST /api/activity/questions/:n/open` | — | `PREPARING`（n=1）或 `QUESTION_ENDED(n-1)` → `OPEN(n)`；記錄 `openedAt[n]` | 409 `NO_ACTIVITY`、`QUESTION_NOT_NEXT` |
 | `POST /api/activity/questions/:n/end` | — | `OPEN(n)` → `QUESTION_ENDED(n)`，或最後一題時 → `FINISHED`；記錄 `endedAt[n]` | 409 `NO_ACTIVITY`、`QUESTION_NOT_OPEN` |
 
