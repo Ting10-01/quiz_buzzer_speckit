@@ -119,6 +119,7 @@ specs/004-buzzer-session/
 ├── checklists/requirements.md
 ├── analyze-report.md
 ├── manual-verification.md     # implement 階段產生
+├── load-test.md               # implement 階段產生（T047 壓力測試結果）
 └── tasks.md
 ```
 
