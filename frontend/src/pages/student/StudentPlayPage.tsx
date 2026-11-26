@@ -55,6 +55,9 @@ interface ViewProps {
 /**
  * Subscribes to phase changes for the life of the view. The handler is kept in a ref so the
  * subscription is made once, while the handler always sees the latest state.
+ * A change notified after the previous view navigated but before this view subscribed reaches
+ * neither (#20), so once subscribed the view also checks the current activity with the same
+ * handler.
  */
 function usePhaseChange(handler: (activity: Activity | null) => void) {
   const { activity: activityService } = useServiceRegistry();
@@ -62,10 +65,19 @@ function usePhaseChange(handler: (activity: Activity | null) => void) {
   useEffect(() => {
     handlerRef.current = handler;
   });
-  useEffect(
-    () => activityService.onPhaseChange((activity) => handlerRef.current(activity)),
-    [activityService],
-  );
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = activityService.onPhaseChange((activity) => handlerRef.current(activity));
+    activityService
+      .getCurrentActivity()
+      .then((activity) => active && handlerRef.current(activity))
+      // Only a catch-up check: the subscription still delivers the next change.
+      .catch(() => {});
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [activityService]);
 }
 
 /**
