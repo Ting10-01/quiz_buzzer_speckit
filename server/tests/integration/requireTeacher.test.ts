@@ -77,6 +77,10 @@ const TEACHER_ONLY_ROUTES = [
   { method: 'GET', url: '/api/auth/picker-token' },
   { method: 'GET', url: '/api/guided-notes/spreadsheets/spreadsheet-id-0001' },
   { method: 'POST', url: '/api/guided-notes/read', payload: { spreadsheetId: 'spreadsheet-id-0001', worksheet: '學習單' } },
+  // 004 (T024, T055)
+  { method: 'POST', url: '/api/activity', payload: { groupCount: 4 } },
+  { method: 'PUT', url: '/api/activity/settings', payload: { groupCount: 6 } },
+  { method: 'DELETE', url: '/api/activity' },
 ] as const;
 
 describe('teacher-only route list', () => {
