@@ -101,9 +101,9 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T029 [P] [US2] `server/tests/unit/activity/ActivityManager.groups.test.ts`：依 data-model「組別規則」逐列測試——沒有活動（`NO_ACTIVITY`）、組別超出範圍（`NO_SUCH_GROUP`）、同組重新加入不重複計算、準備中換組、鎖定後換組回 `GROUP_LOCKED`「第 1 題開放後不能換組，你在第 m 組」、鎖定後未加入的連線可加入（OPEN、QUESTION_ENDED、FINISHED）；`leaveGroup` 準備中成功、鎖定後回 `error`；每次成功的加入或離開都 commit 新版本（REQ-ACT-10、11、13）
-- [ ] T030 [P] [US2] `server/tests/integration/activity/ActivityGateway.groups.test.ts`：`group:join` 的 ack 帶 `studentToken`，老師連線 1 秒內收到人數加 1（AC-09）；兩條連線加入同組為 2 人（AC-10）；準備中換組（AC-11）；開放第 1 題後換組被拒絕、仍在原組（AC-12）；開放後新連線可加入（AC-13）；斷線後以同一 `studentToken` 重新連線並加入原組，人數不變且 `groupOf` 仍為原組（AC-14）；伺服器不認得的 token 被忽略；payload 不是整數時回 `error`；學生連線收到的所有快照 `spreadsheet` 為空白值、老師連線的不是（AC-16、SC-003）
-- [ ] T031 [P] [US2] `frontend/tests/unit/HttpActivityService.groups.test.ts`：`joinGroup` 成功時存 `studentToken` 並回傳 `Activity`；ack 有 `error` 時先套用 `snapshot` 再 reject `UnexpectedError(error.message)`（`NO_ACTIVITY`、`NO_SUCH_GROUP`、`GROUP_LOCKED`）；`leaveGroup` 有 `error` 時 reject `UnexpectedError(error.message)`；ack 逾時 reject「連不上伺服器，請確認伺服器已啟動」
+- [X] T029 [P] [US2] `server/tests/unit/activity/ActivityManager.groups.test.ts`：依 data-model「組別規則」逐列測試——沒有活動（`NO_ACTIVITY`）、組別超出範圍（`NO_SUCH_GROUP`）、同組重新加入不重複計算、準備中換組、鎖定後換組回 `GROUP_LOCKED`「第 1 題開放後不能換組，你在第 m 組」、鎖定後未加入的連線可加入（OPEN、QUESTION_ENDED、FINISHED）；`leaveGroup` 準備中成功、鎖定後回 `error`；每次成功的加入或離開都 commit 新版本（REQ-ACT-10、11、13）
+- [X] T030 [P] [US2] `server/tests/integration/activity/ActivityGateway.groups.test.ts`：`group:join` 的 ack 帶 `studentToken`，老師連線 1 秒內收到人數加 1（AC-09）；兩條連線加入同組為 2 人（AC-10）；準備中換組（AC-11）；開放第 1 題後換組被拒絕、仍在原組（AC-12）；開放後新連線可加入（AC-13）；斷線後以同一 `studentToken` 重新連線並加入原組，人數不變且 `groupOf` 仍為原組（AC-14）；伺服器不認得的 token 被忽略；payload 不是整數時回 `error`；學生連線收到的所有快照 `spreadsheet` 為空白值、老師連線的不是（AC-16、SC-003）
+- [X] T031 [P] [US2] `frontend/tests/unit/HttpActivityService.groups.test.ts`：`joinGroup` 成功時存 `studentToken` 並回傳 `Activity`；ack 有 `error` 時先套用 `snapshot` 再 reject `UnexpectedError(error.message)`（`NO_ACTIVITY`、`NO_SUCH_GROUP`、`GROUP_LOCKED`）；`leaveGroup` 有 `error` 時 reject `UnexpectedError(error.message)`；ack 逾時 reject「連不上伺服器，請確認伺服器已啟動」
 
 ### Implementation for User Story 2
 
