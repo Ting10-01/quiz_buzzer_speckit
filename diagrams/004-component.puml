@@ -10,9 +10,9 @@ actor "老師" as Teacher
 actor "學生（各組，每組可多個分頁）" as Student
 
 package "前端（瀏覽器分頁）" {
-  package "001 頁面（001 最終版，不修改；D21 見 spec「需請 001 修改」C1）" #EEEEEE {
-    component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage" as StudentPages
-    component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup)\nConsolePage (T-Lobby / T-Live / T-QuestionEnd)" as TeacherPages
+  package "001 頁面（001 最終版；004 只套用組數規則與說明文字，REQ-ACT-23；D21 見 spec「需請 001 修改」C1）" #EEEEEE {
+    component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage\n（S-Wait「這一輪」：004 的說明文字）" as StudentPages
+    component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup：004 的組數規則與說明文字)\nConsolePage (T-Lobby「取消活動」/ T-Live / T-QuestionEnd)" as TeacherPages
     component "ActivityService" <<interface>> as IActivity
     component "createServiceRegistry()\n組合根：只改 activity 的綁定" as Registry
   }
@@ -27,14 +27,14 @@ package "shared" {
 }
 
 package "伺服器（Fastify，唯一權威來源，原則 V）" {
-  component "activityRoutes\nREST：建立、修改設定、\n開放、結束" as Routes
+  component "activityRoutes\nREST：建立、修改設定、取消、\n開放、結束" as Routes
   component "ActivityGateway\n在 002 的 app.io 上：students 房間、\n加入與離開組別" as Gateway
   component "ActivityManager\n活動規則與階段轉換" as Manager
   component "CommandQueue\n依抵達順序逐一處理\n（004 與 005 共用一條）" as Queue
   component "SequenceClock\n不倒退的時間" as Clock
   component "ActivityStore\n活動狀態 + 版本號" as Store
-  component "GroupMembership\n學生身分 → 組別\ngroupOf(socket)" as Membership
-  component "ActivityView\n依對象產生 Activity\n（學生版不含試算表 ID）" as View
+  component "GroupMembership\n學生身分 → 組別\ngroupOf(socket)；取消時清除" as Membership
+  component "ActivityView\n依對象產生 Activity\n（學生版不含學習單資訊）" as View
   component "ActivityBroadcaster\n狀態改變後推送最新快照" as Broadcaster
 }
 
@@ -49,7 +49,7 @@ Teacher --> TeacherPages
 Student --> StudentPages
 StudentPages ..> IActivity
 TeacherPages ..> IActivity
-TeacherPages ..> Rules : 組數範圍與預設\n（001 spec 交給 004 定義）
+TeacherPages ..> Rules : 組數範圍與預設\n（001 spec 交給 004 定義，004 套用）
 Registry --> HttpAct : 綁定
 HttpAct -up-|> IActivity
 HttpAct --> Realtime : 推送、加入與離開組別
@@ -83,7 +83,7 @@ Sub005 ..> Clock
 Res006 ..> Store : 題目清單、結束時間
 
 note right of Queue
-  建立、修改設定、開放、結束、加入、離開，
+  建立、修改設定、取消、開放、結束、加入、離開，
   以及 005 的送出與判定，全部在同一條佇列
   以同步程式碼逐一處理（中間沒有 await）。
   網路推送在處理完之後才排程。
@@ -93,5 +93,6 @@ note bottom of Broadcaster
   每份快照帶 ActivityStore 的版本號；
   前端只採用比手上更新的版本（REQ-ACT-14）。
   同一輪事件迴圈內有多次改變時只送最新一份。
+  活動被取消時送 activity = null（版本照樣遞增）。
 end note
 @enduml

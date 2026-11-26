@@ -1,5 +1,5 @@
 @startuml 004-sequence
-title 004 時序圖：建立活動、加入組別、逐題開放與結束、重新整理
+title 004 時序圖：建立活動、加入組別、逐題開放與結束、重新整理、取消活動
 
 skinparam defaultFontName "PingFang TC"
 skinparam shadowing false
@@ -139,4 +139,24 @@ else 001 C1 完成後
   HS --> TP : Activity(OPEN, n)
   TP -> TP : 直接進入 T-Live（第 n 題）
 end
+
+== 7. 準備中取消活動（REQ-ACT-22、001 FR-026） ==
+T -> TP : 控制台・準備中「取消活動」→「確定取消活動」
+TP -> HS : cancelActivity()
+HS -> RT : DELETE /api/activity
+RT -> RT : app.requireTeacher（002）
+RT -> AM : cancelActivity()
+AM -> Q : run(...)
+activate Q
+Q -> AM : 沒有活動？→ 回傳目前狀態（連點只生效一次）\n不是 PREPARING？→ ActivityRuleError(CANCEL_LOCKED)\n「第 1 題開放後不能取消活動」
+AM -> GM : reset()（清除所有組別對應）
+AM -> ST : commit(null)
+deactivate Q
+AM --> RT : ActivitySnapshot { version: v+1, activity: null }
+RT --> HS : 200 snapshot
+HS -> HS : apply → onPhaseChange(null)
+HS --> TP : resolve → T-Pick
+BC -> GW : emit activity:snapshot { activity: null }（所有連線）
+GW -->> HS : activity:snapshot
+HS -->> SP : onPhaseChange(null)\nMain：沒有活動；S-Join：「目前沒有活動」並清除已選組別；\nS-Wait → S-Join（不呼叫 leaveGroup，001 FR-050、FR-051）
 @enduml
