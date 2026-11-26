@@ -33,6 +33,8 @@ export interface FakeRegistryOverrides extends Partial<Controls> {
 }
 
 const subscription = () => vi.fn(() => vi.fn());
+/** A query that has not answered yet, so pages that check on mount see no change. */
+const unanswered = () => vi.fn(() => new Promise<never>(() => {}));
 
 export function createFakeRegistry(overrides: FakeRegistryOverrides = {}): ServiceRegistry {
   const { auth, guidedNotes, activity, submission, result, isMockMode = false, ...controls } =
@@ -48,7 +50,7 @@ export function createFakeRegistry(overrides: FakeRegistryOverrides = {}): Servi
       endQuestion: vi.fn(),
       joinGroup: vi.fn(),
       leaveGroup: vi.fn(),
-      getCurrentActivity: vi.fn(),
+      getCurrentActivity: unanswered(),
       onPhaseChange: subscription(),
       onActivityChange: subscription(),
       ...activity,
