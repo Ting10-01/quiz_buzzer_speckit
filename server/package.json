@@ -6,7 +6,8 @@
     "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
     "start": "tsx --env-file-if-exists=.env src/main.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:load:activity": "tsx tests/load/phaseSync.load.ts --runs 20"
   },
   "dependencies": {
     "@googleapis/drive": "^27.1.0",
