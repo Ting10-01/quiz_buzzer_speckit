@@ -1,7 +1,7 @@
 // 001's ActivityService over 004's server (contracts/activity-service.md): teacher commands through
 // 002's ApiClient, pushes and student events through RealtimeClient. Only snapshots with a newer
 // version are taken, so the page never goes back to an older state (REQ-ACT-14, AC-24).
-import type { ActivitySnapshot } from '@quiz-buzzer/shared/activitySync';
+import type { ActivitySnapshot, GroupAck } from '@quiz-buzzer/shared/activitySync';
 import type { Activity, ActivitySettings, ValidationError } from '@quiz-buzzer/shared/entities';
 import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { ApiClient } from './http/ApiClient';
@@ -57,12 +57,24 @@ export class HttpActivityService implements ActivityService {
     return notYet();
   }
 
-  joinGroup(): Promise<Activity> {
-    return notYet();
+  /**
+   * Stores this tab's student identity so a refreshed tab is the same student (REQ-ACT-13). A refusal
+   * still carries the current snapshot, which is applied before rejecting (contracts/activity-service.md).
+   */
+  async joinGroup(groupNumber: number): Promise<Activity> {
+    const ack = await this.realtime.emitWithAck<GroupAck>('group:join', { groupNumber });
+    if (ack.error) {
+      this.apply(ack.snapshot);
+      throw new Error(ack.error.message);
+    }
+    if (ack.studentToken) this.realtime.setStudentToken(ack.studentToken);
+    return this.activityAfter(ack.snapshot);
   }
 
-  leaveGroup(): Promise<void> {
-    return notYet();
+  async leaveGroup(): Promise<void> {
+    const ack = await this.realtime.emitWithAck<GroupAck>('group:leave', {});
+    if (ack.error) throw new Error(ack.error.message);
+    this.apply(ack.snapshot);
   }
 
   /** From the snapshot the server sends on connect (REQ-ACT-15); no extra request (research RA-09). */
@@ -138,7 +150,7 @@ export class HttpActivityService implements ActivityService {
   }
 }
 
-// Commands arrive with the user stories that own them (tasks T034, T041); their
+// Commands arrive with the user stories that own them (task T041); their
 // parameters are added then.
 function notYet<T>(): Promise<T> {
   return Promise.reject(new Error('尚未實作'));

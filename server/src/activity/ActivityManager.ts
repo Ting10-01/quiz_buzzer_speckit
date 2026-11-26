@@ -1,11 +1,11 @@
 import { GROUP_COUNT_MAX, GROUP_COUNT_MIN } from '@quiz-buzzer/shared/activityRules';
-import type { ActivitySnapshot } from '@quiz-buzzer/shared/activitySync';
+import type { ActivitySnapshot, GroupAck } from '@quiz-buzzer/shared/activitySync';
 import type { ActivitySettings, ValidationError } from '@quiz-buzzer/shared/entities';
 import type { ImportStore } from '../guided-notes/ImportStore.js';
 import type { ActivityStore } from './ActivityStore.js';
 import { Audience, toActivity } from './ActivityView.js';
 import type { CommandQueue } from './CommandQueue.js';
-import type { GroupMembership } from './GroupMembership.js';
+import type { GroupMembership, SocketRef } from './GroupMembership.js';
 import type { SequenceClock } from './SequenceClock.js';
 
 /** A rule does not allow the command; REST answers 409 { code, message } (data-model "ActivityRuleError"). */
@@ -35,6 +35,7 @@ function checkGroupCount(settings: unknown, lowest: number): number | Validation
 }
 
 const noActivity = () => new ActivityRuleError('NO_ACTIVITY', '目前沒有活動');
+const groupLocked = (group: number) => `第 1 題開放後不能換組，你在第 ${group} 組`;
 
 // The activity rules (data-model "ActivityManager"). Every command runs inside CommandQueue.run.
 export class ActivityManager {
@@ -94,6 +95,42 @@ export class ActivityManager {
     });
   }
 
+  /**
+   * Puts the connection in group n (data-model "組別規則"). Once question 1 has opened a tab that has
+   * joined cannot move; a tab that has not joined may still join any group. Rules answer in the ack.
+   */
+  joinGroup(socket: SocketRef, groupNumber: number): GroupAck {
+    return this.queue.run(() => {
+      const state = this.store.current();
+      if (!state) return this.refuse('NO_ACTIVITY', '目前沒有活動');
+      if (!Number.isInteger(groupNumber) || groupNumber < 1 || groupNumber > state.groupCount) {
+        return this.refuse('NO_SUCH_GROUP', `沒有第 ${groupNumber} 組`);
+      }
+      const current = this.membership.groupOf(socket);
+      if (current !== null && current !== groupNumber && state.phase !== 'PREPARING') {
+        return this.refuse('GROUP_LOCKED', groupLocked(current));
+      }
+      const studentToken = this.membership.join(socket, groupNumber);
+      // Members are not part of ActivityState, so the same state is committed to add 1 to the version.
+      this.store.commit(state);
+      return { snapshot: this.snapshot(Audience.PUBLIC), studentToken };
+    });
+  }
+
+  /** Leaves the group while PREPARING; a tab that has not joined succeeds without a change. */
+  leaveGroup(socket: SocketRef): GroupAck {
+    return this.queue.run(() => {
+      const state = this.store.current();
+      const current = this.membership.groupOf(socket);
+      if (state && current !== null && state.phase !== 'PREPARING') {
+        return this.refuse('GROUP_LOCKED', groupLocked(current));
+      }
+      this.membership.leave(socket);
+      if (state) this.store.commit(state);
+      return { snapshot: this.snapshot(Audience.PUBLIC) };
+    });
+  }
+
   /** The current state for the audience. Read-only, so it may also be called inside CommandQueue.run. */
   snapshot(audience: Audience): ActivitySnapshot {
     const state = this.store.current();
@@ -101,5 +138,10 @@ export class ActivityManager {
       version: this.store.version(),
       activity: state && toActivity(state, this.membership.memberCounts(state.groupCount), audience),
     };
+  }
+
+  /** A refused group command: nothing changes and the ack carries the current PUBLIC snapshot. */
+  private refuse(code: string, message: string): GroupAck {
+    return { snapshot: this.snapshot(Audience.PUBLIC), error: { code, message } };
   }
 }

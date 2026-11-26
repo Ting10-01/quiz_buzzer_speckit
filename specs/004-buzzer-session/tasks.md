@@ -107,9 +107,9 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] 在 `server/src/activity/ActivityManager.ts` 實作 `joinGroup(socket, n)`、`leaveGroup(socket)`，在 `CommandQueue.run` 內；回傳 `GroupAck`（`PUBLIC` 快照），依 T026
-- [ ] T033 [US2] 在 `server/src/activity/ActivityGateway.ts` 處理 `group:join`、`group:leave`：驗證 payload、呼叫 `ActivityManager`、以 ack 回覆（contracts/socket-events.md），依 T032
-- [ ] T034 [US2] 在 `frontend/src/services/HttpActivityService.ts` 實作 `joinGroup`、`leaveGroup`（經 `RealtimeClient.emitWithAck`），`joinGroup` 照 001 回傳 `Promise<Activity>`，被拒絕時以 `UnexpectedError(error.message)` reject，依 T022
+- [X] T032 [US2] 在 `server/src/activity/ActivityManager.ts` 實作 `joinGroup(socket, n)`、`leaveGroup(socket)`，在 `CommandQueue.run` 內；回傳 `GroupAck`（`PUBLIC` 快照），依 T026
+- [X] T033 [US2] 在 `server/src/activity/ActivityGateway.ts` 處理 `group:join`、`group:leave`：驗證 payload、呼叫 `ActivityManager`、以 ack 回覆（contracts/socket-events.md），依 T032
+- [X] T034 [US2] 在 `frontend/src/services/HttpActivityService.ts` 實作 `joinGroup`、`leaveGroup`（經 `RealtimeClient.emitWithAck`），`joinGroup` 照 001 回傳 `Promise<Activity>`，被拒絕時以 `UnexpectedError(error.message)` reject，依 T022
 
 **Checkpoint**: 學生可以加入、換組、重新整理後回到原組；伺服器提供 `groupOf(socket)`
 
