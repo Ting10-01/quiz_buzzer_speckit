@@ -1,8 +1,10 @@
 // E2E stand-ins for Google Picker and the 003 import API (003 research R2). The page gets the 001
-// demonstration sheets (MockFixtures), so the 001 walks keep checking the same screens.
+// demonstration sheets (MockFixtures), so the 001 walks keep checking the same screens; a successful
+// import is also saved on the worker's test server (004 T061).
 import type { Page } from '@playwright/test';
 import { isImportSuccess } from '@quiz-buzzer/shared/guards';
 import { MockFixtures, SPREADSHEET_ID } from '../../src/services/mock/MockFixtures';
+import { seedImport } from './testServer';
 
 const PICKER_SRC = 'https://apis.google.com/js/api.js';
 
@@ -44,7 +46,7 @@ export async function fakeGuidedNotesApi(page: Page) {
     if (id === SPREADSHEET_ID.BAD_HEADER) badHeaderRead = false;
     return route.fulfill({ json: MockFixtures.spreadsheets.find((sheet) => sheet.id === id) });
   });
-  await page.route('**/api/guided-notes/read', (route) => {
+  await page.route('**/api/guided-notes/read', async (route) => {
     const { spreadsheetId, worksheet } = route.request().postDataJSON() as { spreadsheetId: string; worksheet: string };
     let id = spreadsheetId;
     // Same as the 001 mock (M2): re-reading the bad-header sheet counts as "header fixed".
@@ -56,6 +58,8 @@ export async function fakeGuidedNotesApi(page: Page) {
     if (isImportSuccess(result) && result.spreadsheet.worksheets.includes(worksheet)) {
       result.spreadsheet.selectedWorksheet = worksheet;
     }
+    // 004 (T061): the server creates the activity from 003's latest import, so it gets the same one.
+    if (isImportSuccess(result)) await seedImport(result);
     return route.fulfill({ json: result });
   });
 }

@@ -2,7 +2,10 @@
 // Playwright only collects *.spec.ts.
 import { expect, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
+import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
+import { MockFixtures } from '../../src/services/mock/MockFixtures';
 import { signInAsPageTeacher } from './googleSignIn';
+import { advanceActivity, connectTestServer } from './testServer';
 
 export type PageId =
   | 'Main'
@@ -101,9 +104,24 @@ export async function expectOn(page: Page, id: PageId) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
 }
 
+/** The activity the student walks advance through: 001's fixed student activity (M3, M7). */
+export const STUDENT_ACTIVITY: ImportSuccess = {
+  spreadsheet: MockFixtures.activity.spreadsheet,
+  headerRow: 4,
+  headerColumns: ['B', 'C', 'G'],
+  questions: MockFixtures.activity.questions,
+};
+
+/**
+ * Advances the phase seen by the home page and student pages one step at a time (M7). Once 004
+ * binds the real activity service the mock button is gone, so the walk teacher advances the phase
+ * through the test server's teacher API instead, without opening a teacher page (004 T061).
+ */
 export async function advance(page: Page, times = 1) {
   for (let i = 0; i < times; i += 1) {
-    await button(page, '模擬：推進到下一個階段').click();
+    const mockAdvance = button(page, '模擬：推進到下一個階段');
+    if ((await mockAdvance.count()) > 0) await mockAdvance.click();
+    else await advanceActivity(STUDENT_ACTIVITY);
   }
 }
 
@@ -116,6 +134,7 @@ export async function pick(page: Page, name: string, sheet: string) {
 // ----- teacher walks -----
 
 export async function toLogin(page: Page) {
+  await connectTestServer(page);
   await page.goto('/');
   await button(page, /我是老師/).click();
   await expectOn(page, 'T-Login');
@@ -186,6 +205,7 @@ export async function toResults(page: Page, sheet = SHEET_OK, questions = 4) {
 
 /** Main → S-Join, advancing `steps` times on S-Join (M7) first. */
 export async function toJoin(page: Page, steps = 0) {
+  await connectTestServer(page);
   await page.goto('/');
   await button(page, /我是學生/).click();
   await expectOn(page, 'S-JoinEmpty');

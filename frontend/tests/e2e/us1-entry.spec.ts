@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fakeTeacherApi, googleWill } from './googleSignIn';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 async function expectMockBadge(page: Page) {
   await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();

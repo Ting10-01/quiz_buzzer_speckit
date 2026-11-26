@@ -2,6 +2,7 @@
 // replaced, so the "Google" popup returns a fixed code or error without contacting Google.
 import type { Page } from '@playwright/test';
 import { fakeGuidedNotesApi } from './googlePicker';
+import { connectTestServer } from './testServer';
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -24,19 +25,13 @@ export async function googleWill(page: Page, response: GoogleResponse) {
   }, response);
 }
 
-export const PAGE_TEACHER = { name: '模擬老師', email: 'teacher@example.com' };
-
 /**
- * Answers /api/auth/* inside the page with a signed-in teacher. For the 001 page walks, which only
- * need "a teacher is signed in" and run in parallel; the real server allows one teacher at a time,
- * so only teacher-login.spec.ts talks to it.
+ * Sends /api/auth/* to this worker's test server (testServer.ts), where the code 'e2e-code' signs in
+ * teacher@example.com through the fake Google gateway. 004 (T061): the teacher must be really signed in,
+ * because the activity commands go to the server; before 004 these answers were faked in the page.
  */
 export async function fakeTeacherApi(page: Page) {
-  await page.route('**/api/auth/config', (route) => route.fulfill({ json: { clientId: 'e2e-client' } }));
-  await page.route('**/api/auth/google', (route) =>
-    route.fulfill({ json: { ok: true, teacherToken: 'e2e-token', account: PAGE_TEACHER } }),
-  );
-  await page.route('**/api/auth/me', (route) => route.fulfill({ json: PAGE_TEACHER }));
+  await connectTestServer(page);
 }
 
 /**

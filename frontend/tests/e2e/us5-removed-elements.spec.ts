@@ -19,6 +19,12 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
+import { connectTestServer } from './testServer';
+
+// 004 (T061): every page talks to this worker's test server, reset before each test.
+test.beforeEach(async ({ page }) => {
+  await connectTestServer(page);
+});
 
 // T096: none of the elements removed in spec "相對於設計稿的調整" appears on any page or dialog
 // (SC-004).
