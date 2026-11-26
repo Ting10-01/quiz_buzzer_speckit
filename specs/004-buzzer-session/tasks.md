@@ -30,7 +30,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 - [ ] T001 [P] 在 `server/package.json` 加入 `socket.io` 相依、`socket.io-client` 開發相依；在 `frontend/package.json` 加入 `socket.io-client` 相依
 - [ ] T002 [P] 建立 `shared/src/activityRules.ts`：`GROUP_COUNT_MIN = 2`、`GROUP_COUNT_MAX = 20`、`GROUP_COUNT_DEFAULT = 6`，以及 spec「說明文字」的 `JOIN_METHOD_TEXT`、`WAIT_ROUND_TEXT`（data-model §1，REQ-ACT-23）；`server/tests/unit/activity/activityRules.test.ts` 確認常數值與 spec 的數值、文字完全相同
 - [ ] T003 [P] 建立 `shared/src/activitySync.ts`：`ActivitySnapshot { version: number; activity: Activity | null }`、`GroupAck { snapshot: ActivitySnapshot; studentToken?: string; error?: { code: string; message: string } }`；`isValidationError` 沿用 001 的 `shared/src/guards.ts`
-- [ ] T004 建立 `server/tests/helpers/activityTestServer.ts`：以 002 的 `buildApp(config, deps)` 在隨機埠啟動伺服器（含 002 的 `app.io` 與 004 的 activity 模組）；`deps` 以替身取代 002 的老師驗證（憑證 `teacher-test` 為有效老師、可模擬換發）與 003 的 `ImportStore`（預設 4 題，可設為 `null`）；提供 `connectTeacher(token?)`、`connectStudent(studentToken?)`（只用 WebSocket）、`waitForSnapshot(socket, predicate, timeoutMs)`、`emitWithAck(socket, event, payload)`，依 T001、T003
+- [X] T004 建立 `server/tests/helpers/activityTestServer.ts`：以 002 的 `buildApp(config, deps)` 在隨機埠啟動伺服器（含 002 的 `app.io` 與 004 的 activity 模組）；經 002 的 `listenTestApp` 使用 002 的 `FakeGoogleGateway` 登入取得老師憑證（`teacherToken`），`rotateTeacher()` 以另一次登入模擬換發（舊憑證作廢、舊老師連線被中斷），不替換 002 的 `TeacherAuth`、不修改 `AppDeps`；003 的匯入以真的 `ImportStore.save` 存入 4 題的結果（`fourQuestionImport()`），`importResult: null` 表示尚未匯入；提供 `connectTeacher(token?)`、`connectStudent(studentToken?)`（只用 WebSocket）、`waitForSnapshot(socket, predicate, timeoutMs)`、`emitWithAck(socket, event, payload)`，依 T001、T003
 
 ---
 
