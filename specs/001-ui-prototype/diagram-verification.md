@@ -98,3 +98,7 @@ C1、C2 在類別圖新增的 `MockSession.consumeUnexpectedError()`、`MockFixt
 以 `java -DPLANTUML_LIMIT_SIZE=16384 -jar plantuml.jar -charset UTF-8` 重新產生 `001-component.png`、`001-class.png`、`001-sequence.png`。PlantUML 預設上限為 4096 px，修改前的 `001-component.png` 寬度剛好是 4096 px，右側已被裁切；這次調高上限後輸出完整（4771 × 1281）。`001-screen-flow` 沒有修改，未重新產生。
 
 F4 的設計修改（commit `3c121a7`）重新產生了 `001-class.png`、`001-sequence.png`、`001-screen-flow.png`，三張 PNG 與 `.puml` 在同一個 commit 中更新。
+
+## issue #20 之後（2026-11-27）
+
+學生端各畫面（`StudentPlayPage` 的 `usePhaseChange`）訂閱 `onPhaseChange` 之後，再呼叫 `getCurrentActivity()` 一次，用同一個處理函式判斷是否換頁。原因：前一個畫面換頁之後、新畫面訂閱之前通知的階段變化，舊畫面忽略、新畫面收不到，學生會停在舊畫面。時序圖第 3 段的訂閱註記已補上這次呼叫，`001-sequence.png` 重新產生；組件圖與類別圖不受影響（`getCurrentActivity()` 已在 `ActivityService` 中，頁面對服務的依賴不變）。Q2（各畫面掛載時訂閱 `onPhaseChange`）仍成立，其餘結論不變。
