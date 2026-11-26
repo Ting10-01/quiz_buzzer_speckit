@@ -127,13 +127,14 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 - [ ] T036 [P] [US3] `server/tests/integration/activity/sync.test.ts`：1 個老師與 3 個學生連線；開放第 1 題、結束、開放第 2 題、…、結束第 4 題，每次所有連線 1 秒內收到同一版本與階段（AC-17～20）；某學生連線斷線期間老師開放下一題，重新連線後立即收到目前狀態（AC-23）；每條連線收到的版本嚴格遞增
 - [ ] T037 [P] [US3] `server/tests/integration/activity/activityRoutes.questions.test.ts`（Fastify `inject`）：`POST /api/activity/questions/:n/open`、`/end` 的 `200`、`409`、`401`；`:n` 不是整數時回 409；把這兩條路由加進 002 的「老師專用路由清單」
 - [ ] T038 [P] [US3] 在 `frontend/tests/unit/HttpActivityService.teacher.test.ts` 加入 `openQuestion`、`endQuestion`：`200` 套用並回傳 `Activity`；`ApiError` 原樣 reject；回應的版本比已收到的推送舊時不覆蓋較新的狀態（AC-24）
+- [ ] T061 [US3] 依 spec「需請 001 修改」C2 補充，讓 001 的 E2E 接上真的測試伺服器：擴充 `server/tests/e2e/startTestServer.ts`（假的 Google 登入與假的 `SpreadsheetReader`，提供 001 的示範學習單）；修改 `frontend/tests/e2e/` 的走法輔助檔（`us5-walk.ts`、`googleSignIn.ts`、`googlePicker.ts` 等），把頁面的 `/api` 與 Socket.IO 連線導向測試伺服器，老師以測試伺服器登入與匯入，學生需要推進階段時由輔助函式直接呼叫測試伺服器的老師 API，不另開老師頁面；不修改 001 的頁面程式與既有測試的斷言；刪除「模擬：推進到下一個階段」與活動的「模擬：驗證失敗」的專屬測試。必須改斷言才能通過的測試先列出，由使用者決定
 
 ### Implementation for User Story 3
 
 - [ ] T039 [US3] 在 `server/src/activity/ActivityManager.ts` 實作 `openQuestion(n)`、`endQuestion(n)`：依 data-model「狀態轉換」，`openedAt`、`endedAt` 用 `SequenceClock.stamp()`，重複要求不 commit，依 T026
 - [ ] T040 [US3] 在 `server/src/activity/activityRoutes.ts` 加入 `POST /api/activity/questions/:n/open`、`/end`（contracts/activity-http.md），依 T039
 - [ ] T041 [US3] 在 `frontend/src/services/HttpActivityService.ts` 實作 `openQuestion`、`endQuestion`，依 T028
-- [ ] T042 [US3] 修改 `frontend/src/services/createServiceRegistry.ts`：`activity` 綁定 `HttpActivityService`；移除 `phaseControl` 與 `activityValidationControl`；`submission` 或 `result` 仍是模擬實作時，把 `onActivityChange` 的活動寫進 `MockSession.teacherActivity`、`joinGroup` 成功的組別寫進 `MockSession.joinedGroup`、`leaveGroup` 成功時清除，`onPhaseChange(null)`（活動被取消）時清除 `teacherActivity` 與 `joinedGroup`；保留 003 留下的 `readWorksheet` 包裝（`MockResultService` 在老師分頁仍讀 `lastImport`）；並包一層模擬的 `judge`：`JudgeOutcome.activity` 不是 `OPEN` 時呼叫 `HttpActivityService.endQuestion(q)`，以其回傳的活動取代 `JudgeOutcome.activity`（RA-14）；更新 `frontend/tests/unit/ServiceRegistry.test.ts`（`isMockMode()` 仍為 true、`phaseControl` 不存在）
+- [ ] T042 [US3] 修改 `frontend/src/services/createServiceRegistry.ts`：`activity` 綁定 `HttpActivityService`；移除 `phaseControl` 與 `activityValidationControl`；`submission` 或 `result` 仍是模擬實作時，把 `onActivityChange` 的活動寫進 `MockSession.teacherActivity`、`joinGroup` 成功的組別寫進 `MockSession.joinedGroup`、`leaveGroup` 成功時清除，`onPhaseChange(null)`（活動被取消）時清除 `teacherActivity` 與 `joinedGroup`；保留 003 留下的 `readWorksheet` 包裝（`MockResultService` 在老師分頁仍讀 `lastImport`）；並包一層模擬的 `judge`：`JudgeOutcome.activity` 不是 `OPEN` 時呼叫 `HttpActivityService.endQuestion(q)`，以其回傳的活動取代 `JudgeOutcome.activity`（RA-14）；更新 `frontend/tests/unit/createServiceRegistry.test.ts`（`isMockMode()` 仍為 true、`phaseControl` 不存在）
 - [ ] T043 [US3] 在 `server/src/activity/ActivityManager.ts` 與 `ActivityGateway.ts` 加入 pino 事件 `activity.created`、`activity.cancelled`、`question.opened`、`question.ended`、`group.joined`、`group.left`（RA-12），不記錄 `studentToken`；在 002 的 `server/src/logger.ts` `loggerOptions.redact.paths` 加上 `*.studentToken`；不記錄 handshake 物件；`server/tests/integration/activity/logging.test.ts` 檢查 log 輸出中沒有任何 `studentToken`
 - [ ] T044 [US3] `frontend/tests/e2e/activity-sync.spec.ts`：1 個老師與 3 個學生分頁走完「建立 → 加入 → 開放並結束 4 題 → 已結束」，學生頁面隨階段自動切換（S-Join 沒有活動 → 有活動、S-Wait → S-Answer → S-QuestionDone → S-Answer → … → 最後一題直接 S-Results），不需重新整理（AC-15、AC-17～20、SC-001、SC-004）；在 `QUESTION_ENDED`、`FINISHED` 時加入的分頁分別進入 S-QuestionDone、S-Results（001 RD-14）；學生分頁的 WebSocket 訊息中 `spreadsheet` 的 `id`、`title` 為空、沒有 `transport=polling` 的請求（AC-16、REQ-ACT-20、SC-003）；準備中老師取消活動：老師進入 T-Pick，S-Wait 的分頁切到 S-Join 並顯示「目前沒有活動，請等老師建立活動」、已選組別的 S-Join 清除選擇、首頁顯示沒有活動；老師重新建立活動後各組人數從 0 開始（AC-33、AC-34、SC-007）；開放第 1 題後控制台沒有「取消活動」；學生重新整理後選別組，共通錯誤訊息區顯示「第 1 題開放後不能換組，你在第 3 組」、停留在 S-Join；選回原組回到作答頁（AC-12、AC-14）；S-Wait 顯示 spec「說明文字」的內容（AC-09）先 `test.skip`，註明需 001 完成 C2
 
@@ -185,7 +186,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 ## Dependencies & Execution Order
 
 - Phase 1 → Phase 2 → US1 → US2 → US3 → US5；US4 在 US3 之後。
-- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1；T028、T044 中頁面規則與說明文字的 e2e 依賴 001 C2。
+- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2 與 T061；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1；T028、T044 中頁面規則與說明文字的 e2e 依賴 001 C2。
 - 同一檔案的任務依序執行：`ActivityManager.ts`（T015 → T026 → T058 → T032 → T039 → T043）、`HttpActivityService.ts`（T022 → T028 → T060 → T034 → T041 → T050）、`activityRoutes.ts`（T027 → T059 → T040）、`ActivityGateway.ts`（T017 → T033 → T043）。
 
 ### Parallel Opportunities
