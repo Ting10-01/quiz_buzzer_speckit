@@ -78,6 +78,8 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 - [ ] T056 [P] [US1] `frontend/tests/unit/HttpActivityService.cancel.test.ts`（002 `ApiClient` 與假的 `RealtimeClient`）：`cancelActivity` 送 `DELETE /api/activity`，套用回應後 resolve，`onPhaseChange` 收到 `null`、`onActivityChange` 不被呼叫；`ApiError`（409、401）原樣 reject；有活動時推送 `activity: null` 通知 `onPhaseChange(null)`；斷線期間被取消、或伺服器重新啟動（重新連線後收到 `{ version: 0, activity: null }`），都仍通知 `null`（`lastPhaseKey` 不清除，spec Edge Cases）；取消後再推送新活動時通知新的 `Activity`（001 RD-12）
 - [ ] T025 [P] [US1] `frontend/tests/unit/HttpActivityService.teacher.test.ts`（002 `ApiClient` 的替身）：`createActivity`、`updateSettings` 成功時回傳 `Activity` 並套用版本；`200` 的 body 為 `ValidationError`（以 `isValidationError` 判斷）時原樣回傳、不套用版本；`ApiError`（409、401、`NETWORK`）原樣 reject（RA-10）
 
+**Phase 3 Red 的暫時 skip（2026-11-26）**：T054 中「取消後 `joinGroup` 回 `NO_ACTIVITY`」以 `it.skip` 標記，需 T032（Phase 4），在 Phase 4 的 Red 取消 skip；T028 的 e2e 中「組數超出範圍時建立被拒絕」以 `test.skip` 標記，需 T042（Phase 5）把 `activity` 綁定到 `HttpActivityService`，在 Phase 5 的 Red 取消 skip。「組數預設 6」001 頁面已符合，現在就測。
+
 ### Implementation for User Story 1
 
 - [ ] T026 [US1] 在 `server/src/activity/ActivityManager.ts` 實作 `createActivity`、`updateSettings`，都在 `CommandQueue.run` 內；組數驗證用 `activityRules`（data-model「ValidationError 的內容」），依 T015、T002
