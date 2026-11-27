@@ -71,7 +71,7 @@
 - 使用其他子功能的前端元件：
   - Socket.IO：004 的 `RealtimeClient`（每分頁一條連線，組別記在這條連線上）。`submitAnswer`、`getGroupSubmission` 用 `emitWithAck`（5 秒逾時，以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」reject）；`onSubmissionsChange`、`onGroupSubmitted`、`onJudgement` 用 `on`；重新連線用 `onConnect`。
   - HTTP：002 的 `ApiClient.request(method, path, body?)`，自動帶老師憑證，錯誤轉成 `ApiError`（符合 `UnexpectedError`）。
-- `ValidationError` 配合 001 現況：作答頁一律顯示在第一個答案欄旁（001 tasks T087）。`field` 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`，不屬於某一格為 `answers`；`message` 說明是哪一格或什麼原因。
+- `ValidationError` 配合 001 現況：作答頁把某一格的錯誤（`answers.<i>`）顯示在該格旁，不屬於某一格的錯誤（`answers`）顯示在第一個答案欄旁（001 tasks T087）。`field` 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`，不屬於某一格為 `answers`；`message` 說明是哪一格或什麼原因。
 - **老師憑證與連線**：`listSubmissions`、`judge`、`onSubmissionsChange` 開頭都先呼叫 `RealtimeClient.followTeacherCredential()`，與 004 `HttpActivityService` 的老師指令相同（004 T062）。分頁在登入前以學生身分連線；沒有這一步，連線不在 `TEACHER_ROOM`，收不到 `submissions:changed`。重新連線後的 `onConnect` 會觸發下面的重新讀取。
 - **重新連線**:
   - 老師：`onSubmissionsChange` 的訂閱在 `onConnect` 時重新呼叫 `GET /api/questions/:n/submissions`，以完整列表通知頁面。老師重新整理後重新登入（001 FR-015）時，控制台・搶答中掛載時本來就會 `listSubmissions` 並訂閱，取得的是伺服器上的完整列表（AC-29）；舊憑證的請求由 002 拒絕。

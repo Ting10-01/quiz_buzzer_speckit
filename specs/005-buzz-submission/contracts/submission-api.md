@@ -23,7 +23,7 @@ Payload `SubmitRequest` `{ questionNumber, answers, requestId }`，在 004 的 `
 | 第 i 格去除前後空白後是空字串 | `{ ok: false, error: { field: "answers.<i>", message: "每一格都填才能送出" } }`（回報第一個有問題的格） |
 | 第 i 格超過 200 字 | `{ ok: false, error: { field: "answers.<i>", message: "每一格最多 200 字" } }` |
 
-`ServerSubmissionService.submitAnswer` 把 `ok` 轉成 `Submission`、把 `error` 轉成 `ValidationError` 回傳。001 頁面把 `ValidationError` 一律顯示在第一個答案欄旁。
+`ServerSubmissionService.submitAnswer` 把 `ok` 轉成 `Submission`、把 `error` 轉成 `ValidationError` 回傳。001 頁面把 `ValidationError` 中某一格的錯誤（`answers.<i>`）顯示在該格旁，不屬於某一格的錯誤（`answers`）顯示在第一個答案欄旁。
 
 ### `submission:own`（`getGroupSubmission`）
 
