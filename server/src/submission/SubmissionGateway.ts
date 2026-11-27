@@ -26,7 +26,7 @@ export class SubmissionGateway {
     });
   }
 
-  onSubmit(socket: Socket, request: unknown, ack: unknown): void {
+  private onSubmit(socket: Socket, request: unknown, ack: unknown): void {
     if (typeof ack !== 'function') return;
     const group = this.membership.groupOf(socket);
     const reply = this.queue.run(() => this.engine.submit(group, pick(request)));
@@ -34,7 +34,7 @@ export class SubmissionGateway {
   }
 
   /** Read only, so not through the CommandQueue. */
-  onOwn(socket: Socket, request: unknown, ack: unknown): void {
+  private onOwn(socket: Socket, request: unknown, ack: unknown): void {
     if (typeof ack !== 'function') return;
     const questionNumber: unknown = (request as { questionNumber?: unknown } | null)?.questionNumber;
     const submission =
