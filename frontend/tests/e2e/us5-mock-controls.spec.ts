@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  advance,
+  GROUP,
   expectOn,
   mockBar,
   submit,
@@ -22,7 +22,7 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
-import { connectTestServer } from './testServer';
+import { connectTestServer, judgeGroup } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
@@ -87,29 +87,25 @@ test.describe('US5 mock controls per page (FR-061, US5 AC-6, AC-7)', () => {
 });
 
 test.describe('US5 mock control behaviour', () => {
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
+  test('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
     await toSubmitted(page);
-    await page.getByRole('button', { name: ACCEPT }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // 005 T043: the teacher accepts through the test server instead of "模擬：接受".
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expectOn(page, 'S-QuestionDone');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('AC-5: 模擬：接受 on the last question goes to S-Results', async ({ page }) => {
+  test('AC-5: 模擬：接受 on the last question goes to S-Results', async ({ page }) => {
     await toLastAnswer(page);
     await submit(page);
-    await page.getByRole('button', { name: ACCEPT }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // 005 T043: the teacher accepts through the test server instead of "模擬：接受".
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expectOn(page, 'S-Results');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('AC-5: 模擬：不接受 stays on S-Submitted in the not-accepted state', async ({ page }) => {
+  test('AC-5: 模擬：不接受 stays on S-Submitted in the not-accepted state', async ({ page }) => {
     await toSubmitted(page);
-    await page.getByRole('button', { name: REJECT }).click();
+    // 005 T043: the teacher rejects through the test server instead of "模擬：不接受".
+    await judgeGroup(GROUP, 'REJECTED');
     await expectOn(page, 'S-Rejected');
     await expect(page.getByRole('button', { name: ACCEPT })).toHaveCount(0);
     await expect(page.getByRole('button', { name: REJECT })).toHaveCount(0);

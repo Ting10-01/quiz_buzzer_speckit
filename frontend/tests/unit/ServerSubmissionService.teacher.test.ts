@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../src/services/http/ApiClient';
 import { ServerSubmissionService } from '../../src/services/server/ServerSubmissionService';
 import { FakeRealtimeClient } from '../helpers/fakeRealtimeClient';
-import { makeSubmission } from '../helpers/fixtures';
+import { makeActivity, makeSubmission } from '../helpers/fixtures';
 
 // T038: the teacher methods of ServerSubmissionService through 002's ApiClient and 004's RealtimeClient
 // (contracts/submission-api.md sections 2–3, research RD-08); AC-09, AC-29.
@@ -83,11 +83,37 @@ describe('ServerSubmissionService.onSubmissionsChange', () => {
   });
 });
 
-// Until Phase 4 (T023) implements judge; T023 deletes this case.
-describe('ServerSubmissionService.judge before Phase 4', () => {
-  it('rejects with 判定功能尚未完成（005 Phase 4） without sending anything', async () => {
-    await expect(service.judge(2, 1, 'ACCEPTED')).rejects.toMatchObject({ message: '判定功能尚未完成（005 Phase 4）' });
-    expect(api.request).not.toHaveBeenCalled();
+// T020: judge through 002's ApiClient (contracts/submission-api.md section 3); AC-10–AC-12.
+describe('ServerSubmissionService.judge', () => {
+  it('follows the teacher credential, then sends POST /api/questions/:q/judgements and answers the JudgeOutcome', async () => {
+    const outcome = {
+      submissions: [makeSubmission({ questionNumber: 2, groupNumber: 3, rank: 1, judgement: 'ACCEPTED' })],
+      activity: makeActivity({ phase: 'QUESTION_ENDED', currentQuestion: 2 }),
+    };
+    api.request.mockResolvedValue(outcome);
+
+    await expect(service.judge(2, 3, 'ACCEPTED')).resolves.toEqual(outcome);
+    expect(api.request).toHaveBeenCalledExactlyOnceWith('POST', '/api/questions/2/judgements', {
+      groupNumber: 3,
+      judgement: 'ACCEPTED',
+    });
+    expect(realtime.followTeacherCredential).toHaveBeenCalled();
+    expect(realtime.followTeacherCredential.mock.invocationCallOrder[0]).toBeLessThan(api.request.mock.invocationCallOrder[0]);
     expect(realtime.emitWithAck).not.toHaveBeenCalled();
+  });
+
+  it('sends REJECTED the same way', async () => {
+    api.request.mockResolvedValue({ submissions: [], activity: makeActivity({ phase: 'OPEN', currentQuestion: 1 }) });
+    await service.judge(1, 4, 'REJECTED');
+    expect(api.request).toHaveBeenCalledExactlyOnceWith('POST', '/api/questions/1/judgements', {
+      groupNumber: 4,
+      judgement: 'REJECTED',
+    });
+  });
+
+  it('rejects with the ApiClient’s error as it is', async () => {
+    const error = new ApiError(409, 'NO_ACTIVITY', '目前沒有活動');
+    api.request.mockRejectedValue(error);
+    await expect(service.judge(2, 1, 'ACCEPTED')).rejects.toBe(error);
   });
 });

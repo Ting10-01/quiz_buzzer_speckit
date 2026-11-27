@@ -166,8 +166,7 @@ describe('submission:own (AC-28)', () => {
     expect(await own(late)).toEqual({ submission });
   });
 
-  // Needs the judging route, which Phase 4 (T022) adds; skipped until then.
-  it.skip('answers REJECTED after the teacher rejects the group', async () => {
+  it('answers REJECTED after the teacher rejects the group', async () => {
     await openQuestion();
     const sender = await student(1);
     await submit(sender);

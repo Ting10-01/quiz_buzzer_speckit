@@ -86,6 +86,8 @@ const TEACHER_ONLY_ROUTES = [
   { method: 'POST', url: '/api/activity/questions/1/end' },
   // 005 (T039)
   { method: 'GET', url: '/api/questions/1/submissions' },
+  // 005 (T022)
+  { method: 'POST', url: '/api/questions/1/judgements', payload: { groupNumber: 1, judgement: 'ACCEPTED' } },
 ] as const;
 
 describe('teacher-only route list', () => {

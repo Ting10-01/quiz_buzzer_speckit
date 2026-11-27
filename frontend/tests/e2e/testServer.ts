@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process';
 import { test, type BrowserContext, type Page, type WebSocketRoute } from '@playwright/test';
 import type { ActivitySnapshot } from '@quiz-buzzer/shared/activitySync';
-import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
+import type { ImportSuccess, JudgeOutcome } from '@quiz-buzzer/shared/entities';
 import { SUBMIT, type SubmitReply } from '@quiz-buzzer/shared/submissionEvents';
 import { io } from 'socket.io-client';
 
@@ -290,4 +290,17 @@ export async function groupmateSubmits(groupNumber: number, answers?: string[]):
   } finally {
     socket.disconnect();
   }
+}
+
+// ----- the teacher's judgement (005 T043) -----
+
+/**
+ * The walk teacher judges `groupNumber`'s submission of the open question through the test server's
+ * POST /api/questions/:n/judgements, like 001's "模擬：接受" / "模擬：不接受" on a student tab.
+ * Only for student walks: signing in the walk teacher voids a teacher page's credential.
+ */
+export async function judgeGroup(groupNumber: number, judgement: 'ACCEPTED' | 'REJECTED'): Promise<JudgeOutcome> {
+  const { activity } = await serverActivity();
+  if (activity?.phase !== 'OPEN' || activity.currentQuestion === undefined) throw new Error('no question is open on the test server');
+  return teacherApi<JudgeOutcome>('POST', `/api/questions/${activity.currentQuestion}/judgements`, { groupNumber, judgement });
 }

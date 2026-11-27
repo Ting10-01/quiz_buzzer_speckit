@@ -86,7 +86,7 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(page.getByRole('button', { name: `加入第 ${GROUP} 組` })).toBeEnabled();
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
   test.skip('Q7: accepted, not accepted and a groupmate submitting', async ({ page }) => {
     await joinAfter(page, 1);
     await advance(page);
