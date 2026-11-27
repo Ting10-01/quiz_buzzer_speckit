@@ -7,6 +7,8 @@ import { spawn } from 'node:child_process';
 import { test, type BrowserContext, type Page, type WebSocketRoute } from '@playwright/test';
 import type { ActivitySnapshot } from '@quiz-buzzer/shared/activitySync';
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
+import { SUBMIT, type SubmitReply } from '@quiz-buzzer/shared/submissionEvents';
+import { io } from 'socket.io-client';
 
 export const TEST_SERVER = 'http://127.0.0.1:3100';
 
@@ -40,6 +42,8 @@ let currentUrl: string | undefined;
 let lastResetTest: string | undefined;
 const routedContexts = new WeakSet<BrowserContext>();
 const framesByContext = new WeakMap<BrowserContext, string[]>();
+/** Socket.IO events the pages of a browser context send that never reach the server (005 T041). */
+const droppedByContext = new WeakMap<BrowserContext, Set<string>>();
 
 function spawnWorkerServer(): Promise<string> {
   const child = spawn(process.execPath, ['--import', 'tsx', 'tests/e2e/startTestServer.ts'], {
@@ -67,7 +71,7 @@ function spawnWorkerServer(): Promise<string> {
  * WebSocket at another URL, so the page side is answered here and relayed over Node's WebSocket.
  * Every frame the server sends is kept for socketFramesOf().
  */
-function bridgeWebSocket(ws: WebSocketRoute, serverUrl: string, frames: string[]): void {
+function bridgeWebSocket(ws: WebSocketRoute, serverUrl: string, frames: string[], dropped = new Set<string>()): void {
   const target = new URL(ws.url());
   const server = new WebSocket(`${serverUrl.replace('http', 'ws')}${target.pathname}${target.search}`);
   const pending: string[] = [];
@@ -82,6 +86,8 @@ function bridgeWebSocket(ws: WebSocketRoute, serverUrl: string, frames: string[]
   server.onclose = () => void ws.close();
   ws.onMessage((message) => {
     const text = String(message);
+    // A Socket.IO event frame is 42[ack id]["event", payload].
+    if ([...dropped].some((event) => text.startsWith('42') && text.includes(`["${event}"`))) return;
     if (server.readyState === WebSocket.OPEN) server.send(text);
     else pending.push(text);
   });
@@ -118,12 +124,14 @@ export async function connectTestServer(page: Page): Promise<string> {
   routedContexts.add(context);
   const frames: string[] = [];
   framesByContext.set(context, frames);
+  const dropped = new Set<string>();
+  droppedByContext.set(context, dropped);
 
   await context.route('**/api/**', (route) => {
     const target = new URL(route.request().url());
     return route.continue({ url: `${url}${target.pathname}${target.search}` });
   });
-  await context.routeWebSocket(/\/socket\.io\//, (ws) => bridgeWebSocket(ws, url, frames));
+  await context.routeWebSocket(/\/socket\.io\//, (ws) => bridgeWebSocket(ws, url, frames, dropped));
   return url;
 }
 
@@ -138,6 +146,17 @@ export async function resetTestServer(): Promise<void> {
 /** Every Socket.IO frame the server has sent to pages of this browser context so far. */
 export function socketFramesOf(context: BrowserContext): string[] {
   return [...(framesByContext.get(context) ?? [])];
+}
+
+/**
+ * The server stops receiving `event` from the pages of this browser context, as if it were down; the
+ * page's emitWithAck times out (005 T041). Returns a function that undoes it.
+ */
+export function dropSocketEvent(context: BrowserContext, event: string): () => void {
+  const dropped = droppedByContext.get(context);
+  if (!dropped) throw new Error('connectTestServer(page) has not run for this browser context');
+  dropped.add(event);
+  return () => dropped.delete(event);
 }
 
 /** Whether connectTestServer() has run in the current test. */
@@ -239,4 +258,36 @@ export async function bypassGroupCountOnce(page: Page, groupCount: number): Prom
     },
     { times: 1 },
   );
+}
+
+// ----- another student of a group (005 T041) -----
+
+/**
+ * Another tab of `groupNumber` submits the open question through the test server, like 001's
+ * "模擬：同組組員送出": a separate WebSocket connection joins the group and sends submission:submit.
+ * Fills every sub-question unless `answers` is given. Rejects unless the server accepts it.
+ */
+export async function groupmateSubmits(groupNumber: number, answers?: string[]): Promise<SubmitReply> {
+  const { activity } = await serverActivity();
+  const questionNumber = activity?.phase === 'OPEN' ? activity.currentQuestion : undefined;
+  const question = activity?.questions.find((q) => q.number === questionNumber);
+  if (!question || questionNumber === undefined) throw new Error('no question is open on the test server');
+
+  const socket = io(testServerUrl(), { transports: ['websocket'], forceNew: true, reconnection: false });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      socket.once('connect', resolve);
+      socket.once('connect_error', reject);
+    });
+    await socket.timeout(3000).emitWithAck('group:join', { groupNumber });
+    const reply = (await socket.timeout(3000).emitWithAck(SUBMIT, {
+      questionNumber,
+      answers: answers ?? question.subQuestions.map((_, i) => `組員答案${i + 1}`),
+      requestId: `groupmate-${groupNumber}-${questionNumber}-${Date.now()}`,
+    })) as SubmitReply;
+    if (!reply.ok) throw new Error(`the groupmate's submission was refused: ${reply.error?.message}`);
+    return reply;
+  } finally {
+    socket.disconnect();
+  }
 }

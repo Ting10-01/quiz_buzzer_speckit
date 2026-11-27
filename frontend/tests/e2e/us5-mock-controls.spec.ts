@@ -33,13 +33,13 @@ test.beforeEach(async ({ page }) => {
 
 const ACCEPT = '模擬：接受';
 const REJECT = '模擬：不接受';
-const TEAMMATE = '模擬：同組組員送出';
-const VALIDATION = '模擬：驗證失敗';
 const UNEXPECTED = '模擬：非預期錯誤';
 
 /**
  * FR-061: the exact set of controls each page (and S-Submitted state) shows. 004 removed the activity
- * mock, so "模擬：推進到下一個階段" and T-Setup's "模擬：驗證失敗" are gone (004 plan, T042).
+ * mock, so "模擬：推進到下一個階段" and T-Setup's "模擬：驗證失敗" are gone (004 plan, T042). 005 bound
+ * the real submission service, so the judgement, groupmate and S-Answer validation controls are gone
+ * too (005 T024, T041).
  */
 const EXPECTED: [PageId, (page: Page) => Promise<void>, string[]][] = [
   ['Main', async (page) => {
@@ -58,13 +58,9 @@ const EXPECTED: [PageId, (page: Page) => Promise<void>, string[]][] = [
   ['S-JoinEmpty', (page) => toJoin(page), [UNEXPECTED]],
   ['S-Join', (page) => toJoin(page, 1), [UNEXPECTED]],
   ['S-Wait', toWait, [UNEXPECTED]],
-  ['S-Answer', toAnswer, [TEAMMATE, VALIDATION, UNEXPECTED]],
-  ['S-Submitted', toSubmitted, [ACCEPT, REJECT]],
-  ['S-Rejected', async (page) => {
-    await toSubmitted(page);
-    await page.getByRole('button', { name: REJECT }).click();
-    await expectOn(page, 'S-Rejected');
-  }, []],
+  ['S-Answer', toAnswer, [UNEXPECTED]],
+  ['S-Submitted', toSubmitted, []],
+  // 005 T041: S-Rejected needs judging, which Phase 4 adds; restored in T043.
   ['S-QuestionDone', toStudentQuestionDone, []],
   ['S-Results', toStudentResults, []],
 ];
@@ -91,7 +87,8 @@ test.describe('US5 mock controls per page (FR-061, US5 AC-6, AC-7)', () => {
 });
 
 test.describe('US5 mock control behaviour', () => {
-  test('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
+  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  test.skip('AC-5: 模擬：接受 goes to S-QuestionDone (not the last question)', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: ACCEPT }).click();
     // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
@@ -99,7 +96,8 @@ test.describe('US5 mock control behaviour', () => {
     await expectOn(page, 'S-QuestionDone');
   });
 
-  test('AC-5: 模擬：接受 on the last question goes to S-Results', async ({ page }) => {
+  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  test.skip('AC-5: 模擬：接受 on the last question goes to S-Results', async ({ page }) => {
     await toLastAnswer(page);
     await submit(page);
     await page.getByRole('button', { name: ACCEPT }).click();
@@ -108,21 +106,12 @@ test.describe('US5 mock control behaviour', () => {
     await expectOn(page, 'S-Results');
   });
 
-  test('AC-5: 模擬：不接受 stays on S-Submitted in the not-accepted state', async ({ page }) => {
+  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  test.skip('AC-5: 模擬：不接受 stays on S-Submitted in the not-accepted state', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: REJECT }).click();
     await expectOn(page, 'S-Rejected');
     await expect(page.getByRole('button', { name: ACCEPT })).toHaveCount(0);
     await expect(page.getByRole('button', { name: REJECT })).toHaveCount(0);
-  });
-
-  test('AC-8: 模擬：驗證失敗 only affects the next 整組送出', async ({ page }) => {
-    await toAnswer(page);
-    await page.getByRole('button', { name: VALIDATION }).click();
-    await submit(page);
-    await expectOn(page, 'S-Answer');
-    await expect(page.getByRole('textbox').first()).toHaveAccessibleDescription(VALIDATION);
-    await submit(page);
-    await expectOn(page, 'S-Submitted');
   });
 });

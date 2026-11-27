@@ -239,6 +239,15 @@ export async function submit(page: Page, value = '答案') {
   await button(page, '整組送出').click();
 }
 
+/** S-Answer: leaves the first field blank (spaces only), fills the rest and clicks "整組送出" (005 T041). */
+export async function submitWithBlank(page: Page) {
+  const fields = page.getByRole('textbox');
+  const count = await fields.count();
+  await fields.first().fill('  ');
+  for (let i = 1; i < count; i += 1) await fields.nth(i).fill(`答案${i + 1}`);
+  await button(page, '整組送出').click();
+}
+
 export async function toSubmitted(page: Page) {
   await toAnswer(page);
   await submit(page);
