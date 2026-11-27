@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { fakeGuidedNotesApi, pickerWill } from './googlePicker';
 import { googleWill } from './googleSignIn';
-import { TEST_SERVER, startTestServer } from './testServer';
+import { TEST_SERVER, routeSocketIo, startTestServer } from './testServer';
 
 // T022, T036, T041: teacher sign-in against the real server with a fake Google gateway
 // (testServer.ts starts server/tests/e2e/startTestServer.ts on port 3100).
@@ -22,11 +22,15 @@ const SCOPE_DENIED =
   '需要存取雲端硬碟才能讀取學習單。請再按一次「用 Google 登入」，並在 Google 的畫面勾選雲端硬碟檔案那一項。';
 const SIGN_IN_AGAIN = '老師登入已失效，請回首頁重新登入';
 
-/** Opens the app with its /api requests sent to the test server. */
+/**
+ * Opens the app with its /api requests and Socket.IO connection sent to the test server. Since 001's
+ * C1 the sign-in page reads the current activity over Socket.IO (004 T065).
+ */
 async function open(page: Page) {
   await page.route('**/api/**', (route) =>
     route.continue({ url: TEST_SERVER + new URL(route.request().url()).pathname }),
   );
+  await routeSocketIo(page, TEST_SERVER);
   await page.goto('/');
 }
 

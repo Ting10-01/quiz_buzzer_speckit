@@ -89,6 +89,14 @@ function bridgeWebSocket(ws: WebSocketRoute, serverUrl: string, frames: string[]
 }
 
 /**
+ * Sends the page's Socket.IO connection to a server started by the spec itself, like
+ * teacher-login.spec.ts's startTestServer(); without it Socket.IO goes through Vite's proxy (004 T065).
+ */
+export async function routeSocketIo(page: Page, serverUrl: string): Promise<void> {
+  await page.routeWebSocket(/\/socket\.io\//, (ws) => bridgeWebSocket(ws, serverUrl, []));
+}
+
+/**
  * Starts (once per worker) this worker's test server and resets it once per test, and sends every
  * /api request and Socket.IO connection of the page's browser context to it. Call before the first
  * page.goto; call again for a page in another browser context.
