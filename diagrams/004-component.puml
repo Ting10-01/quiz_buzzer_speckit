@@ -59,7 +59,7 @@ Realtime ..> Api002 : TeacherCredentialStore.get()\n→ auth.teacherToken
 HttpAct ..> SyncTypes
 
 Api002 --> Routes : HTTP（Authorization: Bearer）
-Realtime <--> Gateway : WebSocket\n（handshake auth：teacherToken 或 studentToken）
+Realtime <--> Gateway : WebSocket\n（handshake auth：teacherToken 或 studentToken；\nactivity:snapshot 由 Broadcaster 經 app.io 推送）
 
 Routes ..> Auth002 : preHandler
 Gateway ..> Auth002 : 使用 app.io、socket.data.isTeacher
@@ -74,7 +74,7 @@ Manager ..> Rules
 Store <.. Broadcaster : subscribe
 Broadcaster --> View
 Broadcaster --> Membership : 各組人數
-Broadcaster --> Gateway : emit activity:snapshot\n（TEACHER_ROOM、students 房間）
+Broadcaster ..> Auth002 : app.io.to(...).emit activity:snapshot\n（TEACHER_ROOM、students 房間）
 
 Sub005 ..> Queue : 送出、判定
 Sub005 ..> Membership : groupOf(socket)

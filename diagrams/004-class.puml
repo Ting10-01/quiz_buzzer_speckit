@@ -89,6 +89,7 @@ package "frontend/src/services（004 新增）" {
     -lastPhaseKey: string [0..1]
     +（ActivityService 的 10 個方法）
     -apply(snapshot: ActivitySnapshot): boolean
+    -followTeacherCredential(): void
   }
   class RealtimeClient {
     -socket: Socket
@@ -96,6 +97,7 @@ package "frontend/src/services（004 新增）" {
     -rejectedTeacherToken: string [0..1]
     +connect(): void
     +reconnect(): void
+    +followTeacherCredential(): boolean
     +on<T>(event: string, listener: (payload: T) => void): Unsubscribe
     +onConnect(listener: () => void): Unsubscribe
     +emitWithAck<T>(event: string, payload: object): Promise<T>

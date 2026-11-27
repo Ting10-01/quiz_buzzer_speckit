@@ -182,6 +182,7 @@ n 不是 1..groupCount 的整數       → error NO_SUCH_GROUP「沒有第 n 組
 | `-latest: ActivitySnapshot \| null` | 手上最新的快照；連線成功時清為 `null` |
 | `-lastPhaseKey: string \| null` | 上一次 `onPhaseChange` 通知時的 `phase:currentQuestion:groupCount`；通知 `null`（活動被取消）後為 `null`；重新連線時不清除 |
 | `-apply(snapshot): boolean` | `latest` 為 `null` 或 `snapshot.version > latest.version` 時採用並通知，回傳 true；否則忽略 |
+| `-followTeacherCredential(): void` | `getCurrentActivity` 與五個老師指令開頭呼叫 `RealtimeClient.followTeacherCredential()`；回傳 true（已重新連線）時把 `latest` 清為 `null`，等老師版的快照 |
 
 十個方法的行為見 [contracts/activity-service.md](./contracts/activity-service.md)。
 
@@ -190,9 +191,10 @@ n 不是 1..groupCount 的整數       → error NO_SUCH_GROUP「沒有第 n 組
 | 成員 | 說明 |
 | --- | --- |
 | `-socket` | `io({ transports: ["websocket"], auth: cb => cb({ teacherToken, studentToken }) })`；`auth` 每次連線時重新讀取：`teacherToken` 取自 002 的 `TeacherCredentialStore.get()`（等於 `rejectedTeacherToken` 時不帶），`studentToken` 取自 `sessionStorage` |
-| `-connectedTeacherToken` | 目前連線 handshake 時用的老師憑證；與 002 存放的不同時要 `reconnect()`（[activity-service.md](./contracts/activity-service.md)） |
+| `-connectedTeacherToken` | 目前連線 handshake 時用的老師憑證；與 002 存放的不同時 `followTeacherCredential()` 會 `reconnect()`（[activity-service.md](./contracts/activity-service.md)） |
 | `-rejectedTeacherToken` | 被 002 以 `UNAUTHORIZED` 拒絕的老師憑證；之後的 handshake 不再帶它，`TeacherCredentialStore.get()` 等於它時也不觸發重新連線（002 #18 之後作廢的憑證會留在本分頁，research RA-07） |
 | `+connect()`、`+reconnect()` | 建立連線；以當下的憑證重新 handshake。`disconnect` 原因為 `io server disconnect`（002 換發老師憑證時中斷舊連線）時自動 `reconnect()` |
+| `+followTeacherCredential(): boolean` | `TeacherCredentialStore.get()`（等於 `rejectedTeacherToken` 時視為沒有）與 `connectedTeacherToken` 不同、或還沒連線時 `reconnect()` 並回傳 true；相同時回傳 false |
 | `+on<T>(event, listener)`、`+onConnect(listener)` | 訂閱任一伺服器事件（004 用 `activity:snapshot`，005、006 註冊自己的事件）與連線成功；都回傳 `Unsubscribe` |
 | `+emitWithAck<T>(event, payload)` | 送出事件並等 ack（004 用 `group:join`、`group:leave`，005 用自己的事件）；5 秒逾時以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」 reject |
 | `+studentToken()`、`+setStudentToken(token)` | 讀寫 `sessionStorage` 的 `quizBuzzer.studentToken` |
