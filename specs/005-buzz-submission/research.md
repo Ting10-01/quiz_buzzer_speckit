@@ -79,8 +79,8 @@
 
 ## RD-09 Logging（原則 VI、VIII）
 
-- **Decision**: 使用 002 的 pino logger（`loggerOptions`），記錄 `submission.accepted`（`seq`＝`SubmissionEngine.processed`、`questionNumber`、`groupNumber`、`rank`、`elapsedMs`、`requestId`）、`submission.duplicate`、`submission.rejected`（`seq`、`reason`）、`judgement.applied`、`judgement.ignored`。不記錄答案內容與任何憑證。
-- **Rationale**: 人工驗證與壓力測試可用 log 對照順位（AC-22）；答案不需要出現在 log。
+- **Decision**: 使用 002 的 pino logger（`loggerOptions`），記錄 `submission.accepted`（`seq`＝`SubmissionEngine.processed`、`questionNumber`、`groupNumber`、`rank`、`elapsedMs`、`requestId`）、`submission.duplicate`（`seq`、`groupNumber`、`requestId`）、`submission.rejected`（`seq`、`groupNumber`、`requestId`、`reason`；未加入組別時 `groupNumber` 為 `null`）、`judgement.applied`、`judgement.ignored`。不記錄答案內容與任何憑證。
+- **Rationale**: 人工驗證與壓力測試可用 log 對照順位（AC-22）；壓力測試要確認每組被接受的是該組 `seq` 最小的那一筆（RD-10），所以重複與被拒絕的紀錄也要有 `groupNumber` 與 `requestId`；答案不需要出現在 log。
 
 ## RD-10 壓力測試（NFR-01、NFR-02、SC-002、SC-003）
 
