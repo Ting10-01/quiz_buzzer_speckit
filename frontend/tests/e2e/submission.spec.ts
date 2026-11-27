@@ -159,7 +159,10 @@ test.describe('T032 搶答與判定 (quickstart 1–10)', () => {
     const cFrames = socketFramesOf(c.context());
     expect(ranksIn(cFrames).length).toBeGreaterThan(0);
     for (const answer of groupOneAnswers) expect(cFrames.join('\n')).not.toContain(`"${answer}"`);
-    for (const student of [a, b, d]) expect(socketFramesOf(student.context()).join('\n')).not.toContain('"C1"');
+    // 006 T036: once question 1 ended, its result names the winner (group 2) with its answers (006 AC-01),
+    // so only the frames other than those result:question / result:all replies are checked here.
+    const notResults = (frames: string[]) => frames.filter((frame) => !/^43\d+\[\{"ok":true,"results?":/.test(frame));
+    for (const student of [a, b, d]) expect(notResults(socketFramesOf(student.context())).join('\n')).not.toContain('"C1"');
     for (const student of [a, b, c, d]) expect(ranksIn(socketFramesOf(student.context())).every((rank) => rank === 0)).toBe(true);
 
     // Last: signing in the walk teacher voids the teacher page's credential.

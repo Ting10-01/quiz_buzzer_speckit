@@ -33,32 +33,32 @@ test.beforeEach(async ({ page }) => {
 
 const ACCEPT = '模擬：接受';
 const REJECT = '模擬：不接受';
-const UNEXPECTED = '模擬：非預期錯誤';
 
 /**
  * FR-061: the exact set of controls each page (and S-Submitted state) shows. 004 removed the activity
  * mock, so "模擬：推進到下一個階段" and T-Setup's "模擬：驗證失敗" are gone (004 plan, T042). 005 bound
  * the real submission service, so the judgement, groupmate and S-Answer validation controls are gone
- * too (005 T024, T041).
+ * too (005 T024, T041). 006 bound the real result service, so no interface is a mock and
+ * "模擬：非預期錯誤" is gone as well: no page shows the bar (FR-005, 006 T036).
  */
 const EXPECTED: [PageId, (page: Page) => Promise<void>, string[]][] = [
   ['Main', async (page) => {
     await page.goto('/');
     await expectOn(page, 'Main');
   }, []],
-  ['T-Login', toLogin, [UNEXPECTED]],
-  ['T-Pick', toPick, [UNEXPECTED]],
-  ['T-Import', (page) => toImport(page), [UNEXPECTED]],
-  ['T-ImportError', toImportError, [UNEXPECTED]],
-  ['T-Setup', (page) => toSetup(page), [UNEXPECTED]],
-  ['T-Lobby', (page) => toLobby(page), [UNEXPECTED]],
-  ['T-Live', (page) => toLive(page), [UNEXPECTED]],
-  ['T-QuestionEnd', toQuestionEnd, [UNEXPECTED]],
-  ['T-Results', (page) => toResults(page), [UNEXPECTED]],
-  ['S-JoinEmpty', (page) => toJoin(page), [UNEXPECTED]],
-  ['S-Join', (page) => toJoin(page, 1), [UNEXPECTED]],
-  ['S-Wait', toWait, [UNEXPECTED]],
-  ['S-Answer', toAnswer, [UNEXPECTED]],
+  ['T-Login', toLogin, []],
+  ['T-Pick', toPick, []],
+  ['T-Import', (page) => toImport(page), []],
+  ['T-ImportError', toImportError, []],
+  ['T-Setup', (page) => toSetup(page), []],
+  ['T-Lobby', (page) => toLobby(page), []],
+  ['T-Live', (page) => toLive(page), []],
+  ['T-QuestionEnd', toQuestionEnd, []],
+  ['T-Results', (page) => toResults(page), []],
+  ['S-JoinEmpty', (page) => toJoin(page), []],
+  ['S-Join', (page) => toJoin(page, 1), []],
+  ['S-Wait', toWait, []],
+  ['S-Answer', toAnswer, []],
   ['S-Submitted', toSubmitted, []],
   // 005 T041: S-Rejected needs judging, which Phase 4 adds; restored in T043.
   ['S-QuestionDone', toStudentQuestionDone, []],

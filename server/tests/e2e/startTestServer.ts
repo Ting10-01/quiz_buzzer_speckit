@@ -9,6 +9,9 @@ import { Audience } from '../../src/activity/ActivityView.js';
 import { buildApp } from '../../src/app.js';
 import { loadConfig } from '../../src/config.js';
 import { FakeGoogleGateway, signInFor } from '../helpers/fakeGoogleGateway.js';
+import { FakeSpreadsheetWriter } from '../helpers/FakeSpreadsheetWriter.js';
+import { FakeSpreadsheetReader } from '../guided-notes/helpers/fakeSpreadsheetReader.js';
+import { loadFixture } from '../guided-notes/helpers/gridBuilder.js';
 import { TEST_GOOGLE_CONFIG } from '../helpers/testApp.js';
 
 // Codes the E2E GIS stub hands back from the "Google" popup.
@@ -35,16 +38,19 @@ export const E2E_ACCOUNTS = {
  * - POST /test/import: stands in for 003's import; the page's Picker and import API are faked
  *   in the page (googlePicker.ts), so the result it showed is saved here for createActivity.
  * - GET /test/activity: the teacher snapshot, so walk helpers know the next phase step.
+ * - GET /test/written: what 006's write-back sent to the fake Google Sheets (006 T032).
  */
-function addTestRoutes(app: FastifyInstance): void {
+function addTestRoutes(app: FastifyInstance, writer: FakeSpreadsheetWriter): void {
   app.post('/test/reset', async () => {
     const { queue, store, membership } = app.activity;
     queue.run(() => {
       membership.reset();
       store.commit(null);
     });
+    writer.calls.splice(0);
     return { ok: true };
   });
+  app.get('/test/written', async () => writer.calls);
   app.post<{ Body: ImportSuccess }>('/test/import', async (request) => {
     app.importStore.save(request.body, {});
     return { ok: true };
@@ -59,8 +65,18 @@ export async function startTestServer(port: number) {
     .set(E2E_CODES.noDriveScope, signInFor(E2E_ACCOUNTS.noDriveScope, ['openid', 'https://www.googleapis.com/auth/userinfo.email']))
     .set(E2E_CODES.pageTeacher, signInFor(E2E_ACCOUNTS.pageTeacher))
     .set(E2E_CODES.walkTeacher, signInFor(E2E_ACCOUNTS.walkTeacher));
-  const app = buildApp({ port, google: TEST_GOOGLE_CONFIG, missingGoogleVars: [] }, { gateway });
-  addTestRoutes(app);
+  // 006: write-back reads the sheet again. 001's "題組＋單題範本" (the page's import, googlePicker.ts) has
+  // the same question numbers and blank cells as the "group" fixture; its "單題範本" is read-only, like
+  // in 001's mock (M8); any other sheet is not found.
+  const spreadsheetReader = new FakeSpreadsheetReader()
+    .set('group-and-single', loadFixture('group'))
+    .set('single-only', loadFixture('single'), false);
+  const spreadsheetWriter = new FakeSpreadsheetWriter();
+  const app = buildApp(
+    { port, google: TEST_GOOGLE_CONFIG, missingGoogleVars: [] },
+    { gateway, spreadsheetReader, spreadsheetWriter },
+  );
+  addTestRoutes(app, spreadsheetWriter);
   await app.listen({ host: '127.0.0.1', port });
   return app;
 }

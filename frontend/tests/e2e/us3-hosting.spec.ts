@@ -1,17 +1,20 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
-import { connectTestServer } from './testServer';
+import { connectTestServer, groupmateSubmits } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
   await connectTestServer(page);
 });
 
-// T071, T144: quickstart Q5 (hosting and judging) and Q6 (write-back) with the mock services (M4, M8).
+// T071, T144: quickstart Q5 (hosting and judging) and Q6 (write-back). 006 T036: groups submit through
+// the test server (groupmateSubmits) instead of 001's seeded submissions, and the write-back goes to the
+// test server's fake Google Sheets (server/tests/e2e/startTestServer.ts).
 
-async function expectMockBadge(page: Page) {
-  await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
+// 006 T036: every interface is real, so the "模擬模式" label is gone (001 FR-005).
+async function expectNoMockBadge(page: Page) {
+  await expect(page.getByText('模擬模式', { exact: true })).toHaveCount(0);
 }
 
 /** Main → T-Login → T-Pick → `sheet` → T-Import → T-Setup → T-Lobby → T-Live (question 1). */
@@ -68,14 +71,14 @@ const writeBackButton = (page: Page) => page.getByRole('button', { name: '寫回
 const writeBackDialog = (page: Page) => page.getByRole('dialog', { name: /寫回 Google Sheets/ });
 
 test.describe('US3 hosting (quickstart Q5, Q6)', () => {
-  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
-  test.skip('Q5 + Q6 with 題組＋單題範本: judge in order, auto-end, no submissions, write-back succeeds', async ({
+  test('Q5 + Q6 with 題組＋單題範本: judge in order, auto-end, no submissions, write-back succeeds', async ({
     page,
   }) => {
     await toLive(page, '題組＋單題範本');
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Question 1: four submissions in rank order; only the earliest is judgeable (US3 AC-2).
+    for (const group of [2, 4, 1, 3]) await groupmateSubmits(group);
     await expect(answerRows(page)).toHaveCount(4);
     await expect(answerRows(page).first()).toContainText('第 2 組');
     await expectJudgeable(rowOf(page, 2), true);
@@ -91,10 +94,11 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     // "接受" ends the question automatically (US3 AC-3).
     await judge(page, 4, '接受');
     await expectQuestionEnd(page, 1, '第 4 組');
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Question 2: accept the earliest.
     await openNext(page, 2);
+    for (const group of [5, 3]) await groupmateSubmits(group);
     await expect(answerRows(page)).toHaveCount(2);
     await judge(page, 5, '接受');
     await expectQuestionEnd(page, 2, '第 5 組');
@@ -112,16 +116,17 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
 
     // Question 4 is the last: accepting goes straight to T-Results (FR-032a).
     await openNext(page, 4);
+    await groupmateSubmits(1);
     await judge(page, 1, '接受');
     await expect(writeBackButton(page)).toBeVisible();
     await expect(page.getByRole('region', { name: '第 1 題' })).toContainText('第 4 組');
     await expect(page.getByRole('region', { name: '第 3 題' })).toContainText('沒有組別送出');
     await expect(page.getByRole('region', { name: '第 4 題' })).toContainText('第 1 組');
     await expect(page.getByRole('main')).toContainText('尚未寫回');
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Write-back: "取消" does nothing (US3 AC-13); "寫回" shows success and the cell count in the
-    // dialog (US3 AC-11); "關閉" leaves the status on the page (US3 AC-14).
+    // dialog, 2 + 2 + 1 for questions 1, 2 and 4 (US3 AC-11); "關閉" leaves the status on the page (US3 AC-14).
     await writeBackButton(page).click();
     await expect(writeBackDialog(page)).toContainText('題組＋單題範本');
     await writeBackDialog(page).getByRole('button', { name: '取消' }).click();
@@ -130,16 +135,15 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     await writeBackButton(page).click();
     await writeBackDialog(page).getByRole('button', { name: '寫回', exact: true }).click();
     await expect(writeBackDialog(page)).toContainText('寫回成功');
-    await expect(writeBackDialog(page)).toContainText('已寫入 6 格');
+    await expect(writeBackDialog(page)).toContainText('已寫入 5 格');
     await expect(writeBackDialog(page).getByRole('button')).toHaveText(['關閉']);
     await writeBackDialog(page).getByRole('button', { name: '關閉' }).click();
     await expect(writeBackDialog(page)).toBeHidden();
     await expect(page.getByRole('main')).toContainText('寫回成功');
-    await expect(page.getByRole('main')).toContainText('6 格');
+    await expect(page.getByRole('main')).toContainText('5 格');
   });
 
-  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
-  test.skip('Q5 + Q6 with 單題範本: reject everyone, end the last question, write-back fails', async ({
+  test('Q5 + Q6 with 單題範本: reject everyone, end the last question, write-back fails', async ({
     page,
   }) => {
     await toLive(page, '單題範本');
@@ -151,6 +155,7 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
         await endQuestion(page);
         await expectQuestionEnd(page, 3, '沒有組別送出');
       } else {
+        await groupmateSubmits(1);
         await answerRows(page).first().getByRole('button', { name: '接受', exact: true }).click();
         await expect(page.getByRole('button', { name: `開放第 ${n + 1} 題` })).toBeVisible();
       }
@@ -158,6 +163,7 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
 
     // Question 6 (last): reject both, then every judge button is disabled (spec T-Live 全部不接受).
     await openNext(page, 6);
+    for (const group of [5, 3]) await groupmateSubmits(group);
     await judge(page, 5, '不接受');
     await judge(page, 3, '不接受');
     await expectJudgeable(rowOf(page, 5), false);

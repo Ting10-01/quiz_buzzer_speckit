@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectTestServer, resetTestServer } from './testServer';
+import { connectTestServer, groupmateSubmits, judgeGroup, resetTestServer } from './testServer';
 // 004 (T061): the shared step also works once the mock advance control is gone.
 import { advance } from './us5-walk';
 
@@ -9,14 +9,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 // T084: quickstart Q7 (accepted, not accepted, groupmate submits), Q8 (every phase) and
-// Q13 (where joining leads) with the mock services (M5–M7), plus SC-007 / FR-054.
+// Q13 (where joining leads) on the test server, plus SC-007 / FR-054.
 
 const GROUP = 3;
 /** Any group number other than this tab's group. */
 const OTHER_GROUP = /第 [1245-9] 組/;
 
-async function expectMockBadge(page: Page) {
-  await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
+// 006 T036: every interface is real, so the "模擬模式" label is gone (001 FR-005).
+async function expectNoMockBadge(page: Page) {
+  await expect(page.getByText('模擬模式', { exact: true })).toHaveCount(0);
 }
 
 /** Main → S-Join, then advances `steps` times on S-Join (M7) before joining GROUP. */
@@ -39,7 +40,7 @@ const myAnswers = (page: Page) => page.getByRole('region', { name: '本組送出
 async function expectAnswerPage(page: Page, n: number) {
   await expect(page.getByText(`第 ${n} 題 / 共 4 題`)).toBeVisible();
   await expect(submitButton(page)).toBeVisible();
-  await expectMockBadge(page);
+  await expectNoMockBadge(page);
 }
 
 /** SC-007, FR-054: nothing on the page names another group. */
@@ -60,7 +61,7 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await joinAfter(page, 1);
     await expect(page.getByRole('button', { name: '選錯組別？重新選擇' })).toBeVisible();
     await expect(page.getByText(`第 ${GROUP} 組`).first()).toBeVisible();
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // OPEN(1) → S-Answer
     await joinAfter(page, 2);
@@ -70,13 +71,13 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await joinAfter(page, 3);
     await expect(questionResult(page)).toBeVisible();
     await expect(page.getByRole('region', { name: '本組的答案' })).toContainText('本組沒有送出');
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // FINISHED → S-Results, this group won 0 questions
     await joinAfter(page, 9);
     await expect(page.getByText('本組搶到')).toBeVisible();
     await expect(page.getByText('0 題', { exact: true })).toBeVisible();
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
   });
 
   test('S-Wait: choosing again returns to S-Join with the group still selected', async ({ page }) => {
@@ -86,38 +87,36 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(page.getByRole('button', { name: `加入第 ${GROUP} 組` })).toBeEnabled();
   });
 
-  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
-  test.skip('Q7: accepted, not accepted and a groupmate submitting', async ({ page }) => {
+  // 006 T036: judged by the walk teacher and submitted by a groupmate through the test server, so the
+  // results come from the real result service.
+  test('Q7: accepted, not accepted and a groupmate submitting', async ({ page }) => {
     await joinAfter(page, 1);
     await advance(page);
 
-    // Question 1: submit, then "模擬：接受" → this question's result with this group as winner.
+    // Question 1: submit, then accepted → this question's result with this group as winner.
     await expectAnswerPage(page, 1);
     await expectNoOtherGroups(page);
-    await expect(page.getByRole('button', { name: '模擬：同組組員送出' })).toBeVisible();
     await answer(page, ['CPU', '作業系統']);
     await expect(waiting(page)).toBeVisible();
     await expect(myAnswers(page)).toContainText('CPU');
     await expect(myAnswers(page)).toContainText('作業系統');
     await expectNoOtherGroups(page);
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // Accepting ends the question (005).
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expect(questionResult(page)).toContainText(`第 ${GROUP} 組`);
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
-    // Question 2: submit, then "模擬：不接受" → stays, cannot submit again.
+    // Question 2: submit, then not accepted → stays, cannot submit again.
     await advance(page);
     await expectAnswerPage(page, 2);
     await answer(page, ['演算法', '佇列']);
     await expect(waiting(page)).toBeVisible();
-    await page.getByRole('button', { name: '模擬：不接受' }).click();
+    await judgeGroup(GROUP, 'REJECTED');
     await expect(page.getByText('老師沒有接受本組的答案')).toBeVisible();
     await expect(waiting(page)).toHaveCount(0);
     await expect(myAnswers(page)).toContainText('佇列');
     await expect(submitButton(page)).toHaveCount(0);
     await expect(page.getByRole('textbox')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '模擬：接受' })).toHaveCount(0);
     await expectNoOtherGroups(page);
     await advance(page);
     await expect(questionResult(page)).toContainText('沒有組別搶答成功');
@@ -125,27 +124,23 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     // Question 3: a groupmate submits → S-Submitted with the groupmate's answer.
     await advance(page);
     await expectAnswerPage(page, 3);
-    await page.getByRole('button', { name: '模擬：同組組員送出' }).click();
+    await groupmateSubmits(GROUP, ['0']);
     await expect(waiting(page)).toBeVisible();
     await expect(myAnswers(page)).toContainText('0');
     await expect(submitButton(page)).toHaveCount(0);
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expect(questionResult(page)).toContainText(`第 ${GROUP} 組`);
 
     // Question 4 (last): accepting goes straight to S-Results.
     await advance(page);
     await expectAnswerPage(page, 4);
     await answer(page, ['IP']);
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expect(page.getByText('本組搶到')).toBeVisible();
     await expect(page.getByText('3 題', { exact: true })).toBeVisible();
     await expect(questionResult(page)).toHaveCount(0);
     await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
   });
 
   test('Q7: a validation failure stays on S-Answer beside the first field', async ({ page }) => {
@@ -166,7 +161,7 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
       await expectAnswerPage(page, n);
       await advance(page);
       await expect(questionResult(page)).toContainText('沒有組別送出');
-      await expectMockBadge(page);
+      await expectNoMockBadge(page);
     }
     await advance(page);
     await expectAnswerPage(page, 4);
@@ -177,6 +172,6 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(questionResult(page)).toHaveCount(0);
     // FINISHED is final: S-Results has no advance control (FR-061).
     await expect(page.getByRole('button', { name: '模擬：推進到下一個階段' })).toHaveCount(0);
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
   });
 });

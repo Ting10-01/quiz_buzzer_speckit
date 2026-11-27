@@ -39,7 +39,7 @@ test.beforeEach(async ({ page }) => {
 // T093: every arrow of diagrams/001-screen-flow.puml, one test per arrow (SC-001, SC-002).
 // Test names start with the arrow's code, or with "from → to" for the arrows labelled on the
 // diagram. S10 and S11 are not triggered by the 001 mock (SC-002 exclusions); S10 is covered by
-// the StudentPlayPage component test (T079). Every arrival checks the "模擬模式" label (SC-003).
+// the StudentPlayPage component test (T079). Every arrival checks that the "模擬模式" label is gone (FR-005, 006 T036).
 
 const groupField = (page: Page) => page.getByRole('group', { name: '組數' });
 const groupItems = (page: Page) => groupField(page).getByRole('listitem');
@@ -216,12 +216,11 @@ test.describe('US5 screen flow: labelled arrows (student round)', () => {
     await expectOn(page, 'S-Results');
   });
 
-  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
-  test.skip('S-Submitted → S-QuestionDone: 判定：接受（本題結束）', async ({ page }) => {
+  test('S-Submitted → S-QuestionDone: 判定：接受（本題結束）', async ({ page }) => {
     await toSubmitted(page);
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // 006 T036: the teacher accepts through the test server, which ends the question (005); the
+    // result comes from the real result service.
+    await judgeGroup(GROUP, 'ACCEPTED');
     await expectOn(page, 'S-QuestionDone');
     await expect(page.getByRole('region', { name: '本題結果' })).toContainText(`第 ${GROUP} 組`);
   });
