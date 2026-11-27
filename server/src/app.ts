@@ -14,6 +14,7 @@ import type { SpreadsheetReader } from './guided-notes/SpreadsheetReader.js';
 import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
 import { attachSocketServer } from './realtime/socketServer.js';
+import { submissionRoutes } from './submission/index.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -57,6 +58,8 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   attachSocketServer(app, teacherAuth);
   // 004: activity state, pushes and student group events on app.io.
   app.register(createActivityModule, { importStore: app.importStore });
+  // 005: submissions and judging, on 004's command queue and app.io.
+  app.register(submissionRoutes);
 
   return app;
 }
