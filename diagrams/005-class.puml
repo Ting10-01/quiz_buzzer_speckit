@@ -230,7 +230,8 @@ SubmissionGateway ..> AppIo : 在 app.io 上註冊事件
 SubmissionNotifier ..> AppIo : 列表送 io.to(TEACHER_ROOM)
 SubmissionNotifier ..> GroupMembership : 組員送出、判定送 groupOf = n 的連線
 SubmissionRoutes ..> RequireTeacher : preHandler
-ResultService ..> SubmissionStore : list / winner
+SubmissionRoutes ..> ActivityStore : run 內 current()；\n沒有活動回 409 NO_ACTIVITY
+ResultService ..> SubmissionStore : app.submissions\nlist / winner（唯讀）
 ActivityStore --> ActivityState
 
 note bottom of SubmissionRecord

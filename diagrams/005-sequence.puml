@@ -84,6 +84,7 @@ FT -> RT : ApiClient.request(POST /api/questions/n/judgements,\n{group 2, REJECT
 RT -> RT : app.requireTeacher（002）
 RT -> Q : run(() => engine.judge(…))
 group 臨界區
+  RT -> AS : current()（沒有活動回 409 NO_ACTIVITY）
   Q -> EN : judge(n, 2, REJECTED)
   EN -> ST : firstPending() 是第 2 組 → REJECTED
   EN -> AC : snapshot(TEACHER)

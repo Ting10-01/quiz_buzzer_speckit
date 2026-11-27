@@ -63,11 +63,13 @@ SockClient <--> Gateway : WebSocket（app.io）
 TeacherHttp --> Routes : HTTP REST
 
 BuildApp --> Routes : app.register
+BuildApp ..> Store : app.decorate('submissions')\n供 006 讀取
 Gateway ..> Membership : 依連線判斷組別（原則 VI）
 Gateway --> Queue : run(submit)
 Routes ..> ReqTeacher : 只有老師（REQ-SUB-17）
 Routes --> Queue : run(judge)
 Routes --> Store : 列出送出（唯讀）
+Routes ..> ActStore : run 內 current()；\n沒有活動回 409 NO_ACTIVITY
 Queue --> Engine : 一筆處理完才處理下一筆
 Engine ..> ActStore : 讀取階段、題目、openedAt；\nsubscribe：結束時把待判定改為未判定
 Engine --> Clock : 接受時間
@@ -76,10 +78,11 @@ Engine ..> EndQ : 接受後自動結束本題（同一個 run 內）；\nJudgeOu
 Engine ..> Notifier : 處理完後才通知（不在臨界區）
 Engine ..> Logger : 記錄順位與判定
 Notifier --> Visibility
-Visibility --> Store
+Notifier --> Store : 讀取完整列表
+Store ..> Visibility : list / winner 用 forTeacher
 Notifier ..> SockAuth : 列表只送 io.to(TEACHER_ROOM)
 Notifier ..> Membership : 組員送出、判定只送 groupOf = 該組的連線
-Res006 ..> Store : 每題送出與成功組別
+Res006 ..> Store : app.submissions\n每題送出與成功組別（唯讀）
 
 note right of Queue
   時序正確（REQ-SUB-07、NFR-01）：
