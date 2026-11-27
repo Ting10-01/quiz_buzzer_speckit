@@ -80,6 +80,7 @@
 | `question(q)` | 取得第 q 題（沒有則為空） |
 | `append(record)` | 加入一筆；第 q 題還沒有 `QuestionSubmissions` 時先建立 |
 | `closeQuestion(q)` | `closed = true`；其餘 `PENDING` 改為 `UNJUDGED`（REQ-SUB-14） |
+| `clear()` | 清空所有題的送出；活動消失時由 `SubmissionEngine.onActivityChange` 呼叫 |
 | `list(q)` | 老師視角的 `Submission[]`，依 `rank`；沒有該題時為空陣列（006 使用） |
 | `winner(q)` | 被接受的 `Submission`（老師視角）或空（006 使用） |
 
@@ -91,7 +92,7 @@
 | `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `answers`「請先加入組別」）→ 請求格式（`answers`「送出的資料格式不正確」）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`answers`「這一題目前不能作答」）→ 本組已有紀錄（`requestId` 相同回第一次的結果；否則 `answers`「本組已送出此題」）→ 格數等於小題數（`answers`「送出的資料格式不正確」）→ 每格非空白（`answers.<i>`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers.<i>`「每一格最多 200 字」）→ 建立紀錄。建立後通知 `SubmissionNotifier.groupSubmitted`、`submissionsChanged` |
 | `ownSubmission(group, q): Submission [0..1]` | 本組第 q 題的紀錄，以 `forStudent` 產生；`group` 為空或沒有紀錄時為空（REQ-SUB-21） |
 | `judge(q, group, judgement): JudgeOutcome` | 在 004 的 `CommandQueue.run` 內執行；`ACCEPTED` 時就地呼叫 004 `ActivityManager.endQuestion(n)`；規則見 research RD-07；回傳 `{ submissions: SubmissionStore.list(q), activity: ActivityManager.snapshot(Audience.TEACHER).activity }` |
-| `onActivityChange(version)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫，參數是新的版本號）：以 `ActivityStore.current()` 讀取狀態；先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表 |
+| `onActivityChange(version)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫，參數是新的版本號）：以 `ActivityStore.current()` 讀取狀態；先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表；活動消失（`current()` 為空）時再 `SubmissionStore.clear()` |
 | `validate(group, request)` | 上述 `submit` 的檢查，回傳第一個錯誤或空 |
 
 ### 其他

@@ -141,6 +141,7 @@ package "伺服器（server/src/submission/）" {
     +question(questionNumber: number): QuestionSubmissions [0..1]
     +append(record: SubmissionRecord): void
     +closeQuestion(questionNumber: number): void
+    +clear(): void
     +list(questionNumber: number): Submission[]
     +winner(questionNumber: number): Submission [0..1]
   }
