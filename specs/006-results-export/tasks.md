@@ -140,6 +140,7 @@ description: "Task list for 006 結果與寫回"
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T031 在 `frontend/src/services/createServiceRegistry.ts` 把 `result` 綁定改為 `ServerResultService`（傳入 004 的 `RealtimeClient` 與 002 的 `ApiClient`），並更新 001 的 `ServiceRegistry` 單元測試：`result` 不再是模擬實作，`MockResultService` 只留給測試
+- [ ] T036 依 T031，讓 001 的 E2E 跟上「沒有任何模擬實作」（001 FR-005、FR-061，比照 005 T041、T043）：`us5-walk.ts` 等的「模擬模式」標示檢查改為確認不顯示；`us5-mock-controls.spec.ts` 每一頁都沒有模擬控制列；`us5-unexpected-error.spec.ts` 拿掉「模擬：非預期錯誤」的案例，保留連不上伺服器的案例；恢復 005 T043 因結果仍是模擬實作而 skip 的 `us3-hosting` 兩個案例、`us4-student` Q7、`us5-screen-flow` 的案例，改由測試伺服器判定與推進；005 `submission.spec.ts` 檢查學生沒收到他組答案時，排除題目結束後 006 公布的本題結果（006 AC-01 公布成功組別的答案）
 - [ ] T032 `frontend/tests/e2e/results.spec.ts`（Playwright，沿用 005 的多分頁 E2E 環境，Google 以替身取代）：第 2 題結束時老師分頁與第 5 組分頁顯示成功組別與答案、第 5 組分頁顯示本組送出的答案、收到的本組送出判定為「不接受」且沒有其他組的答案，題目進度只含已結束的題目（AC-01、AC-02、AC-10、SC-006）；活動結束後學生全部結果頁顯示每題所有送出與本組搶到的題數（AC-07）、老師結果頁顯示每題所有送出與比第一名慢的秒數（AC-08、AC-30）；T-WriteBack 的說明文字為「這些填空格原本的內容會被覆蓋。」且沒有「備份」（AC-11、REQ-RES-19，依 T035）；寫回成功與失敗的顯示（REQ-RES-20）
 - [ ] T033 依 [quickstart.md](quickstart.md) 的 16 個情境做人工驗證，紀錄寫入 `specs/006-results-export/manual-verification.md`（SC-001～SC-004、SC-008、AC-12～AC-17、AC-21～AC-26 的真實 Google 行為）
 - [ ] T034 圖表一致性驗證：比對程式碼與 `diagrams/006-*.puml` 的組件、類別、方法與呼叫順序，結果寫入 `specs/006-results-export/diagram-verification.md`（原則 I）
@@ -153,6 +154,7 @@ description: "Task list for 006 結果與寫回"
 - US2 依 US1 的 `ResultQuery`；US3 的 `WriteBackService` 依 US2 的 `allResults`；US4 在 US3 的 `WriteBackService` 上加入失敗處理。
 - 每個 Phase 內，標 [P] 的測試可同時撰寫；實作依任務中「依 Txxx」的順序。
 - T031 放在最後：四個 Story 都完成後才換綁定，避免頁面在中途拿到未完成的 `writeBack`。
+- T036 依 T031（換綁後 001 的 E2E 才需要改）；T032 依 T036（同一個 E2E 測試伺服器與 `expectOn`）。
 
 ## 需求追溯
 
@@ -190,3 +192,5 @@ description: "Task list for 006 結果與寫回"
 | SC-008 | T017、T033 |
 
 其他驗收（AC-22～AC-24 的真實 Google 行為）：T026（替身）、T033（人工）。
+
+001 的 E2E 跟上換綁（001 FR-005、FR-061）：T036。
