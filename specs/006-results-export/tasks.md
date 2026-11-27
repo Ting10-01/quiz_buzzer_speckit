@@ -57,7 +57,7 @@ description: "Task list for 006 結果與寫回"
 
 - [X] T008 [US1] 實作 `server/src/results/ResultQuery.ts` 的 `ResultQueryError`、`ResultQueryErrorCode`、`questionResult`、`isEnded`、`visible`，依 data-model 第 3 節與 research RD-02、RD-03
 - [X] T009 [US1] 實作 `server/src/results/resultSocketHandlers.ts` 的 `registerResultHandlers`（`result:question`），並在 002 的 `buildApp` 以 `registerResultHandlers(app.io, query, membership)` 註冊（004 的 `createActivityModule()` 之後），依 T008
-- [ ] T010 [US1] 實作 `frontend/src/services/ServerResultService.ts` 的建構子（`realtime: RealtimeClient`、`api: ApiClient`）與 `getQuestionResult`，依 research RD-10 與 contracts
+- [X] T010 [US1] 實作 `frontend/src/services/ServerResultService.ts` 的建構子（`realtime: RealtimeClient`、`api: ApiClient`）與 `getQuestionResult`，依 research RD-10 與 contracts
 
 **Checkpoint**: 一題結束後的結果可由伺服器取得，公布範圍正確
 
@@ -78,7 +78,7 @@ description: "Task list for 006 結果與寫回"
 ### Implementation for User Story 2
 
 - [X] T014 [US2] 在 `server/src/results/ResultQuery.ts` 實作 `allResults` 與 `behindFirstMs` 的計算，在 `resultSocketHandlers.ts` 註冊 `result:all`，依 data-model 第 3 節與 research RD-12
-- [ ] T015 [US2] 在 `frontend/src/services/ServerResultService.ts` 實作 `getAllResults`
+- [X] T015 [US2] 在 `frontend/src/services/ServerResultService.ts` 實作 `getAllResults`
 
 **Checkpoint**: 全部結果可由伺服器取得，內容與 005 一致
 
@@ -104,7 +104,7 @@ description: "Task list for 006 結果與寫回"
 - [X] T022 [P] [US3] 實作 `server/src/results/GoogleSheetsWriter.ts`，依 research RD-05、RD-06 與 data-model 第 4 節，依 T003
 - [X] T023 [US3] 實作 `server/src/results/WriteBackService.ts` 的寫回步驟 1～8 的成功路徑與 `planCells`、`firstLayoutMismatch`，依 T008、T014、T021
 - [X] T024 [US3] 實作 `server/src/results/resultsRoutes.ts`（`preHandler: requireTeacher`），`WriteBackFailure` 依 data-model 第 4 節轉成 `200 WriteBackResult(ok=false)` 或 `401 ErrorBody`；在 002 的 `buildApp` 以 `GoogleSheetsWriter`（`app.googleClients`）、003、004、005 的實例建立 `WriteBackService`，以 `app.register(resultsRoutes, { writeBack })` 註冊，依 T022、T023
-- [ ] T025 [US3] 在 `frontend/src/services/ServerResultService.ts` 實作 `writeBack`，依 contracts
+- [X] T025 [US3] 在 `frontend/src/services/ServerResultService.ts` 實作 `writeBack`，依 contracts
 
 **Checkpoint**: 寫回的成功路徑可用替身完整跑過
 
@@ -131,7 +131,7 @@ description: "Task list for 006 結果與寫回"
 ### Implementation for User Story 4
 
 - [X] T029 [US4] 在 `server/src/results/WriteBackService.ts` 實作 `WriteBackFailure`、`WriteBackErrorCode`、`WriteBackStep`、`mapGoogleError`、步驟 1～5 的檢查與 `inProgress`；每次寫回以 pino 記錄結果代碼與 `cellCount`（不記錄老師憑證與 Google token），依 research RD-07、RD-08
-- [ ] T030 [US4] 在 `frontend/src/services/ServerResultService.ts` 把兩種 401 的 `ApiError` 轉成 `WriteBackResult`，其他原樣往上丟，依 contracts
+- [X] T030 [US4] 在 `frontend/src/services/ServerResultService.ts` 把兩種 401 的 `ApiError` 轉成 `WriteBackResult`，其他原樣往上丟，依 contracts
 
 **Checkpoint**: 每種寫回失敗都不改動學習單
 
