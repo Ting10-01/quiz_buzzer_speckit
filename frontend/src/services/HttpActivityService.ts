@@ -25,10 +25,8 @@ export class HttpActivityService implements ActivityService {
   constructor(
     private readonly realtime: Pick<
       RealtimeClient,
-      'on' | 'onConnect' | 'emitWithAck' | 'studentToken' | 'setStudentToken' | 'reconnect'
-    > &
-      // Optional until T050's tests (Phase 7) give the unit-test fake this method.
-      Partial<Pick<RealtimeClient, 'followTeacherCredential'>>,
+      'on' | 'onConnect' | 'emitWithAck' | 'studentToken' | 'setStudentToken' | 'reconnect' | 'followTeacherCredential'
+    >,
     private readonly api: Pick<ApiClient, 'request'>,
   ) {
     // The server may have restarted and count versions from 0 again, so the next snapshot always wins.
@@ -119,7 +117,7 @@ export class HttpActivityService implements ActivityService {
    * student snapshot, so it waits for the next one (contracts/activity-service.md, T062).
    */
   private followTeacherCredential(): void {
-    if (this.realtime.followTeacherCredential?.()) this.latest = null;
+    if (this.realtime.followTeacherCredential()) this.latest = null;
   }
 
   /** A ValidationError comes back as a 200 body and changes nothing; ApiError rejects as it is (RA-10). */
