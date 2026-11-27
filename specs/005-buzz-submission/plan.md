@@ -61,7 +61,7 @@
 | `SubmissionStore`、`QuestionSubmissions`、`SubmissionRecord` | `server/src/submission/SubmissionStore.ts` | component、class、sequence |
 | `SubmissionVisibility` | `server/src/submission/SubmissionVisibility.ts` | component、class |
 | `SubmissionNotifier` | `server/src/submission/SubmissionNotifier.ts` | component、class、sequence |
-| 組裝與註冊（建立上述物件、訂閱 `ActivityStore.subscribe`、在 `app.io` 註冊事件、註冊路由） | `server/src/submission/index.ts` 的 `submissionRoutes`（Fastify plugin，從 004 的 `app.activity` 取得 `store`、`membership`、`manager`、`queue`、`clock`，從 002 取得 `app.io`、`app.requireTeacher`、`app.log`）；在 002 的 `buildApp`（`server/src/app.ts`）於 `createActivityModule` 之後加一行 `app.register(submissionRoutes)` | component |
+| 組裝與註冊（建立上述物件、訂閱 `ActivityStore.subscribe`、在 `app.io` 註冊事件、註冊路由） | `server/src/submission/index.ts` 的 `submissionRoutes`（Fastify plugin，從 004 的 `app.activity` 取得 `store`、`membership`、`manager`、`queue`、`clock`，從 002 取得 `app.io`、`app.requireTeacher`、`app.log`；以 `app.decorate('submissions', …)` 把 `SubmissionStore` 提供給 006，見 contracts/submission-store.md「取得方式」）；在 002 的 `buildApp`（`server/src/app.ts`）於 `createActivityModule` 之後加一行 `app.register(submissionRoutes)` | component |
 | 004 `CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager.endQuestion`、`RealtimeClient`；002 `buildApp`、`app.requireTeacher`、`app.io`、`TEACHER_ROOM`、`ApiClient`、logger；006 `ResultService` | 其他子功能的檔案，005 只呼叫，不修改 | component、class、sequence |
 
 ## 交界假設
