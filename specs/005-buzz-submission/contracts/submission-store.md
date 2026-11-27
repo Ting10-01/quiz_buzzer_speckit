@@ -4,6 +4,14 @@
 
 `SubmissionStore` 是送出、順位、判定與搶答成功組別的唯一權威來源（原則 V），只存在伺服器記憶體。006 只讀，不寫。
 
+## 取得方式
+
+005 的 `submissionRoutes`（`server/src/submission/index.ts`）建立唯一的 `SubmissionStore` 後，以 `app.decorate('submissions', store)` 掛在根 Fastify instance 上，比照 004 的 `app.activity`（004 contracts/server-modules.md）。006 在 002 的 `buildApp` 中於 `submissionRoutes` 之後註冊，經 `app.submissions` 取得，不必修改 005 的檔案（2026-11-28 使用者決定，diagram-verification D8）。
+
+| 名稱 | 型別 | 說明 |
+| --- | --- | --- |
+| `app.submissions` | `SubmissionStore` | 只放 `SubmissionStore`；006 只呼叫下方的 `list`、`winner`。005 的 Engine、Notifier 等其他物件不公開 |
+
 ## 方法（006 使用）
 
 | 方法 | 回傳 | 說明 |
