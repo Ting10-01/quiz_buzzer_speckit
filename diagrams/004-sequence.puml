@@ -9,6 +9,7 @@ actor "老師" as T
 participant "老師頁面\n（T-Setup / Console）" as TP
 participant "學生頁面\n（S-Join / S-Wait / S-Answer）" as SP
 participant "HttpActivityService\n（各分頁）" as HS
+participant "RealtimeClient\n（各分頁）" as RC
 participant "activityRoutes" as RT
 participant "ActivityGateway" as GW
 participant "ActivityManager" as AM
@@ -16,6 +17,7 @@ participant "CommandQueue" as Q
 participant "ActivityStore" as ST
 participant "GroupMembership" as GM
 participant "ActivityBroadcaster" as BC
+participant "app.io\n（002）" as IO
 participant "ImportStore\n（003）" as IS
 
 == 1. 建立活動（R3、D4、D5） ==
@@ -26,9 +28,10 @@ RT -> RT : app.requireTeacher（002）
 RT -> AM : createActivity(settings)
 AM -> Q : run(...)
 activate Q
-Q -> AM : 已有活動？→ ActivityRuleError(ACTIVITY_EXISTS)\n組數不是 2–20 的整數？→ ValidationError
+Q -> AM : 已有活動？→ ActivityRuleError(ACTIVITY_EXISTS)
 AM -> IS : latest()
-IS --> AM : ImportSuccess（沒有時 NO_IMPORT）
+IS --> AM : ImportSuccess（null → ActivityRuleError(NO_IMPORT)）
+AM -> AM : 組數不是 2–20 的整數？→ ValidationError
 AM -> ST : commit(PREPARING, 4 組, 題目)
 ST -> BC : listener(version)（只排程）
 deactivate Q
@@ -36,8 +39,8 @@ AM --> RT : ActivitySnapshot(v1)
 RT --> HS : 200 { version: 1, activity }\n（組數不合法時也是 200，body 為 ValidationError）
 HS -> HS : apply(v1)
 HS --> TP : Activity(PREPARING) → T-Lobby
-BC -> GW : 下一輪事件迴圈：emit activity:snapshot(v1)\nTEACHER_ROOM：完整；students 房間：PUBLIC
-GW -->> HS : activity:snapshot(v1)
+BC -> IO : 下一輪事件迴圈：emit activity:snapshot(v1)\nTEACHER_ROOM：完整；students 房間：PUBLIC
+IO -->> HS : activity:snapshot(v1)
 HS -> HS : apply(v1) → 版本不比手上新，忽略（老師分頁）\n其他分頁：更新並通知
 HS -->> SP : onPhaseChange(Activity)\nS-Join（沒有活動）→ S-Join（有活動）
 
@@ -56,8 +59,8 @@ AM --> GW : GroupAck { snapshot(v2), studentToken }
 GW --> HS : ack
 HS -> HS : sessionStorage 存 studentToken；apply(v2)
 HS --> SP : Activity(PREPARING) → S-Wait
-BC -> GW : emit activity:snapshot(v2)
-GW -->> HS : （老師分頁）activity:snapshot(v2)
+BC -> IO : emit activity:snapshot(v2)
+IO -->> HS : （老師分頁）activity:snapshot(v2)
 HS -->> TP : onActivityChange → 第 3 組 1 人
 
 == 3. 開放第 n 題（R3、R11） ==
@@ -73,8 +76,8 @@ AM -> ST : commit(OPEN, n)
 deactivate Q
 RT --> HS : 200 snapshot(v3)
 HS --> TP : Activity(OPEN, n) → T-Live
-BC -> GW : emit activity:snapshot(v3)（所有連線）
-GW -->> HS : activity:snapshot(v3)
+BC -> IO : emit activity:snapshot(v3)（所有連線）
+IO -->> HS : activity:snapshot(v3)
 HS -->> SP : onPhaseChange → S-Answer（第 n 題）
 
 == 4. 結束第 n 題（老師按鈕，或 005 接受後自動結束） ==
@@ -95,8 +98,8 @@ else
   AM -> ST : commit(QUESTION_ENDED, n)
 end
 deactivate Q
-BC -> GW : emit activity:snapshot
-GW -->> HS : activity:snapshot
+BC -> IO : emit activity:snapshot
+IO -->> HS : activity:snapshot
 HS -->> SP : onPhaseChange → S-QuestionDone 或 S-Results
 
 == 5. 學生重新整理後回到原組別（REQ-ACT-13） ==
@@ -125,8 +128,11 @@ T -> TP : 重新整理 → 首頁 →「我是老師」→ 以 Google 登入（0
 note over GW : 002：任何人登入都取代前一位老師，\n換發老師憑證並 io.in(TEACHER_ROOM).disconnectSockets(true)\n中斷所有舊老師連線；活動不變
 note over TP : 001 C1（FR-015，2026-11-27 完成）：\n登入成功後依目前活動進入對應頁面
 TP -> HS : getCurrentActivity()
-HS -> HS : TeacherCredentialStore.get() ≠ connectedTeacherToken\n→ RealtimeClient.reconnect()
-HS -> GW : 連線 handshake auth { teacherToken（新） }
+HS -> RC : followTeacherCredential()
+RC -> RC : TeacherCredentialStore.get() ≠ connectedTeacherToken\n（且不是 rejectedTeacherToken）→ reconnect()
+RC --> HS : true
+HS -> HS : latest = null（等老師版的快照）
+RC -> GW : 連線 handshake auth { teacherToken（新） }
 GW -> GW : 002 驗證 → TEACHER_ROOM，isTeacher = true
 GW -->> HS : activity:snapshot（TEACHER）
 HS --> TP : Activity(OPEN, n)
@@ -148,7 +154,7 @@ AM --> RT : ActivitySnapshot { version: v+1, activity: null }
 RT --> HS : 200 snapshot
 HS -> HS : apply → onPhaseChange(null)
 HS --> TP : resolve → T-Pick
-BC -> GW : emit activity:snapshot { activity: null }（所有連線）
-GW -->> HS : activity:snapshot
+BC -> IO : emit activity:snapshot { activity: null }（所有連線）
+IO -->> HS : activity:snapshot
 HS -->> SP : onPhaseChange(null)\nMain：沒有活動；S-Join：「目前沒有活動」並清除已選組別；\nS-Wait → S-Join（不呼叫 leaveGroup，001 FR-050、FR-051）
 @enduml
