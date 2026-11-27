@@ -79,6 +79,7 @@ end
 
 == 2. 老師依順序判定：不接受順位 1（E4、D10、feature-split 第 4 節） ==
 T -> FT : 順位 1 的「不接受」
+FT -> FT : RealtimeClient.followTeacherCredential()\n（連線不是老師身分時重新連線，004 T062）
 FT -> RT : ApiClient.request(POST /api/questions/n/judgements,\n{group 2, REJECTED})，帶 Bearer
 RT -> RT : app.requireTeacher（002）
 RT -> Q : run(() => engine.judge(…))

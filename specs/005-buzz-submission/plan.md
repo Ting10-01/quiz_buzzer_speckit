@@ -1,6 +1,6 @@
 # Implementation Plan: 搶答與判定
 
-**Branch**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂） | **Spec**: [spec.md](./spec.md)
+**Branch**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂；2026-11-27 對照 001–004 的實際程式修訂） | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/005-buzz-submission/spec.md`
 
@@ -14,11 +14,11 @@
 
 **Language/Version**: TypeScript 5（strict），Node.js 24 LTS（沿用 001 research RD-01、RD-02）
 
-**Primary Dependencies**: Fastify（002 的 `buildApp`）、Socket.IO 4（002 的 `app.io`、004 的前端 `RealtimeClient`，只用 WebSocket 傳輸）、pino（002 的 `loggerOptions`）、004 的 `CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager`、002 的前端 `ApiClient`、React（001 的前端，不改頁面）。005 不新增執行期套件；`socket.io-client` 已是前端依賴，伺服器的整合與壓力測試另加為 devDependency
+**Primary Dependencies**: Fastify（002 的 `buildApp`）、Socket.IO 4（002 的 `app.io`、004 的前端 `RealtimeClient`，只用 WebSocket 傳輸）、pino（002 的 `loggerOptions`）、004 的 `CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager`、002 的前端 `ApiClient`、React（001 的前端，不改頁面）。005 不新增執行期套件；`socket.io-client` 已是前端依賴，也已是 server 的 devDependency（004 加入）
 
 **Storage**: 伺服器記憶體（`SubmissionStore`）；伺服器重啟即消失，不寫檔（001 research RD-05）
 
-**Testing**: Vitest（單元、整合；整合以 Fastify `inject()` 與真的 Socket.IO 連線）、Playwright（多分頁端對端）、壓力測試 `npm run test:load -w server`（research RD-10、RD-11）
+**Testing**: Vitest（單元、整合；整合以 Fastify `inject()` 與真的 Socket.IO 連線）、Playwright（多分頁端對端）、壓力測試 `npm run test:load:submission -w server`（research RD-10、RD-11）。測試伺服器、假的 `RealtimeClient` 與 E2E 測試伺服器沿用 004 的輔助檔
 
 **Target Platform**: 本機單一 Node 程序；Chrome 為主，多分頁模擬老師與各組
 
@@ -43,7 +43,7 @@
 | V. 單一權威狀態來源 | 階段與題號只讀 004 的 `ActivityStore`；送出、順位、判定只在 `SubmissionStore`；前端只呈現伺服器回傳或推送的完整列表 | 通過 |
 | VI. 最小資訊揭露與機敏資料 | 學生只收本組資料，`rank` 一律為 0（`SubmissionVisibility.forStudent`）；送出列表與判定需 `app.requireTeacher`，老師推播只送 `TEACHER_ROOM`；log 不記答案與憑證；005 不碰金鑰 | 通過（research RD-06） |
 | VII. 輸入驗證與錯誤訊息 | 送出的題號、格數、空白、長度、組別都在伺服器驗證，錯誤指出是哪一格；判定請求格式錯誤回 400，不合規則不改變狀態 | 通過 |
-| VIII. 自動化測試與人工驗證 | 每個 User Story 有正常與邊界案例；Google、時鐘以替身取代；壓力測試；人工驗證紀錄 | 通過 |
+| VIII. 自動化測試與人工驗證 | 每個 User Story 有正常與邊界案例；Google、時鐘以替身取代；壓力測試；每個 User Story 的 Phase 結尾各有人工驗證並留下紀錄 | 通過 |
 | IX. 程式碼規範 | 不新增頁面元件；呈現（頁面）與資料（服務）分離；英文命名 | 通過 |
 | X. 人工把關 | 本計畫需人工審查後才進入 tasks | 待審查 |
 | XI. 簡潔 | 不用資料庫、鎖、worker、每連線 Outbox（research RD-05）；沒有只有一個實作的新介面；不自建佇列與時鐘，直接用 004 的；判定通知掃描連線而不維護組別房間（research RD-05） | 通過 |
@@ -53,7 +53,7 @@
 | 圖中的組件／類別 | 程式位置 | 來源圖 |
 | --- | --- | --- |
 | `ServerSubmissionService` | `frontend/src/services/server/ServerSubmissionService.ts` | component、class、sequence |
-| `createServiceRegistry()`（改 `submission` 綁定，移除 `judgementControl`、`submissionValidationControl`、`teammateControl`） | `frontend/src/services/createServiceRegistry.ts`（001 的檔案，只改綁定） | component |
+| `createServiceRegistry()`（改 `submission` 綁定，移除 `judgementControl`、`submissionValidationControl`、`teammateControl`，刪除 004 橋接中跟送出有關的部分，research RD-08） | `frontend/src/services/createServiceRegistry.ts`（001 的檔案，只改組合根） | component |
 | `SubmitRequest`、`SubmitReply`、`OwnSubmissionRequest`、`OwnSubmissionReply`、`JudgeRequest`、`SubmissionsChanged`、`GroupSubmitted`、`SubmissionJudged`、事件名稱常數 | `shared/src/submissionEvents.ts` | class |
 | `SubmissionGateway` | `server/src/submission/SubmissionGateway.ts` | component、class、sequence |
 | `SubmissionRoutes` | `server/src/submission/SubmissionRoutes.ts` | component、class、sequence |
@@ -61,23 +61,23 @@
 | `SubmissionStore`、`QuestionSubmissions`、`SubmissionRecord` | `server/src/submission/SubmissionStore.ts` | component、class、sequence |
 | `SubmissionVisibility` | `server/src/submission/SubmissionVisibility.ts` | component、class |
 | `SubmissionNotifier` | `server/src/submission/SubmissionNotifier.ts` | component、class、sequence |
-| 組裝與註冊（建立上述物件、訂閱 `ActivityStore.subscribe`、在 `app.io` 註冊事件、註冊路由） | `server/src/submission/index.ts` 的 `submissionRoutes`（Fastify plugin）；在 002 的 `buildApp`（`server/src/app.ts`）加一行 `app.register(submissionRoutes, deps)` | component |
+| 組裝與註冊（建立上述物件、訂閱 `ActivityStore.subscribe`、在 `app.io` 註冊事件、註冊路由） | `server/src/submission/index.ts` 的 `submissionRoutes`（Fastify plugin，從 004 的 `app.activity` 取得 `store`、`membership`、`manager`、`queue`、`clock`，從 002 取得 `app.io`、`app.requireTeacher`、`app.log`）；在 002 的 `buildApp`（`server/src/app.ts`）於 `createActivityModule` 之後加一行 `app.register(submissionRoutes)` | component |
 | 004 `CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager.endQuestion`、`RealtimeClient`；002 `buildApp`、`app.requireTeacher`、`app.io`、`TEACHER_ROOM`、`ApiClient`、logger；006 `ResultService` | 其他子功能的檔案，005 只呼叫，不修改 | component、class、sequence |
 
 ## 交界假設
 
-已對照 001 最終版、004 `contracts/server-modules.md`（含前端 `RealtimeClient.on`、`emitWithAck`、`onConnect`）、`socket-events.md` 與 002 `contracts/server-extension.md`、`socket-handshake.md`。下列是 005 依賴、但對方契約沒有明寫或需要對方配合的部分。
+已對照 `main` 目前的 001、004 `contracts/server-modules.md`（含前端 `RealtimeClient.on`、`emitWithAck`、`onConnect`）、`socket-events.md` 與 002 `contracts/server-extension.md`、`socket-handshake.md`。下列是 005 依賴、但對方契約沒有明寫或需要對方配合的部分。2026-11-27 對照 001–004 的實際程式後，除 A-8 外都已確認成立（「狀態」欄）。
 
-| # | 假設 | 對象 |
-| --- | --- | --- |
-| A-1 | `ActivityStore.subscribe(listener)` 的 listener 在 `commit` 當下、仍在 `CommandQueue.run` 內同步被呼叫（004 契約已寫明）。005 在 listener 中看到第 n 題不再開放時，把待判定改為未判定 | 004 |
-| A-2 | 004 擁有唯一的 `CommandQueue.run<T>(command: () => T): T` 與 `SequenceClock.stamp()`；004 的開放、結束一題也走這條佇列（REQ-ACT-17），所以 005 的送出、判定與它們構成單一順序。`ActivityState.openedAt` 由同一個 `SequenceClock` 記錄 | 004 |
-| A-3 | 004 的 `ActivityManager.snapshot(Audience.TEACHER)` 可在 `CommandQueue.run` 內呼叫，回傳當下的老師視角 `Activity`；005 用它組 `JudgeOutcome.activity`（004 data-model 已列出 `snapshot(audience)`，但寫的用途是「連線時第一次推送」） | 004 |
-| A-4 | `ActivityManager.endQuestion(n)` 在第 n 題不是目前開放的題目時丟 `ActivityRuleError(QUESTION_NOT_OPEN)`，已結束時不改變不報錯；005 只在確認第 n 題開放中之後呼叫。最後一題時 004 一併把活動改為 `FINISHED`（D9） | 004 |
-| A-5 | 005 的老師路由加進 002 的老師路由清單測試（002 T043），確認沒有老師憑證時被 `app.requireTeacher` 拒絕 | 002 |
-| A-6 | 002 提供測試用的老師憑證取得方式（不連 Google），供 005 的整合、端對端與壓力測試使用；學生加入組別與開題直接走 004 的 `group:join` 與 HTTP | 002、004 |
-| A-7 | 006 以 `SubmissionStore.list(n)`、`winner(n)` 取得每題結果；`list` 回傳老師視角（含 `rank`）的 `Submission[]` | 006 |
-| A-8 | 001 把 `Submission.rank` 改成可選之前，學生視角 `rank` 填 0；改完後由 005 的後續任務 T035 改成不放 `rank`。這一項不阻擋 005 的實作 | 001 |
+| # | 假設 | 對象 | 狀態 |
+| --- | --- | --- | --- |
+| A-1 | `ActivityStore.subscribe(listener)` 的 listener 在 `commit` 當下、仍在 `CommandQueue.run` 內同步被呼叫（004 契約已寫明）。005 在 listener 中看到第 n 題不再開放時，把待判定改為未判定。listener 的參數是新的 `version: number`，005 以 `ActivityStore.current()` 讀狀態；listener 只改 `SubmissionStore` 與排程推播，不在裡面 `emit`（004 RA-04） | 004 | 已確認（`ActivityStore.commit`） |
+| A-2 | 004 擁有唯一的 `CommandQueue.run<T>(command: () => T): T` 與 `SequenceClock.stamp()`；004 的開放、結束一題也走這條佇列（REQ-ACT-17），所以 005 的送出、判定與它們構成單一順序。`ActivityState.openedAt` 由同一個 `SequenceClock` 記錄；在 `run` 內再呼叫 `run` 會就地執行 | 004 | 已確認（`CommandQueue`、`ActivityManager.openQuestion`） |
+| A-3 | 004 的 `ActivityManager.snapshot(Audience.TEACHER)` 可在 `CommandQueue.run` 內呼叫，回傳當下的老師視角 `Activity`；005 用它組 `JudgeOutcome.activity`（004 data-model 已列出 `snapshot(audience)`，但寫的用途是「連線時第一次推送」） | 004 | 已確認（程式註解寫明可在 `run` 內呼叫） |
+| A-4 | `ActivityManager.endQuestion(n)` 在第 n 題不是目前開放的題目時丟 `ActivityRuleError(QUESTION_NOT_OPEN)`，已結束時不改變不報錯；005 只在確認第 n 題開放中之後呼叫。最後一題時 004 一併把活動改為 `FINISHED`（D9） | 004 | 已確認（`ActivityManager.endQuestion`） |
+| A-5 | 005 的老師路由加進 002 的老師路由清單測試（002 T043），確認沒有老師憑證時被 `app.requireTeacher` 拒絕 | 002 | 待 T022 加入 |
+| A-6 | 002 提供測試用的老師憑證取得方式（不連 Google），供 005 的整合、端對端與壓力測試使用；學生加入組別與開題直接走 004 的 `group:join` 與 HTTP | 002、004 | 已確認：004 的 `activityTestServer.ts` 經 002 的 `FakeGoogleGateway` 取得 `teacherToken`，並有 `rotateTeacher()` |
+| A-7 | 006 以 `SubmissionStore.list(n)`、`winner(n)` 取得每題結果；`list` 回傳老師視角（含 `rank`）的 `Submission[]` | 006 | 006 尚未開始 |
+| A-8 | 001 把 `Submission.rank` 改成可選之前，學生視角 `rank` 填 0；改完後由 005 的後續任務 T035 改成不放 `rank`。這一項不阻擋 005 的實作 | 001 | 未完成（`shared/src/entities.ts` 的 `rank` 仍為必填） |
 
 ## Project Structure
 
@@ -95,7 +95,8 @@ specs/005-buzz-submission/
 │   └── submission-store.md     # 提供給 006 的 SubmissionStore
 ├── checklists/requirements.md
 ├── analyze-report.md
-├── manual-verification.md      # implement 階段產生
+├── manual-verification.md      # implement 階段產生：每個 User Story 的人工驗證
+├── load-test.md                # implement 階段產生：壓力測試 20 輪的結果
 └── tasks.md
 ```
 
@@ -105,9 +106,9 @@ specs/005-buzz-submission/
 shared/src/
 └── submissionEvents.ts                  # 005：事件名稱與 payload 型別
 server/
-├── package.json                         # 005：加入 test:load script、socket.io-client devDependency
+├── package.json                         # 005：加入 test:load:submission script
 ├── src/
-│   ├── app.ts                           # 002 的 buildApp：加一行 app.register(submissionRoutes, deps)
+│   ├── app.ts                           # 002 的 buildApp：加一行 app.register(submissionRoutes)
 │   └── submission/                      # 005
 │       ├── index.ts                     # submissionRoutes（Fastify plugin）：組裝並註冊
 │       ├── SubmissionEngine.ts
@@ -117,18 +118,21 @@ server/
 │       ├── SubmissionGateway.ts
 │       └── SubmissionRoutes.ts
 └── tests/
+    ├── helpers/activityTestServer.ts    # 004 的檔案：005 加入含題組的匯入範例與等待事件的輔助函式
     ├── unit/submission/
     ├── integration/submission/
     └── load/submission.load.ts
 frontend/
 ├── src/services/
-│   ├── createServiceRegistry.ts         # 001 的檔案：只改 submission 綁定、移除兩個模擬控制
+│   ├── createServiceRegistry.ts         # 001 的檔案：只改 submission 綁定、移除三個模擬控制與 004 橋接中跟送出有關的部分
 │   └── server/ServerSubmissionService.ts
 └── tests/
-    ├── unit/ServerSubmissionService.test.ts
+    ├── unit/ServerSubmissionService.student.test.ts
+    ├── unit/ServerSubmissionService.teacher.test.ts
     └── e2e/
         ├── submission.spec.ts
-        └── submission-texts.spec.ts
+        ├── submission-texts.spec.ts
+        └── us4-student.spec.ts、us5-*.spec.ts、us5-walk.ts 等  # 001 的 E2E：只改走法，改接測試伺服器
 ```
 
 **Structure Decision**: 伺服器的 005 程式集中在 `server/src/submission/`，只有 `SubmissionGateway`、`SubmissionNotifier` 使用 Socket.IO，只有 `SubmissionRoutes` 使用 Fastify；`SubmissionEngine`、`SubmissionStore` 不依賴網路，可用假物件做單元測試。事件型別放 `shared/`，前後端改動欄位時編譯期就會發現。

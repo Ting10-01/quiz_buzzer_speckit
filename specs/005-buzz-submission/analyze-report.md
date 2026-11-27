@@ -1,6 +1,6 @@
 # Specification Analysis Report: 005 搶答與判定
 
-**Date**: 2026-11-21（第 4 次：2026-11-22） | **Command**: `/speckit-analyze` | **Artifacts**: spec.md、plan.md、tasks.md、research.md、data-model.md、contracts/、diagrams/005-*.puml、constitution.md；交界對照 001 最終版（PR #10）、`docs/feature-split.md` 最新版、004 `contracts/server-modules.md`、`socket-events.md`，002 `contracts/server-extension.md`、`socket-handshake.md`、`tasks.md`
+**Date**: 2026-11-21（第 4 次：2026-11-22；第 5 次：2026-11-27） | **Command**: `/speckit-analyze` | **Artifacts**: spec.md、plan.md、tasks.md、research.md、data-model.md、contracts/、diagrams/005-*.puml、constitution.md；交界對照 001 最終版（PR #10）、`docs/feature-split.md` 最新版、004 `contracts/server-modules.md`、`socket-events.md`，002 `contracts/server-extension.md`、`socket-handshake.md`、`tasks.md`
 
 ## 第 1 次分析的發現（已修正）
 
@@ -47,6 +47,44 @@
 | L5 | Dependency | LOW | plan 交界假設 A-3 | 005 在 `CommandQueue.run` 內呼叫 004 的 `ActivityManager.snapshot(Audience.TEACHER)` 組 `JudgeOutcome.activity`；004 文件寫的用途是「連線時第一次推送」 | 請 004 確認可在 `run` 內呼叫（只讀，無副作用） |
 | L6 | Usability | LOW | spec Assumptions | 配合 001 現況：「整組送出」有空白格時仍可按；驗證錯誤一律顯示在第一個答案欄旁 | 已寫為已知限制；要改善需先改 001 |
 
+## 第 5 次分析（2026-11-27，對照 001–004 完成後的實際程式）
+
+001–004 已實作完成；005 的文件停在 2026-11-22。這次對照 `main` 目前的 001 spec 與契約、004 `server/src/activity/`、`frontend/src/services/` 的實際程式。處理方式由使用者決定（S1–S3），其餘照建議修改。
+
+### 發現與修正
+
+| ID | Category | Severity | Location(s) | Summary | 修正 |
+|----|----------|----------|-------------|---------|------|
+| S1 | Process | HIGH | 分支、`.specify/feature.json` | 分支 `005-buzzer-submission` 與 `specs/005-buzz-submission` 不同名（CLAUDE.md 第 2 節）；`.specify/feature.json`（不進版控）仍指向 004，speckit 指令都會作用在 004 | 分支改名為 `005-buzz-submission`；`feature.json` 改指 005 |
+| S2 | Inconsistency | HIGH | tasks T024、research RD-08 | 004 RA-14 在組合根留下 `bridgeMocksToActivity`，換綁時沒有處理；換綁後 `MockResultService` 讀不到送出，結果頁一律「沒有組別送出」 | 使用者決定 A：T024 刪除橋接中跟送出有關的部分，保留 `teacherActivity` 與 `lastImport`；結果頁的落差列為已知限制（spec Session 2026-11-27、Assumptions） |
+| S3 | Coverage | HIGH | tasks | 換綁後依賴模擬控制的 001 測試會失敗，沒有任務處理（004 以 T061、T063 處理同類問題） | 新增 T041（Phase 3，送出相關）、T043（Phase 4，判定相關）：只改走法與輔助檔，不改頁面與斷言；必須改斷言的先列出由使用者決定 |
+| M1 | Coverage | MEDIUM | spec | 001 FR-015、D21：老師在搶答中重新登入後回到控制台；spec 沒有這個情境 | 新增 AC-29、Edge Case、REQ-SUB-10 補充；T019 以 `rotateTeacher()` 測試 |
+| M2 | Inconsistency | MEDIUM | data-model、research RD-08、tasks | 老師端方法沒有呼叫 `RealtimeClient.followTeacherCredential()`（004 T062），連線可能不在 `TEACHER_ROOM` | data-model、contracts 規則 7、類別圖、時序圖、T038、T040、T020、T023 補上 |
+| M3 | Inconsistency | MEDIUM | 類別圖、data-model | `ActivityStore.subscribe` 的 listener 參數寫成 `ActivityState`，實際為 `version: number` | 改為 `onActivityChange(version)`，以 `current()` 讀狀態；重新產生 PNG |
+| M4 | Inconsistency | MEDIUM | research RD-05、T008、T029 | 推送「立刻送出」會在 `CommandQueue.run` 內 `emit`，違反 004 RA-04 | 推送一律 `setImmediate` 排程；T029 改為 `run` 內不得 `emit`；contracts 規則 6、類別圖 note |
+| M5 | Duplication | MEDIUM | T003、T014、T020、T032 | 另寫測試伺服器與假 `RealtimeClient`，與 004 既有輔助檔重複 | 改為擴充 `activityTestServer.ts`，使用 `fakeRealtimeClient.ts` 與 004 的 E2E 測試伺服器 |
+| L1 | Inconsistency | LOW | T002、plan、quickstart、RD-10 | `socket.io-client` 已是 devDependency；指令命名與 004 不一致 | 改為 `test:load:submission` |
+| L2 | Inconsistency | LOW | T030 | 壓力測試結果寫進人工驗證紀錄；004 改為獨立的 `load-test.md` | 改記在 `load-test.md` |
+| L3 | Dependency | LOW | plan 交界假設、spec「相依」、contracts | A-1～A-4、A-6 已可確認；004 以 `app.activity` 提供模組；「PR #10 最終版」已過時 | plan 加「狀態」欄；`app.register(submissionRoutes)` 改從 `app.activity` 取得；改為以 `main` 目前的版本為準 |
+| L4 | Process | LOW | tasks | CLAUDE.md 步驟 6 的頁面確認規則沒有說明 | tasks 註明 005 不改頁面，不適用 |
+
+### 依使用者要求新增
+
+- 每個 User Story 的 Phase 以人工驗證結尾：T042（US1）、T044（US2）、T045（US3）、T046（US4）；quickstart 的人工驗證情境依 User Story 分組（情境 1–16），T033 在 Polish 全部再走一次。
+- 為了讓 US1 能在瀏覽器驗證，組合根換綁（T024）與老師的答案列表（`GET` 路由 T039、`listSubmissions`／`onSubmissionsChange` T040，對應 US1 的 AC-03）提前到 Phase 3；判定（`POST` 路由、`judge`）留在 Phase 4。Phase 3 與 Phase 4 之間，`judge` 暫時以 `UnexpectedError`「判定功能尚未完成（005 Phase 4）」reject（2026-11-27 使用者決定，不把判定提前、不交給模擬實作）：控制台在共通錯誤訊息區顯示訊息，列表與階段不變，題目以 004 的「結束這一題」結束；T038 測試這個錯誤，T023 換成真正的實作並刪除這段程式與測試案例。
+- 任務編號 T036 未使用（新增任務從 T037 起，避免與舊編號混淆）。
+
+### 修正後重跑
+
+以腳本核對：spec 的 AC-01～29 都出現在 tasks；tasks 引用的任務編號都有定義（T061 是 004 的任務）；文件中已沒有 `test:load -w`、`submissionTestServer`、`ActivityState [0..1]) =>`、「立刻送出」等過時寫法。
+
+| ID | Category | Severity | Summary | Recommendation |
+|----|----------|----------|---------|----------------|
+| L4 | Dependency | LOW | `Submission.rank` 在 001 仍為必填，T035 繼續等待 | 不變 |
+| L6 | Usability | LOW | 已知限制：空白格仍可按送出、錯誤顯示在第一個答案欄旁 | 不變 |
+| L7 | Usability | LOW | 已知限制：006 完成前結果頁一律「沒有組別送出」 | 006 完成後消失 |
+| L8 | Process | LOW | T041、T043 可能需要改 001 的斷言（例如 `createServiceRegistry.test.ts` 檢查三個控制存在、`us4-student.spec.ts` 檢查訊息「模擬：驗證失敗」） | 實作時列出，由使用者決定 |
+
 ## Coverage Summary
 
 | Requirement Key | Has Task? | Task IDs | Notes |
@@ -54,7 +92,7 @@
 | REQ-SUB-01～21 | ✅ | 見 tasks.md 需求追溯表 | 21 條全部有任務 |
 | REQ-SUB-NFR-01～04 | ✅ | T027～T030、T012、T015 | 壓力測試、慢連線、時鐘 |
 | SC-001～007 | ✅ | 見 tasks.md 成功標準表 | SC-006 為人工驗證 |
-| AC-01～28 | ✅ | 每個 AC 至少出現在一個測試任務 | 以腳本逐一核對 |
+| AC-01～29 | ✅ | 每個 AC 至少出現在一個測試任務 | 以腳本逐一核對（2026-11-27） |
 
 **Constitution Alignment Issues**: 沒有。I（三張圖完整、藍圖對照、T034）、II（追溯表）、III（只改組合根綁定與 `buildApp` 一行註冊，不改 001 頁面）、V（只讀 004 `ActivityStore`；單一佇列由 004 擁有）、VI（`forStudent` 的 `rank` 為 0、只送本組、`app.requireTeacher`、`TEACHER_ROOM`、T025）、VII（伺服器驗證、`{ code, message }`）、VIII（每個 Story 有正常與邊界測試、T033 人工驗證）、XI（不自建佇列與時鐘、不維護組別房間、不做 Outbox）。
 
@@ -63,12 +101,12 @@
 ## Metrics
 
 - Total Requirements: 25（21 條功能需求、4 條非功能需求）
-- Total Acceptance Criteria: 28
-- Total Tasks: 35
+- Total Acceptance Criteria: 29
+- Total Tasks: 45（T001–T046，T036 未使用）
 - Coverage: 100%
 - Ambiguity Count: 0
 - Duplication Count: 0
-- Critical Issues Count: 0（HIGH 0、MEDIUM 0、LOW 4）
+- Critical Issues Count: 0（第 5 次修正後：HIGH 0、MEDIUM 0、LOW 4）
 
 ## 跨子功能交界
 
@@ -77,10 +115,11 @@
 | 001 `SubmissionService` 七個方法、`JudgeOutcome` | ✅ contracts/submission-api.md 第 4 節逐一對應；頁面行為照 001 最終版 |
 | 001 D10–D18 | ✅ spec「001 交給 005 的事項」依最終版逐條處理 |
 | 002 `buildApp`、`app.requireTeacher`、`app.io`、`TEACHER_ROOM`、`ApiClient`、`{ code, message }`、T043 老師路由清單 | ✅ T019、T022、T025 |
-| 004 `CommandQueue`、`SequenceClock`、`ActivityStore.subscribe`、`GroupMembership.groupOf`、`ActivityManager.endQuestion`／`snapshot`、`RealtimeClient.on`／`emitWithAck`／`onConnect` | ✅ 與 004 contracts 一致；`snapshot` 在 `run` 內呼叫待 004 確認（L5） |
+| 004 `CommandQueue`、`SequenceClock`、`ActivityStore.subscribe`、`GroupMembership.groupOf`、`ActivityManager.endQuestion`／`snapshot`、`RealtimeClient.on`／`emitWithAck`／`onConnect` | ✅ 已與 004 的實際程式核對（2026-11-27）：`snapshot` 可在 `run` 內呼叫；listener 參數為版本號；推送不在 `run` 內送出 |
 | 006 `SubmissionStore.list`、`winner` | ✅ contracts/submission-store.md；`behindFirstMs` 由 006 計算 |
 
 ## Next Actions
 
-- 沒有 CRITICAL、HIGH、MEDIUM，可以進入人工審查（原則 X）。
+- 第 5 次修正後沒有 CRITICAL、HIGH、MEDIUM；人工審查（原則 X）後可以進入 `/speckit-implement` Phase 1。
+- 依 CLAUDE.md 第 3 節，spec 的修改要先獨立 commit（`spec` 類型），再 commit plan、tasks 等設計文件與圖表。
 - 001 把 `Submission.rank` 改成可選後，執行 T035。

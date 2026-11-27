@@ -1,6 +1,6 @@
 # Contract: 送出與判定的 Socket.IO 事件與 HTTP API
 
-**Owner**: `005-buzz-submission` | **Types**: `shared/src/submissionEvents.ts`（欄位見 [data-model.md](../data-model.md) 第 2 節） | **前端實作**: `ServerSubmissionService`，對應 001 最終版 [contracts/service-interfaces.md](../../001-ui-prototype/contracts/service-interfaces.md) 的 `SubmissionService`
+**Owner**: `005-buzz-submission` | **Types**: `shared/src/submissionEvents.ts`（欄位見 [data-model.md](../data-model.md) 第 2 節） | **前端實作**: `ServerSubmissionService`，對應 001（`main` 目前的版本）[contracts/service-interfaces.md](../../001-ui-prototype/contracts/service-interfaces.md) 的 `SubmissionService`
 
 Socket.IO 只使用 WebSocket 傳輸（004 D22）。伺服器端事件註冊在 002 建立的 `app.io`；前端經 004 的 `RealtimeClient`。連線本身、老師連線的驗證與 `TEACHER_ROOM`（002）、加入組別（004 `group:join`）都不屬於 005。HTTP 路由以 `app.register` 註冊在 002 的 `buildApp`。
 
@@ -46,6 +46,8 @@ Payload `{ questionNumber }`，ack 為 `OwnSubmissionReply` `{ submission }`：�
 3. `submission:judged` 只在老師判定 `ACCEPTED` 或 `REJECTED` 時送出；變成 `UNJUDGED` 不送（REQ-SUB-15）。
 4. 學生連線收不到任何其他組的送出資料，也收不到真正的順位（REQ-SUB-16）；老師推播不得用 `io.emit` 廣播（002 REQ-AUTH-08）。
 5. 重新連線後伺服器不補送舊事件（004 `RealtimeClient` 規則）；前端服務在 `onConnect` 時自己重新取得（research RD-08）。
+6. 三種事件都在 004 的 `CommandQueue.run` 結束之後才送出（`setImmediate` 排程），不在 `run` 內 `emit`（004 RA-04、research RD-05）。
+7. 老師端的 `listSubmissions`、`onSubmissionsChange`、`judge` 先呼叫 `RealtimeClient.followTeacherCredential()`，確保連線以老師身分加入 `TEACHER_ROOM`（004 T062、research RD-08）。
 
 ## 3. 老師 → 伺服器（HTTP）
 

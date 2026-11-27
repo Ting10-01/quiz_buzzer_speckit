@@ -38,9 +38,9 @@
 | `lastRequest: SubmitRequest [0..1]` | 上一次因逾時或斷線失敗的送出；題號與答案相同時沿用其 `requestId` |
 | `lastQuestion: number [0..1]` | 最近一次 `submitAnswer`／`getGroupSubmission` 的題號；重新連線時用來補發學生的通知 |
 | `submitAnswer(q, answers)` | 004 `RealtimeClient.emitWithAck(SUBMIT, request)`；`ok` 回 `submission`，否則回 `error` |
-| `listSubmissions(q)` | 002 `ApiClient.request("GET", "/api/questions/:q/submissions")` |
-| `onSubmissionsChange(q, listener)` | `RealtimeClient.on(SUBMISSIONS_CHANGED, …)`，只轉交題號為 q 的列表；`RealtimeClient.onConnect` 時重新 `listSubmissions(q)` 並通知 |
-| `judge(q, group, judgement)` | `ApiClient.request("POST", "/api/questions/:q/judgements", { groupNumber, judgement })`，回傳 `JudgeOutcome` |
+| `listSubmissions(q)` | 先 `RealtimeClient.followTeacherCredential()`，再 002 `ApiClient.request("GET", "/api/questions/:q/submissions")` |
+| `onSubmissionsChange(q, listener)` | 先 `RealtimeClient.followTeacherCredential()`（讓連線在 `TEACHER_ROOM`，004 T062），再 `RealtimeClient.on(SUBMISSIONS_CHANGED, …)`，只轉交題號為 q 的列表；`RealtimeClient.onConnect` 時重新 `listSubmissions(q)` 並通知 |
+| `judge(q, group, judgement)` | 先 `RealtimeClient.followTeacherCredential()`，再 `ApiClient.request("POST", "/api/questions/:q/judgements", { groupNumber, judgement })`，回傳 `JudgeOutcome` |
 | `getGroupSubmission(q)` | `RealtimeClient.emitWithAck(OWN, { questionNumber: q })`，回傳 `submission`（或 `null`） |
 | `onGroupSubmitted(listener)` | `RealtimeClient.on(GROUP_SUBMITTED, …)`；`onConnect` 時以 `getGroupSubmission(lastQuestion)` 補發 |
 | `onJudgement(listener)` | `RealtimeClient.on(JUDGED, …)`；`onConnect` 時以 `getGroupSubmission(lastQuestion)` 補發 `REJECTED` |
@@ -91,7 +91,7 @@
 | `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `answers`「請先加入組別」）→ 請求格式（`answers`「送出的資料格式不正確」）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`answers`「這一題目前不能作答」）→ 本組已有紀錄（`requestId` 相同回第一次的結果；否則 `answers`「本組已送出此題」）→ 格數等於小題數（`answers`「送出的資料格式不正確」）→ 每格非空白（`answers.<i>`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers.<i>`「每一格最多 200 字」）→ 建立紀錄。建立後通知 `SubmissionNotifier.groupSubmitted`、`submissionsChanged` |
 | `ownSubmission(group, q): Submission [0..1]` | 本組第 q 題的紀錄，以 `forStudent` 產生；`group` 為空或沒有紀錄時為空（REQ-SUB-21） |
 | `judge(q, group, judgement): JudgeOutcome` | 在 004 的 `CommandQueue.run` 內執行；`ACCEPTED` 時就地呼叫 004 `ActivityManager.endQuestion(n)`；規則見 research RD-07；回傳 `{ submissions: SubmissionStore.list(q), activity: ActivityManager.snapshot(Audience.TEACHER).activity }` |
-| `onActivityChange(activity)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫）：先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表 |
+| `onActivityChange(version)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫，參數是新的版本號）：以 `ActivityStore.current()` 讀取狀態；先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表 |
 | `validate(group, request)` | 上述 `submit` 的檢查，回傳第一個錯誤或空 |
 
 ### 其他
@@ -99,7 +99,7 @@
 | 類別 | 成員 | 說明 |
 | --- | --- | --- |
 | `SubmissionVisibility` | `forTeacher(record)`、`forStudent(record)` | `forStudent` 的 `rank` 一律為 0（REQ-SUB-16）；001 改成可選後改為不放 |
-| `SubmissionNotifier` | `pending: Set<number>`、`timer`；`submissionsChanged(q)`、`groupSubmitted(record)`、`judged(record)`、`flush()` | 老師列表 200 ms 合併後送 `app.io.to(TEACHER_ROOM)`；組員送出與判定立刻送給 `GroupMembership.groupOf(socket) === n` 的連線（research RD-05） |
+| `SubmissionNotifier` | `pending: Set<number>`、`timer`；`submissionsChanged(q)`、`groupSubmitted(record)`、`judged(record)`、`flush()` | 三個方法都只排程（`setImmediate`），不在呼叫當下 `emit`，因為呼叫者在 `CommandQueue.run` 內（004 RA-04）。老師列表 200 ms 合併後送 `app.io.to(TEACHER_ROOM)`；組員送出與判定不合併，送給 `GroupMembership.groupOf(socket) === n` 的連線（research RD-05） |
 | `SubmissionGateway` | `register(io)`、`onSubmit(socket, request, ack)`、`onOwn(socket, request, ack)` | 在 002 的 `app.io` 上註冊；取得組別後 `commandQueue.run(() => engine.submit(group, request))`、`engine.ownSubmission(group, q)`，ack 回覆 |
 | `SubmissionRoutes` | `register(app)`、`list(q)`、`judge(q, request)` | 以 `app.register` 註冊在 002 的 `buildApp`；兩個路由都掛 `{ preHandler: app.requireTeacher }`，錯誤回應 `{ code, message }`；見 [contracts/submission-api.md](./contracts/submission-api.md) |
 
