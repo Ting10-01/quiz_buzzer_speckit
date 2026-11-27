@@ -30,7 +30,7 @@ description: "Task list for 005 搶答與判定"
 
 - [ ] T001 [P] 建立 `shared/src/submissionEvents.ts`：`SubmitRequest`（`questionNumber: number`、`answers: string[]`、`requestId: string`）、`SubmitReply`（`ok: boolean`、`submission?: Submission`、`error?: ValidationError`）、`OwnSubmissionRequest`（`questionNumber: number`）、`OwnSubmissionReply`（`submission: Submission | null`）、`JudgeRequest`（`groupNumber: number`、`judgement: Judgement`）、`SubmissionsChanged`（`questionNumber`、`submissions: Submission[]`）、`GroupSubmitted`（`submission`）、`SubmissionJudged`（`submission`），以及事件名稱常數 `SUBMIT = "submission:submit"`、`OWN = "submission:own"`、`SUBMISSIONS_CHANGED = "submissions:changed"`、`GROUP_SUBMITTED = "submission:groupSubmitted"`、`JUDGED = "submission:judged"`，依 data-model 第 2 節；`JudgeOutcome` 直接用 001 `shared/src/entities.ts` 的定義
 - [ ] T002 [P] 在 `server/package.json` 加入 script `test:load:submission`（`tsx tests/load/submission.load.ts --runs 20`，命名沿用 004 的 `test:load:activity`）；`socket.io-client` 已是 devDependency，不再加入
-- [ ] T003 [P] 擴充 004 的 `server/tests/helpers/activityTestServer.ts`，不另寫測試伺服器（research RD-11）：加入 `groupQuestionImport()`（第 1 題為含 2 個小題的題組、其餘為單題，作為 `importResult` 傳入）與 `waitForEvent(socket, event, predicate, timeoutMs)`；老師憑證、`rotateTeacher()`、`connectTeacher`、`connectStudent`、`emitWithAck` 沿用既有的（plan 交界假設 A-6）
+- [X] T003 [P] 擴充 004 的 `server/tests/helpers/activityTestServer.ts`，不另寫測試伺服器（research RD-11）：加入 `groupQuestionImport()`（第 1 題為含 2 個小題的題組、其餘為單題，作為 `importResult` 傳入）與 `waitForEvent(socket, event, predicate, timeoutMs)`；老師憑證、`rotateTeacher()`、`connectTeacher`、`connectStudent`、`emitWithAck` 沿用既有的（plan 交界假設 A-6）
 
 ---
 

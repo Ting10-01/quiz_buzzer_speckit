@@ -27,6 +27,32 @@ export function fourQuestionImport(): ImportSuccess {
   };
 }
 
+// A 4-question import whose question 1 is a group of 2 sub-questions; the rest are single questions.
+export function groupQuestionImport(): ImportSuccess {
+  const base = fourQuestionImport();
+  return {
+    ...base,
+    spreadsheet: { ...base.spreadsheet, id: 'sheet-id-submission-0001' },
+    questions: [
+      {
+        number: 1,
+        type: 'GROUP' as const,
+        text: '第 1 題',
+        subQuestions: [
+          { index: 1, blankCell: 'G5' },
+          { index: 2, blankCell: 'G6' },
+        ],
+      },
+      ...[2, 3, 4].map((number) => ({
+        number,
+        type: 'SINGLE' as const,
+        text: `第 ${number} 題`,
+        subQuestions: [{ index: 1, blankCell: `G${number + 5}` }],
+      })),
+    ],
+  };
+}
+
 export interface ActivityTestServerOptions {
   // What 003's ImportStore.latest() returns; null means nothing has been imported. Default: fourQuestionImport().
   importResult?: ImportSuccess | null;
@@ -131,6 +157,29 @@ export function waitForSnapshot(
       reject(new Error(`no matching activity:snapshot within ${timeoutMs} ms`));
     }, timeoutMs);
     socket.on('activity:snapshot', listener);
+  });
+}
+
+// The next `event` on this socket whose payload matches `predicate`; rejects after `timeoutMs`.
+// Unlike waitForSnapshot it keeps no history, so start waiting before triggering the event.
+export function waitForEvent<T>(
+  socket: Socket,
+  event: string,
+  predicate: (payload: T) => boolean = () => true,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const listener = (payload: T) => {
+      if (!predicate(payload)) return;
+      clearTimeout(timer);
+      socket.off(event, listener);
+      resolve(payload);
+    };
+    const timer = setTimeout(() => {
+      socket.off(event, listener);
+      reject(new Error(`no matching ${event} within ${timeoutMs} ms`));
+    }, timeoutMs);
+    socket.on(event, listener);
   });
 }
 
