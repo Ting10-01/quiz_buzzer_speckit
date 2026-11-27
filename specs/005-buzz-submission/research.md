@@ -1,8 +1,8 @@
 # Research: 搶答與判定
 
-**Feature**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂） | **Plan**: [plan.md](./plan.md)
+**Feature**: `005-buzz-submission` | **Date**: 2026-11-21（2026-11-22 配合 001 最終版修訂；2026-11-27 對照 001–004 的實際程式修訂） | **Plan**: [plan.md](./plan.md)
 
-技術棧沿用 001 [research.md](../001-ui-prototype/research.md) 的 RD-01～RD-08（TypeScript strict、Node.js 24 LTS、Fastify、Socket.IO、pino、Vitest、Playwright、npm workspaces `frontend/` `shared/` `server/`），不另選框架。介面與實體以 001 最終版（PR #10）的 [contracts/service-interfaces.md](../001-ui-prototype/contracts/service-interfaces.md)、[data-model.md](../001-ui-prototype/data-model.md) 為準。伺服器骨架、`app.io`、`TEACHER_ROOM`、`app.requireTeacher`、`ApiClient` 依 002 `contracts/server-extension.md`、`socket-handshake.md`；`CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager`、`RealtimeClient` 依 004 `contracts/server-modules.md`、`socket-events.md`。本文件只處理 005 特有的問題：順序、時間、併發、資訊隔離與介面的落點。順序與併發的想法沿用舊 `002-buzzer-session` research R1～R4、R8，改成「老師依順序判定」（E4）。
+技術棧沿用 001 [research.md](../001-ui-prototype/research.md) 的 RD-01～RD-08（TypeScript strict、Node.js 24 LTS、Fastify、Socket.IO、pino、Vitest、Playwright、npm workspaces `frontend/` `shared/` `server/`），不另選框架。介面與實體以 `main` 目前的 001（含 2026-11-24、2026-11-27 的修訂）的 [contracts/service-interfaces.md](../001-ui-prototype/contracts/service-interfaces.md)、[data-model.md](../001-ui-prototype/data-model.md) 為準。伺服器骨架、`app.io`、`TEACHER_ROOM`、`app.requireTeacher`、`ApiClient` 依 002 `contracts/server-extension.md`、`socket-handshake.md`；`CommandQueue`、`SequenceClock`、`ActivityStore`、`GroupMembership`、`ActivityManager`、`RealtimeClient` 依 004 `contracts/server-modules.md`、`socket-events.md`。本文件只處理 005 特有的問題：順序、時間、併發、資訊隔離與介面的落點。順序與併發的想法沿用舊 `002-buzzer-session` research R1～R4、R8，改成「老師依順序判定」（E4）。
 
 ---
 
@@ -39,8 +39,9 @@
 ## RD-05 推播量、同組通知與慢連線（REQ-SUB-10、REQ-SUB-15、REQ-SUB-20、NFR-02、NFR-04）
 
 - **Decision**:
-  - 老師列表合併：某題有變化時，若 200 ms 內沒有推送過就立刻推送，否則在 200 ms 視窗結束時推送一次最新的完整列表。
-  - 送給某一組的通知（組員送出、判定）不合併：走過 `app.io` 目前所有連線，送給 `GroupMembership.groupOf(socket) === n` 的那些。004 不建立組別房間（004 socket-events），所以 005 不維護 `group:<n>` 房間。組員送出的通知也會送到送出者自己的分頁；那個分頁已經在等待判定頁，沒有訂閱 `onGroupSubmitted`，不受影響。
+  - 老師列表合併：某題有變化時，若 200 ms 內沒有推送過，就以 `setImmediate` 排在這一輪事件迴圈結束後推送；否則在 200 ms 視窗結束時推送一次最新的完整列表。
+  - `SubmissionNotifier` 的三個方法都只排程，不在呼叫當下 `emit`：它們由 `submit`、`judge` 與 `ActivityStore.subscribe` 的 listener 在 004 的 `CommandQueue.run` 內呼叫，而 004 規定 listener 只排程、不在 `run` 內送網路訊息（004 RA-04，`ActivityBroadcaster` 也用 `setImmediate`）。組員送出與判定的通知同樣以 `setImmediate` 送出，不合併。
+  - 送給某一組的通知（組員送出、判定）不合併，排程後走過 `app.io` 目前所有連線，送給 `GroupMembership.groupOf(socket) === n` 的那些。004 不建立組別房間（004 socket-events），所以 005 不維護 `group:<n>` 房間。組員送出的通知也會送到送出者自己的分頁；那個分頁已經在等待判定頁，沒有訂閱 `onGroupSubmitted`，不受影響。
   - 所有 `emit` 都不等待對方回應。
 - **Rationale**: 1 秒 1,000 筆送出時，老師最多每秒收到 5 份列表，落後不超過 1 秒。組別通知一題最多 20 次（每組送出一次）加上幾次判定，每次掃過約 200 條連線，成本可忽略；比在加入、離開組別與斷線重連時同步維護房間簡單（XI）。Socket.IO 對每條連線各自緩衝，慢連線只塞住自己。
 - **上限**: 連線數到數千條時，改成在 004 的加入組別流程中維護房間。
@@ -63,13 +64,17 @@
 
 ## RD-08 001 頁面的落點與替換方式
 
-- **Decision**: 前端新增 `frontend/src/services/server/ServerSubmissionService.ts`，實作 001 `SubmissionService` 的七個方法，在 `createServiceRegistry()` 把 `submission` 綁到它，並移除 `judgementControl`、`submissionValidationControl`、`teammateControl`（001 plan「替換模擬實作的方式」、data-model `ServiceRegistry`）。004 在 005 完成前把活動與本分頁組別寫進 `MockSession`，讓模擬送出能展示（004 plan）；換綁後 `submission` 不再讀 `MockSession`。`MockSubmissionService` 是 001 的檔案，保留不刪，只供 001 的測試使用。
+- **Decision**: 前端新增 `frontend/src/services/server/ServerSubmissionService.ts`，實作 001 `SubmissionService` 的七個方法，在 `createServiceRegistry()` 把 `submission` 綁到它，並移除 `judgementControl`、`submissionValidationControl`、`teammateControl`（001 plan「替換模擬實作的方式」、data-model `ServiceRegistry`）。`MockSubmissionService` 是 001 的檔案，保留不刪，只供 001 的單元與元件測試使用。
+- **組合根中 004 留下的橋接（004 RA-14 的 `bridgeMocksToActivity`）**：刪除跟送出有關的部分：包住 `submission.judge` 的那一層（接受後改呼叫 `activity.endQuestion`；真正的 `judge` 已在伺服器自動結束本題）、包住 `joinGroup`／`leaveGroup` 寫入 `MockSession.joinedGroup` 的那一層，以及 `session.setViewerPhaseAdvancer(() => {})`。保留 `onActivityChange`／`onPhaseChange` 寫入 `MockSession.teacherActivity` 與 003 的 `lastImport` 包裝，因為 `MockResultService` 仍要讀，006 換掉結果的模擬實作後才刪。`mockBound` 移除 `submission`。
+- **006 完成前的結果頁**：`MockResultService` 讀的是 `MockSession.submissions`，換綁後永遠是空的，每一題都顯示「沒有組別送出」。spec 列為已知限制（Session 2026-11-27）；不另做橋接把真正的送出寫回 `MockSession`（XI：那段程式只為了展示，006 一完成就要刪）。
+- **001 的測試**：依賴「模擬：接受」「模擬：不接受」「模擬：同組組員送出」與送出的「模擬：驗證失敗」的 001 E2E 與元件測試，改走真的測試伺服器（同 004 T061）：老師以測試伺服器登入，學生真的送出，需要判定時由輔助函式直接呼叫測試伺服器的老師 API。只改走法與輔助檔，不改 001 的頁面與既有斷言；一定要改斷言才能通過的測試先列出，由使用者決定。這些模擬控制的專屬測試（它們只驗證模擬實作本身）隨模擬控制從組合根移除而刪除或改為只測 `MockSubmissionService`。
 - 使用其他子功能的前端元件：
   - Socket.IO：004 的 `RealtimeClient`（每分頁一條連線，組別記在這條連線上）。`submitAnswer`、`getGroupSubmission` 用 `emitWithAck`（5 秒逾時，以 `UnexpectedError`「連不上伺服器，請確認伺服器已啟動」reject）；`onSubmissionsChange`、`onGroupSubmitted`、`onJudgement` 用 `on`；重新連線用 `onConnect`。
   - HTTP：002 的 `ApiClient.request(method, path, body?)`，自動帶老師憑證，錯誤轉成 `ApiError`（符合 `UnexpectedError`）。
 - `ValidationError` 配合 001 現況：作答頁一律顯示在第一個答案欄旁（001 tasks T087）。`field` 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`，不屬於某一格為 `answers`；`message` 說明是哪一格或什麼原因。
+- **老師憑證與連線**：`listSubmissions`、`judge`、`onSubmissionsChange` 開頭都先呼叫 `RealtimeClient.followTeacherCredential()`，與 004 `HttpActivityService` 的老師指令相同（004 T062）。分頁在登入前以學生身分連線；沒有這一步，連線不在 `TEACHER_ROOM`，收不到 `submissions:changed`。重新連線後的 `onConnect` 會觸發下面的重新讀取。
 - **重新連線**:
-  - 老師：`onSubmissionsChange` 的訂閱在 `onConnect` 時重新呼叫 `GET /api/questions/:n/submissions`，以完整列表通知頁面。
+  - 老師：`onSubmissionsChange` 的訂閱在 `onConnect` 時重新呼叫 `GET /api/questions/:n/submissions`，以完整列表通知頁面。老師重新整理後重新登入（001 FR-015）時，控制台・搶答中掛載時本來就會 `listSubmissions` 並訂閱，取得的是伺服器上的完整列表（AC-29）；舊憑證的請求由 002 拒絕。
   - 學生：服務記住最近一次 `submitAnswer`／`getGroupSubmission` 的題號。`onConnect` 時若有 `onGroupSubmitted` 或 `onJudgement` 的訂閱，就重新 `getGroupSubmission(q)`：有送出且有 `onGroupSubmitted` 訂閱時通知它；判定為 `REJECTED` 且有 `onJudgement` 訂閱時通知它。004 的 `RealtimeClient` 不補送舊事件，所以由服務自己補。
 
 ## RD-09 Logging（原則 VI、VIII）
@@ -79,7 +84,7 @@
 
 ## RD-10 壓力測試（NFR-01、NFR-02、SC-002、SC-003）
 
-- **Decision**: `server/tests/load/submission.load.ts`，以 `npm run test:load -w server` 執行，重複 20 輪：
+- **Decision**: `server/tests/load/submission.load.ts`，以 `npm run test:load:submission -w server` 執行（命名沿用 004 的 `test:load:activity`），重複 20 輪，每輪結果記在 `specs/005-buzz-submission/load-test.md`（同 004：壓力測試是自動化量測，不放進人工驗證紀錄）：
   1. 以子程序啟動伺服器（隨機埠，Google 以 002 的測試替身取代），pino 輸出到暫存檔。
   2. 以 `socket.io-client`（只用 WebSocket 傳輸）建立 1 個老師連線與 200 個學生連線（20 組 × 10），學生經 004 的 `group:join` 加入。
   3. 老師經 004 的 HTTP 建立活動並開放一題。
@@ -91,7 +96,8 @@
 ## RD-11 測試分層（原則 VIII）
 
 - **單元**（Vitest，`server/tests/unit/submission/`）：`SubmissionEngine`（使用 004 真正的 `CommandQueue`、以假的 `performance.now` 控制的 `SequenceClock`，以及假的 `ActivityStore`、`ActivityManager`）、`SubmissionStore`、`SubmissionVisibility`、`SubmissionNotifier`（假計時器、假的 io）；前端 `ServerSubmissionService`（假的 `RealtimeClient` 與 `ApiClient`）。`CommandQueue`、`SequenceClock` 本身的測試屬於 004。
-- **整合**（Vitest + Fastify `inject()` 與真的 Socket.IO 連線，`server/tests/integration/submission/`）：使用 002、004 的真正實作，Google 以 002 的測試替身取代。
-- **端對端**（Playwright，`frontend/tests/e2e/`）：1 個老師分頁與 3 個學生分頁走完送出、組員跟著切換、拒絕、接受、自動結束；擷取學生分頁的 WebSocket 訊息檢查 R9。
+- **整合**（Vitest + Fastify `inject()` 與真的 Socket.IO 連線，`server/tests/integration/submission/`）：使用 002、004 的真正實作，Google 以 002 的測試替身取代。測試伺服器沿用 004 的 `server/tests/helpers/activityTestServer.ts`（老師憑證、`rotateTeacher()`、只用 WebSocket 的老師與學生連線、`emitWithAck`、`importResult`），005 只在旁邊加一個含題組的匯入範例與等待 005 事件的輔助函式，不另寫一份測試伺服器。
+- **前端單元**：使用既有的 `frontend/tests/helpers/fakeRealtimeClient.ts`，不另寫假的 `RealtimeClient`。
+- **端對端**（Playwright，`frontend/tests/e2e/`，經 004 的 `testServer.ts`／`server/tests/e2e/startTestServer.ts` 連到測試伺服器）：1 個老師分頁與 3 個學生分頁走完送出、組員跟著切換、拒絕、接受、自動結束；擷取學生分頁的 WebSocket 訊息檢查 R9。
 - **壓力**：RD-10。
-- **人工驗證**：`specs/005-buzz-submission/manual-verification.md`（implement 階段產生）。
+- **人工驗證**：每個 User Story 的 Phase 結尾各執行 quickstart 中該 Story 的情境，結果記在 `specs/005-buzz-submission/manual-verification.md`（implement 階段產生）；Polish 再把全部情境走一次。
