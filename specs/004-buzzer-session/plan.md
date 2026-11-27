@@ -6,7 +6,7 @@
 
 ## Summary
 
-004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、在準備中取消活動、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，只改 `createServiceRegistry()` 的綁定，頁面不改。組數規則與說明文字由 004 以 `shared/src/activityRules.ts` 提供，001 的頁面依 spec「需請 001 修改」C2 引用（REQ-ACT-23、research RA-16）。004 配合 001 最終版（PR #10）：`joinGroup` 的預期失敗以 `UnexpectedError` reject；仍需 001 修改的是 C1（D21，001 已完成但沒有納入）與 C2（組數規則與說明文字），修改前是暫時限制。2026-11-26 依 main 上的 feature-split、001 最終版（取消活動、RD-12 的 `onPhaseChange(null)`）與 002 #18 修訂。
+004 在伺服器建立唯一權威的活動狀態（`ActivityStore`），老師以 REST 指令建立活動、修改組數、在準備中取消活動、逐題開放與結束；學生以 Socket.IO 連線加入組別，伺服器依連線記住組別（`GroupMembership`）。所有改變狀態的操作在同一條 `CommandQueue` 中以同步程式碼逐一處理；每次改變後 `ActivityBroadcaster` 把帶版本號的完整快照推送給所有連線，前端只採用較新的版本。前端新增 `HttpActivityService` 實作 001 的 `ActivityService`，只改 `createServiceRegistry()` 的綁定，頁面不改。組數規則與說明文字由 004 以 `shared/src/activityRules.ts` 提供，001 的頁面依 spec「需請 001 修改」C2 引用（REQ-ACT-23、research RA-16）。004 配合 001 最終版（PR #10）：`joinGroup` 的預期失敗以 `UnexpectedError` reject；仍需 001 修改的是 C2（組數規則與說明文字），修改前是暫時限制；C1（D21）001 已於 2026-11-27 完成。2026-11-26 依 main 上的 feature-split、001 最終版（取消活動、RD-12 的 `onPhaseChange(null)`）與 002 #18 修訂。
 
 **以三張圖為藍圖**：本計畫的組件、類別、方法與呼叫順序一律依 [`diagrams/004-component.puml`](../../diagrams/004-component.puml)、[`diagrams/004-class.puml`](../../diagrams/004-class.puml)、[`diagrams/004-sequence.puml`](../../diagrams/004-sequence.puml)。下方「藍圖對照」把圖中每個組件與類別對應到一個檔案；[data-model.md](./data-model.md) 與類別圖一一對應；時序圖的 7 段各對應 User Story 與測試（見「時序圖與測試」）。
 
@@ -80,7 +80,7 @@
 | 3. 開放第 n 題 | US3 | `ActivityManager.test.ts`、`sync.test.ts` |
 | 4. 結束第 n 題（老師或 005） | US3 | `ActivityManager.test.ts`（含就地執行與重複要求） |
 | 5. 學生重新整理後回到原組別 | US2 | `ActivityGateway.test.ts`、e2e `activity-sync.spec.ts` |
-| 6. 老師重新整理後重新登入 | US4 | `teacherRefresh.test.ts`；e2e `activity-sync.spec.ts`（暫時限制的部分現在測；回到控制台的部分需 001 C1） |
+| 6. 老師重新整理後重新登入 | US4 | `teacherRefresh.test.ts`；e2e `activity-sync.spec.ts`（回到控制台；001 C1 已完成） |
 | 7. 準備中取消活動 | US1 | `ActivityManager.cancel.test.ts`、`activityRoutes.cancel.test.ts`、`HttpActivityService.cancel.test.ts`；e2e `activity-sync.spec.ts` |
 
 ## 替換模擬實作
