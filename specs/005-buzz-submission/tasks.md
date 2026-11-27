@@ -125,8 +125,8 @@ description: "Task list for 005 搶答與判定"
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] 檢查並修正 `server/src/submission/SubmissionGateway.ts`、`server/src/submission/SubmissionEngine.ts`、`server/src/submission/SubmissionNotifier.ts`：學生只會收到經 `forStudent` 產生的資料；`SUBMISSIONS_CHANGED` 只 emit 到 `app.io.to(TEACHER_ROOM)`；沒有任何事件以 `io.emit` 廣播給所有連線（REQ-SUB-16），依 T025
-- [ ] T045 [US3] 人工驗證：依 quickstart「US3」情境 12–13 在瀏覽器操作，結果記在 `specs/005-buzz-submission/manual-verification.md`，依 T026
+- [X] T026 [US3] 檢查並修正 `server/src/submission/SubmissionGateway.ts`、`server/src/submission/SubmissionEngine.ts`、`server/src/submission/SubmissionNotifier.ts`：學生只會收到經 `forStudent` 產生的資料；`SUBMISSIONS_CHANGED` 只 emit 到 `app.io.to(TEACHER_ROOM)`；沒有任何事件以 `io.emit` 廣播給所有連線（REQ-SUB-16），依 T025
+- [X] T045 [US3] 人工驗證：依 quickstart「US3」情境 12–13 在瀏覽器操作，結果記在 `specs/005-buzz-submission/manual-verification.md`，依 T026
 
 **Checkpoint**: 隔離由伺服器端保證
 
