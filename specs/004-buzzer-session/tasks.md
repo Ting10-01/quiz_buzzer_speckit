@@ -183,6 +183,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 - [ ] T051 依 quickstart.md 執行 17 個人工驗證情境，結果記在 `specs/004-buzzer-session/manual-verification.md`（原則 VIII）
 - [X] T052 圖表一致性驗證：比對 `server/src/activity/`、`shared/src/activity*.ts`、`frontend/src/services/HttpActivityService.ts`、`RealtimeClient.ts` 的類別、方法、呼叫順序與 `diagrams/004-*.puml`，結果寫在 `specs/004-buzzer-session/diagram-verification.md`；不一致時修正程式碼，或依原則 II 先改 spec 與圖表（原則 I）
 - [ ] T053 回報執行的測試指令與結果：`npm test -w server -- activity`、`npm test -w frontend -- HttpActivityService`、`npx playwright test -c frontend/playwright.config.ts activity-sync`、`npm run test:load:activity -w server`（原則 VIII）
+- [ ] T065 依 001 C1 修改 002 的 `frontend/tests/e2e/teacher-login.spec.ts`：`open(page)` 除了 `/api/**`，也把 Socket.IO 連線送到它自己啟動的測試伺服器（`TEST_SERVER`，經 `frontend/tests/e2e/testServer.ts` 匯出的 WebSocket 轉接）。C1 之後登入頁在登入成功後呼叫 `getCurrentActivity()`，需要 Socket.IO 的快照；原本 Socket.IO 經 Vite 代理連到 3000 埠，沒有伺服器時逾時、開著 dev server 時讀到 dev server 的活動，「signs in with account A and shows it on T-Pick (AC-01)」因此失敗。不修改 002 測試的斷言、不修改 001 的頁面與測試（T063 同類）
 
 ---
 
@@ -238,7 +239,7 @@ T056 frontend/tests/unit/HttpActivityService.cancel.test.ts
 | REQ-ACT-18 | AC-30 | T008、T039 | T007、T035 |
 | REQ-ACT-19 | AC-16 | T014、T016、T017 | T013、T030、T044 |
 | REQ-ACT-20 | AC-31 | T018、T020 | T019、T044 |
-| REQ-ACT-21 | AC-25～27、AC-32 | T062、T064 | T048、T049、T050、T063 |
+| REQ-ACT-21 | AC-25～27、AC-32 | T062、T064 | T048、T049、T050、T063、T065 |
 | REQ-ACT-22 | AC-33～36 | T010、T012、T058、T059、T060、T042 | T009、T011、T054、T055、T056、T044 |
 | REQ-ACT-23 | AC-01、AC-02、AC-09 | T002 | T002、T028、T044（頁面部分依賴 001 C2） |
 | REQ-ACT-NFR-01 | AC-28 | T016、T047 | T045、T046 |
