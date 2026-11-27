@@ -125,4 +125,15 @@ describe('SubmissionStore', () => {
     store.closeQuestion(1);
     expect(store.winner(1)).toBeNull();
   });
+
+  // T047: the activity disappeared, so nothing of it is kept (spec Edge Cases 活動消失).
+  it('has no submissions of any question after clear()', () => {
+    const store = new SubmissionStore();
+    store.append(submissionRecord({ questionNumber: 1, groupNumber: 1, rank: 1 }));
+    store.append(submissionRecord({ questionNumber: 2, groupNumber: 2, rank: 1 }));
+    store.clear();
+    expect(store.question(1)).toBeUndefined();
+    expect(store.list(1)).toEqual([]);
+    expect(store.list(2)).toEqual([]);
+  });
 });
