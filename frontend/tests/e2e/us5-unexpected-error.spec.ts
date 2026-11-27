@@ -4,7 +4,6 @@ import {
   SHEET_OK,
   errorArea,
   expectOn,
-  mockBar,
   pick,
   toAnswer,
   toImport,
@@ -24,21 +23,11 @@ test.beforeEach(async ({ page }) => {
   await connectTestServer(page);
 });
 
-// T095: "模擬：非預期錯誤" on each of the 12 FR-061 pages (US5 AC-9–AC-11, quickstart Q12).
-// The first service call fails: stay on the page, ErrorArea shows "模擬：連不上伺服器", and what
-// was entered is unchanged. The second attempt succeeds and clears the message.
-
-const MESSAGE = '模擬：連不上伺服器';
-const HINT = '已設定：下一次介面呼叫會回傳非預期錯誤';
-
-async function armUnexpectedError(page: Page) {
-  await page.getByRole('button', { name: '模擬：非預期錯誤' }).click();
-  await expect(mockBar(page).getByRole('status')).toHaveText(HINT);
-}
-
-async function expectError(page: Page) {
-  await expect(errorArea(page)).toHaveText(MESSAGE);
-}
+// T095: an unexpected error on each of the FR-061 pages with a service call (US5 AC-9, AC-10,
+// quickstart Q12). The first service call fails: stay on the page, ErrorArea shows the error, and
+// what was entered is unchanged. The second attempt succeeds and clears the message. Every
+// interface is real since 006, so the server is made unreachable instead of "模擬：非預期錯誤"
+// (006 T036).
 
 async function expectNoError(page: Page) {
   await expect(errorArea(page)).toHaveCount(0);
@@ -182,14 +171,16 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
 
   test('T-Results: 寫回 closes the dialog first', async ({ page }) => {
     await toResults(page);
-    await armUnexpectedError(page);
+    // 006: result is real, so an unreachable server fails it instead of the mock control.
+    const restore = await serverDown(page, '**/api/results/write-back');
     const dialog = page.getByRole('dialog', { name: /寫回 Google Sheets/ });
     await button(page, '寫回 Google Sheets').click();
     await dialog.getByRole('button', { name: '寫回', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expectOn(page, 'T-Results');
-    await expectError(page);
+    await expectServerDown(page);
     await expect(page.getByRole('main')).toContainText('尚未寫回');
+    await restore();
 
     await button(page, '寫回 Google Sheets').click();
     await dialog.getByRole('button', { name: '寫回', exact: true }).click();
@@ -219,12 +210,4 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
     await expectOn(page, 'S-Submitted');
     await expectNoError(page);
   });
-});
-
-test('AC-11: the armed hint disappears after changing pages', async ({ page }) => {
-  await toLogin(page);
-  await armUnexpectedError(page);
-  await button(page, '返回首頁').click();
-  await expectOn(page, 'Main');
-  await expect(page.getByText(HINT)).toHaveCount(0);
 });

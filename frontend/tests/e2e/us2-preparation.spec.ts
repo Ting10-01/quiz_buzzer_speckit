@@ -8,8 +8,9 @@ test.beforeEach(async ({ page }) => {
   await connectTestServer(page);
 });
 
-async function expectMockBadge(page: Page) {
-  await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
+// 006 T036: every interface is real, so the "模擬模式" label is gone (001 FR-005).
+async function expectNoMockBadge(page: Page) {
+  await expect(page.getByText('模擬模式', { exact: true })).toHaveCount(0);
 }
 
 /** Main → T-Login → mock teacher account → T-Pick. */
@@ -74,7 +75,7 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await expect(page.getByRole('row', { name: /第 1 題/ })).toContainText('題組・2 小題');
     await expect(page.getByRole('row', { name: /第 1 題/ })).toContainText('G5、G6');
     await expect(page.getByRole('row', { name: /第 3 題/ })).toContainText('單題');
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Closing the chooser from "重新挑選" stays on T-Import.
     await page.getByRole('button', { name: '重新挑選' }).click();
@@ -94,7 +95,7 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await expect(page.getByText('學生填寫', { exact: true })).toBeVisible();
     await expect(page.getByText('作答欄：作答、答案、回答')).toBeVisible();
     await expect(page.getByText('題號欄與作答欄的表頭要在同一列。')).toBeVisible();
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Re-read succeeds as if the header was fixed (US2 AC-4).
     await page.getByRole('button', { name: '重新讀取' }).click();
@@ -131,7 +132,7 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await expect(groups.getByRole('listitem')).toHaveCount(initial);
     await expect(groups.getByText('還沒有人').first()).toBeVisible();
     await expect(page.getByRole('list', { name: '這一輪的題目' }).getByRole('listitem')).toHaveCount(4);
-    await expectMockBadge(page);
+    await expectNoMockBadge(page);
 
     // Edit mode: "取消" returns to T-Lobby (US2 AC-10).
     await page.getByRole('button', { name: '修改設定' }).click();

@@ -40,7 +40,7 @@ const button = (page: Page, name: string | RegExp) => page.getByRole('button', {
 export const mockBar = (page: Page) => page.getByRole('group', { name: '模擬控制列' });
 export const errorArea = (page: Page) => page.getByRole('alert');
 
-/** Asserts the page currently shown is `id`, and that the "模擬模式" label is visible (SC-003). */
+/** Asserts the page currently shown is `id`, and that the "模擬模式" label is gone: nothing is a mock (FR-005, 006 T036). */
 export async function expectOn(page: Page, id: PageId) {
   switch (id) {
     case 'Main':
@@ -101,7 +101,7 @@ export async function expectOn(page: Page, id: PageId) {
       await expect(heading(page, '全部結果')).toBeVisible();
       break;
   }
-  await expect(page.getByText('模擬模式', { exact: true })).toBeVisible();
+  await expect(page.getByText('模擬模式', { exact: true })).toHaveCount(0);
 }
 
 /** The activity the student walks advance through: 001's fixed student activity (M3, M7). */
