@@ -2,6 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { Activity } from '@quiz-buzzer/shared/entities';
+import {
+  GROUP_COUNT_DEFAULT,
+  GROUP_COUNT_MAX,
+  GROUP_COUNT_MIN,
+  JOIN_METHOD_TEXT,
+} from '@quiz-buzzer/shared/activityRules';
 import { SetupPage } from '../../src/pages/teacher/SetupPage';
 import type { ActivityService } from '../../src/services/interfaces';
 import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeRegistry';
@@ -36,6 +42,17 @@ const groupField = () => screen.getByRole('group', { name: '組數' });
 const groupCount = () => within(groupField()).getAllByRole('listitem').length;
 const minus = () => within(groupField()).getByRole('button', { name: '−' });
 const plus = () => within(groupField()).getByRole('button', { name: '+' });
+
+/** The text of one entry in the "這一輪" summary, found by its term. */
+function summaryEntry(term: string) {
+  const summary = screen.getByRole('region', { name: '這一輪' });
+  const dt = within(summary).getByText(term, { selector: 'dt' });
+  return dt.nextElementSibling?.textContent;
+}
+
+async function clickTimes(button: () => HTMLElement, times: number) {
+  for (let i = 0; i < times; i += 1) await userEvent.click(button());
+}
 
 function expectNoServiceCall(activity: ActivityService) {
   expect(activity.createActivity).not.toHaveBeenCalled();
@@ -169,5 +186,53 @@ describe('SetupPage (T-Setup) edit mode (FR-024, US2 AC-10)', () => {
     await userEvent.click(screen.getByRole('button', { name: '儲存設定' }));
     expect(await within(groupField()).findByText('模擬：驗證失敗')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+// Phase 8.7 (issues #26, #28): the success rule text and 004's group count rules and texts.
+describe('SetupPage (T-Setup) rules and texts (FR-023, D18, 004 C2)', () => {
+  it('shows the full success rule, including that a rejected group cannot submit again (T160, D18, #26)', () => {
+    renderCreate();
+    expect(summaryEntry('成功規則')).toBe(
+      '老師依送出順序判定，第一個被接受的組別搶答成功，這一題隨即結束；老師只能判定最早一筆還沒判定的答案。每組每題只能送出一次，被拒絕後不能重送。',
+    );
+  });
+
+  it('starts create mode at GROUP_COUNT_DEFAULT groups (T161, US2 AC-6, D5)', () => {
+    renderCreate();
+    expect(groupCount()).toBe(GROUP_COUNT_DEFAULT);
+    expect(within(groupField()).getByText(`${GROUP_COUNT_DEFAULT} 組`)).toBeInTheDocument();
+  });
+
+  it('disables "−" at GROUP_COUNT_MIN and never goes below it (T161, US2 AC-7, D4)', async () => {
+    renderCreate();
+    await clickTimes(minus, GROUP_COUNT_DEFAULT - GROUP_COUNT_MIN);
+    expect(groupCount()).toBe(GROUP_COUNT_MIN);
+    expect(minus()).toBeDisabled();
+    expect(plus()).toBeEnabled();
+    await userEvent.click(minus());
+    expect(groupCount()).toBe(GROUP_COUNT_MIN);
+  });
+
+  it('disables "+" at GROUP_COUNT_MAX and never goes above it (T161, US2 AC-7, D4)', async () => {
+    renderCreate();
+    await clickTimes(plus, GROUP_COUNT_MAX - GROUP_COUNT_DEFAULT);
+    expect(groupCount()).toBe(GROUP_COUNT_MAX);
+    expect(plus()).toBeDisabled();
+    expect(minus()).toBeEnabled();
+    await userEvent.click(plus());
+    expect(groupCount()).toBe(GROUP_COUNT_MAX);
+  });
+
+  it('applies the same limits in edit mode, starting from the activity group count (T161, US2 AC-7)', () => {
+    renderEdit(makeActivity({ groups: makeGroups([1, 0]) }));
+    expect(groupCount()).toBe(GROUP_COUNT_MIN);
+    expect(minus()).toBeDisabled();
+    expect(plus()).toBeEnabled();
+  });
+
+  it('shows JOIN_METHOD_TEXT as how students join (T161, FR-023, 004 C2)', () => {
+    renderCreate();
+    expect(summaryEntry('學生加入')).toBe(JOIN_METHOD_TEXT);
   });
 });
