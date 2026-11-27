@@ -15,7 +15,7 @@
 | `npm test -w server -- submission` | 伺服器單元與整合測試 | 全部通過 |
 | `npm test -w frontend -- ServerSubmissionService` | 前端服務單元測試 | 全部通過 |
 | `npm test -w frontend` | 前端全部單元與元件測試（含 001 的測試，換綁後仍要通過） | 全部通過 |
-| `npx playwright test -c frontend/playwright.config.ts` | 005 的端對端測試，以及改走測試伺服器的 001 E2E | 全部通過 |
+| `npm run test:e2e -w frontend` | 005 的端對端測試，以及改走測試伺服器的 001 E2E | 全部通過 |
 | `npm run test:load:submission -w server` | 壓力測試，20 輪（research RD-10） | 20 輪都通過；輸出每輪的 p95、最大延遲、被接受筆數（20）；結果記在 `load-test.md` |
 
 ## 人工驗證情境
