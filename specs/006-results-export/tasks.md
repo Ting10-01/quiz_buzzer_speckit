@@ -140,7 +140,7 @@ description: "Task list for 006 結果與寫回"
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T031 在 `frontend/src/services/createServiceRegistry.ts` 把 `result` 綁定改為 `ServerResultService`（傳入 004 的 `RealtimeClient` 與 002 的 `ApiClient`），並更新 001 的 `ServiceRegistry` 單元測試：`result` 不再是模擬實作，`MockResultService` 只留給測試
-- [ ] T032 `frontend/tests/e2e/results.spec.ts`（Playwright，沿用 005 的多分頁 E2E 環境，Google 以替身取代）：第 2 題結束時老師分頁與第 5 組分頁顯示成功組別與答案、第 5 組分頁顯示本組被拒絕的送出且沒有其他組的答案，題目進度只含已結束的題目（AC-01、AC-02、AC-10、SC-006）；活動結束後學生全部結果頁顯示每題所有送出並醒目標示本組（AC-07）、老師結果頁顯示每題所有送出與比第一名慢的秒數（AC-08、AC-30）；T-WriteBack 的說明文字為「這些填空格原本的內容會被覆蓋。」且沒有「備份」（AC-11、REQ-RES-19，依 T035）；寫回成功與失敗的顯示（REQ-RES-20）
+- [ ] T032 `frontend/tests/e2e/results.spec.ts`（Playwright，沿用 005 的多分頁 E2E 環境，Google 以替身取代）：第 2 題結束時老師分頁與第 5 組分頁顯示成功組別與答案、第 5 組分頁顯示本組送出的答案、收到的本組送出判定為「不接受」且沒有其他組的答案，題目進度只含已結束的題目（AC-01、AC-02、AC-10、SC-006）；活動結束後學生全部結果頁顯示每題所有送出與本組搶到的題數（AC-07）、老師結果頁顯示每題所有送出與比第一名慢的秒數（AC-08、AC-30）；T-WriteBack 的說明文字為「這些填空格原本的內容會被覆蓋。」且沒有「備份」（AC-11、REQ-RES-19，依 T035）；寫回成功與失敗的顯示（REQ-RES-20）
 - [ ] T033 依 [quickstart.md](quickstart.md) 的 16 個情境做人工驗證，紀錄寫入 `specs/006-results-export/manual-verification.md`（SC-001～SC-004、SC-008、AC-12～AC-17、AC-21～AC-26 的真實 Google 行為）
 - [ ] T034 圖表一致性驗證：比對程式碼與 `diagrams/006-*.puml` 的組件、類別、方法與呼叫順序，結果寫入 `specs/006-results-export/diagram-verification.md`（原則 I）
 - [X] T035 確認 001 `TeacherResultsPage` 的 T-WriteBack 說明文字為「這些填空格原本的內容會被覆蓋。」且沒有「備份」（2026-11-27 決定）；不是時只改這段文字（001 FR-041 規定說明文字依 006 的寫回規則撰寫，不改頁面的欄位、按鈕與切換）（AC-11、REQ-RES-19）
