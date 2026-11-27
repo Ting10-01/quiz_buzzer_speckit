@@ -1,6 +1,7 @@
 // 004 activity sync across tabs (tasks T028, T044, T050). Pages are 001's and are not changed by 004.
 import { expect, test, type Browser, type BrowserContext, type Page, type Request } from '@playwright/test';
 import { GROUP_COUNT_MAX, GROUP_COUNT_MIN, JOIN_METHOD_TEXT, WAIT_ROUND_TEXT } from '@quiz-buzzer/shared/activityRules';
+import { signInAsPageTeacher } from './googleSignIn';
 import { advanceActivity, connectTestServer, socketFramesOf } from './testServer';
 import { endQuestion, errorArea, expectOn, pick, SHEET_OK, STUDENT_ACTIVITY, toLobby, toSetup, type PageId } from './us5-walk';
 
@@ -221,5 +222,95 @@ test.describe('T044 第 1 題開放後 (AC-12, AC-14)', () => {
     await joinGroup(page, 3);
     await expectOn(page, 'S-Wait');
     await expect(page.getByRole('region', { name: '這一輪' })).toContainText(WAIT_ROUND_TEXT);
+  });
+});
+
+// ----- T050: the teacher reloads or is replaced; the activity goes on (AC-25–27, AC-32, SC-005) -----
+
+const liveHeading = (page: Page, n: number) => page.getByRole('heading', { level: 1, name: `第 ${n} 題 / 共 ${QUESTIONS} 題` });
+
+/** Main → "我是老師" → "用 Google 登入" as the page teacher (002's test double). */
+async function signInFromHome(page: Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: /我是老師/ }).click();
+  await expectOn(page, 'T-Login');
+  await signInAsPageTeacher(page);
+}
+
+/** The teacher page on T-Live (第 2 題) with one student of group 3 on S-Answer (第 2 題). */
+async function toQuestion2(page: Page, browser: Browser): Promise<Page> {
+  const student = await studentTab(browser);
+  await toLobby(page);
+  await openJoin(student);
+  await joinGroup(student, 3);
+  await expectOn(student, 'S-Wait');
+  await page.getByRole('button', { name: '開放第 1 題' }).click();
+  await expectOn(page, 'T-Live');
+  await endQuestion(page);
+  await expectOn(page, 'T-QuestionEnd');
+  await page.getByRole('button', { name: '開放第 2 題' }).click();
+  await expect(liveHeading(page, 2)).toBeVisible();
+  await expectSoonOn(student, 'S-Answer');
+  await expect(questionLabel(student, 2)).toBeVisible();
+  return student;
+}
+
+test.describe('T050 老師重新整理後回到控制台 (AC-25, AC-26, SC-005)', () => {
+  test('a teacher who reloads during question 2 signs in again straight to T-Live (第 2 題); the student is unaffected', async ({ page, browser }) => {
+    const student = await toQuestion2(page, browser);
+
+    await page.reload();
+    await expectOn(page, 'Main');
+    // AC-25: the student tab stays on question 2 while the teacher is away.
+    await expectOn(student, 'S-Answer');
+    await expect(questionLabel(student, 2)).toBeVisible();
+
+    await signInFromHome(page);
+    await expectOn(page, 'T-Live');
+    await expect(liveHeading(page, 2)).toBeVisible();
+    await expectOn(student, 'S-Answer');
+
+    // The console is really back in control: ending question 2 reaches the student (SC-005).
+    await endQuestion(page);
+    await expectOn(page, 'T-QuestionEnd');
+    await expectSoonOn(student, 'S-QuestionDone');
+  });
+
+  for (const { phase, steps, lands } of [
+    { phase: 'PREPARING', steps: 1, lands: 'T-Lobby' },
+    { phase: 'QUESTION_ENDED (第 1 題)', steps: 3, lands: 'T-QuestionEnd' },
+    { phase: 'FINISHED', steps: 1 + 2 * QUESTIONS, lands: 'T-Results' },
+  ] as const) {
+    test(`signing in while the activity is ${phase} lands on ${lands} (AC-26)`, async ({ page }) => {
+      for (let i = 0; i < steps; i += 1) await advanceActivity(STUDENT_ACTIVITY);
+      await signInFromHome(page);
+      await expectOn(page, lands);
+      if (lands === 'T-QuestionEnd') await expect(page.getByRole('heading', { level: 1, name: '第 1 題已結束' })).toBeVisible();
+    });
+  }
+
+  test('signing in with no activity lands on T-Pick (AC-27)', async ({ page }) => {
+    await signInFromHome(page);
+    await expectOn(page, 'T-Pick');
+  });
+});
+
+test.describe('T050 另一個分頁登入取代老師 (AC-32)', () => {
+  test('a sign-in in another browser during question 2 lands on T-Live (第 2 題); the student is unaffected', async ({ page, browser }) => {
+    const student = await toQuestion2(page, browser);
+    const context = await browser.newContext();
+    contexts.push(context);
+    const other = await context.newPage();
+    await connectTestServer(other);
+
+    await signInFromHome(other);
+    await expectOn(other, 'T-Live');
+    await expect(liveHeading(other, 2)).toBeVisible();
+    await expectOn(student, 'S-Answer');
+    await expect(questionLabel(student, 2)).toBeVisible();
+
+    await endQuestion(other);
+    await expectOn(other, 'T-QuestionEnd');
+    await expectSoonOn(student, 'S-QuestionDone');
   });
 });
