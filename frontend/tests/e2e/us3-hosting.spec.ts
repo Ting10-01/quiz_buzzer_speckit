@@ -68,7 +68,8 @@ const writeBackButton = (page: Page) => page.getByRole('button', { name: '寫回
 const writeBackDialog = (page: Page) => page.getByRole('dialog', { name: /寫回 Google Sheets/ });
 
 test.describe('US3 hosting (quickstart Q5, Q6)', () => {
-  test('Q5 + Q6 with 題組＋單題範本: judge in order, auto-end, no submissions, write-back succeeds', async ({
+  // 005 T041: needs submissions on T-Live and judging, which Phase 4 adds; skipped until T043.
+  test.skip('Q5 + Q6 with 題組＋單題範本: judge in order, auto-end, no submissions, write-back succeeds', async ({
     page,
   }) => {
     await toLive(page, '題組＋單題範本');
@@ -137,7 +138,8 @@ test.describe('US3 hosting (quickstart Q5, Q6)', () => {
     await expect(page.getByRole('main')).toContainText('6 格');
   });
 
-  test('Q5 + Q6 with 單題範本: reject everyone, end the last question, write-back fails', async ({
+  // 005 T041: needs submissions on T-Live and judging, which Phase 4 adds; skipped until T043.
+  test.skip('Q5 + Q6 with 單題範本: reject everyone, end the last question, write-back fails', async ({
     page,
   }) => {
     await toLive(page, '單題範本');

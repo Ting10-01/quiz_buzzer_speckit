@@ -86,7 +86,8 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
     await expect(page.getByRole('button', { name: `加入第 ${GROUP} 組` })).toBeEnabled();
   });
 
-  test('Q7: accepted, not accepted and a groupmate submitting', async ({ page }) => {
+  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  test.skip('Q7: accepted, not accepted and a groupmate submitting', async ({ page }) => {
     await joinAfter(page, 1);
     await advance(page);
 
@@ -150,9 +151,9 @@ test.describe('US4 student (quickstart Q7, Q8, Q13)', () => {
   test('Q7: a validation failure stays on S-Answer beside the first field', async ({ page }) => {
     await joinAfter(page, 2);
     await expectAnswerPage(page, 1);
-    await page.getByRole('button', { name: '模擬：驗證失敗' }).click();
-    await answer(page, ['CPU', '作業系統']);
-    await expect(page.getByRole('textbox').first()).toHaveAccessibleDescription('模擬：驗證失敗');
+    // 005 T041: a blank cell fails the server's validation instead of "模擬：驗證失敗".
+    await answer(page, ['  ', '作業系統']);
+    await expect(page.getByRole('textbox').first()).toHaveAccessibleDescription('每一格都填才能送出');
     await expect(submitButton(page)).toBeVisible();
     await answer(page, ['CPU', '作業系統']);
     await expect(waiting(page)).toBeVisible();

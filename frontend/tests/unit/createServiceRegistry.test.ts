@@ -1,5 +1,5 @@
 import type { ActivitySnapshot, GroupAck } from '@quiz-buzzer/shared/activitySync';
-import { Judgement, type Activity } from '@quiz-buzzer/shared/entities';
+import type { Activity } from '@quiz-buzzer/shared/entities';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServiceRegistry } from '../../src/services/createServiceRegistry';
 import { HttpActivityService } from '../../src/services/HttpActivityService';
@@ -7,8 +7,9 @@ import { HttpAuthService } from '../../src/services/http/HttpAuthService';
 import { MockFixtures } from '../../src/services/mock/MockFixtures';
 import { makeActivity, makeGroups } from '../helpers/fixtures';
 
-// 004 T042: activity is bound to HttpActivityService; the submission and result mocks still run on
-// MockSession, which the composition root keeps in step with the real activity (research RA-14).
+// 004 T042: activity is bound to HttpActivityService. 005 T024: submission is bound to
+// ServerSubmissionService; the result mock still runs on MockSession, which the composition root keeps
+// in step with the real activity (research RA-14, 005 research RD-08).
 
 const { sockets, FakeSocket } = vi.hoisted(() => {
   type Handler = (...args: unknown[]) => void;
@@ -95,14 +96,22 @@ describe('createServiceRegistry', () => {
     expect(registry.activity).toBeInstanceOf(HttpActivityService);
     expect(registry.phaseControl).toBeUndefined();
     expect(registry.activityValidationControl).toBeUndefined();
-    // submission and result are still mocks (005, 006).
+    // result is still a mock (006).
     expect(registry.isMockMode()).toBe(true);
-    expect(registry.judgementControl).toBeDefined();
-    expect(registry.teammateControl).toBe(registry.submission);
-    expect(registry.submissionValidationControl).toBeDefined();
     expect(registry.unexpectedErrorControl).toBeDefined();
     // auth (002) and guidedNotes (003) are real, so the mock chooser is gone (001 plan).
     expect(registry.choicePrompt).toBeUndefined();
+  });
+
+  it('binds submission to ServerSubmissionService and drops the submission mock controls (005)', async () => {
+    // Imported here so the other cases of this file keep running while the service does not exist yet.
+    const modulePath = '../../src/services/server/ServerSubmissionService';
+    const { ServerSubmissionService } = (await import(/* @vite-ignore */ modulePath)) as typeof import('../../src/services/server/ServerSubmissionService');
+    const registry = createServiceRegistry();
+    expect(registry.submission).toBeInstanceOf(ServerSubmissionService);
+    expect(registry.judgementControl).toBeUndefined();
+    expect(registry.teammateControl).toBeUndefined();
+    expect(registry.submissionValidationControl).toBeUndefined();
   });
 
   it('binds auth to the real HttpAuthService (002)', () => {
@@ -125,29 +134,7 @@ describe('createServiceRegistry', () => {
   });
 });
 
-describe('createServiceRegistry: MockSession follows the real activity (research RA-14)', () => {
-  it('gives the submission mock the group this tab joined', async () => {
-    const registry = createServiceRegistry();
-    const socket = connectedSocket();
-    const open = demoActivity({ phase: 'OPEN', currentQuestion: 1 });
-    socket.ack.set('group:join', { snapshot: { version: 2, activity: open }, studentToken: 'student-1' } satisfies GroupAck);
-
-    await registry.activity.joinGroup(3);
-    await expect(registry.submission.submitAnswer(1, ['a', 'b'])).resolves.toMatchObject({ groupNumber: 3 });
-  });
-
-  it('forgets the group after leaving it', async () => {
-    const registry = createServiceRegistry();
-    const socket = connectedSocket();
-    const preparing = demoActivity();
-    socket.ack.set('group:join', { snapshot: { version: 2, activity: preparing }, studentToken: 'student-1' } satisfies GroupAck);
-    socket.ack.set('group:leave', { snapshot: { version: 3, activity: preparing } } satisfies GroupAck);
-
-    await registry.activity.joinGroup(3);
-    await registry.activity.leaveGroup();
-    await expect(registry.submission.submitAnswer(1, ['a', 'b'])).rejects.toThrow();
-  });
-
+describe('createServiceRegistry: the result mock follows the real activity (research RA-14)', () => {
   it('gives the result mock the activity the server pushed', async () => {
     const registry = createServiceRegistry();
     const socket = connectedSocket();
@@ -156,7 +143,7 @@ describe('createServiceRegistry: MockSession follows the real activity (research
     await expect(registry.result.getAllResults()).resolves.toHaveLength(2);
   });
 
-  it('forgets the activity and the group when the activity is cancelled (001 RD-12)', async () => {
+  it('forgets the activity when the activity is cancelled (001 RD-12)', async () => {
     const registry = createServiceRegistry();
     const socket = connectedSocket();
     const twoQuestions = demoActivity({ questions: MockFixtures.activity.questions.slice(0, 2) });
@@ -164,43 +151,8 @@ describe('createServiceRegistry: MockSession follows the real activity (research
     await registry.activity.joinGroup(3);
 
     socket.serverPush('activity:snapshot', { version: 2, activity: null });
-    await expect(registry.submission.submitAnswer(1, ['a', 'b'])).rejects.toThrow();
     // Back to the 001 fixed activity (4 questions) once the teacher activity is gone.
     await expect(registry.result.getAllResults()).resolves.toHaveLength(MockFixtures.activity.questions.length);
-  });
-
-  it('ends the question on the server when the mock judge accepts, and answers the server activity', async () => {
-    const registry = createServiceRegistry();
-    const socket = connectedSocket();
-    socket.serverPush('activity:snapshot', { version: 1, activity: demoActivity({ phase: 'OPEN', currentQuestion: 1 }) });
-    const ended = demoActivity({ phase: 'QUESTION_ENDED', currentQuestion: 1, groups: makeGroups([1, 0, 0, 0, 0, 0]) });
-    const fetch = vi.fn().mockResolvedValue(jsonResponse({ version: 2, activity: ended }));
-    vi.stubGlobal('fetch', fetch);
-
-    // Group 2 is the earliest demo submission for question 1 (M4).
-    const submissions = await registry.submission.listSubmissions(1);
-    const earliest = [...submissions].sort((a, b) => a.rank - b.rank)[0]!;
-    const outcome = await registry.submission.judge(1, earliest.groupNumber, Judgement.ACCEPTED);
-
-    expect(fetch).toHaveBeenCalledTimes(1);
-    const [url, init] = fetch.mock.calls[0]! as [string, RequestInit];
-    expect([init.method, url]).toEqual(['POST', '/api/activity/questions/1/end']);
-    expect(outcome.activity).toEqual(ended);
-  });
-
-  it('leaves the server alone when the mock judge does not accept', async () => {
-    const registry = createServiceRegistry();
-    const socket = connectedSocket();
-    socket.serverPush('activity:snapshot', { version: 1, activity: demoActivity({ phase: 'OPEN', currentQuestion: 1 }) });
-    const fetch = vi.fn();
-    vi.stubGlobal('fetch', fetch);
-
-    const submissions = await registry.submission.listSubmissions(1);
-    const earliest = [...submissions].sort((a, b) => a.rank - b.rank)[0]!;
-    const outcome = await registry.submission.judge(1, earliest.groupNumber, Judgement.REJECTED);
-
-    expect(fetch).not.toHaveBeenCalled();
-    expect(outcome.activity).toMatchObject({ phase: 'OPEN', currentQuestion: 1 });
   });
 
   it('keeps handing a real import to the result mock, which writes back to it (003)', async () => {

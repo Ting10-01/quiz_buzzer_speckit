@@ -130,7 +130,8 @@ test.describe('US5 removed elements (SC-004)', () => {
     });
   }
 
-  test('student pages', async ({ page }) => {
+  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  test.skip('student pages', async ({ page }) => {
     await toJoin(page);
     await check(page, 'S-JoinEmpty');
     await advance(page);

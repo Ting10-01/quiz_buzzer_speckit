@@ -17,7 +17,7 @@ import {
   toResults,
   toSetup,
 } from './us5-walk';
-import { connectTestServer } from './testServer';
+import { connectTestServer, dropSocketEvent } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
@@ -206,11 +206,14 @@ test.describe('US5 unexpected error on every page with a service call (FR-009)',
     const fields = page.getByRole('textbox');
     const count = await fields.count();
     for (let i = 0; i < count; i += 1) await fields.nth(i).fill(`答${i + 1}`);
-    await armUnexpectedError(page);
+    // 005: submission is real, so a server that never answers fails it instead of the mock control.
+    const restore = dropSocketEvent(page.context(), 'submission:submit');
     await button(page, '整組送出').click();
     await expectOn(page, 'S-Answer');
-    await expectError(page);
+    // RealtimeClient gives up after its 5 s ack timeout.
+    await expect(errorArea(page)).toHaveText('連不上伺服器，請確認伺服器已啟動', { timeout: 10_000 });
     for (let i = 0; i < count; i += 1) await expect(fields.nth(i)).toHaveValue(`答${i + 1}`);
+    restore();
 
     await button(page, '整組送出').click();
     await expectOn(page, 'S-Submitted');
