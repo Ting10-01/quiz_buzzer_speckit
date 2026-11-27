@@ -59,7 +59,7 @@ RQ --> SH : QuestionResult[]（活動已結束 → 每題所有送出）
 SH --> CL : ack { ok: true, results }
 CL --> SRS : ack
 SRS --> SP : QuestionResult[]
-SP --> S : 每題所有組別的順位與答案，本組醒目標示
+SP --> S : 每題所有組別的順位與答案，本組搶到的題數
 
 == 寫回 Google Sheets（R5、R5.1；REQ-RES-07～20） ==
 T -> TP : 按「寫回 Google Sheets」
