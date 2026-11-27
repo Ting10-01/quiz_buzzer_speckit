@@ -1,54 +1,31 @@
 import { GuidedNotesParser } from '../../../src/guided-notes/GuidedNotesParser.js';
 import { ImportStore, type BlankMarkers } from '../../../src/guided-notes/ImportStore.js';
 import { isImportError } from '@quiz-buzzer/shared/guards';
-import type { ActivityState, ActivityStore, GroupMembership, SocketRef } from '../../../src/temp-deps/activity.js';
-import type { SubmissionStore } from '../../../src/temp-deps/submission.js';
+import type { ActivityState, ActivityStore } from '../../../src/activity/index.js';
+import type { SubmissionStore } from '../../../src/submission/index.js';
 import type { ImportSuccess, Judgement, Spreadsheet, Submission } from '@quiz-buzzer/shared/entities';
 import { FakeSpreadsheetReader } from '../../guided-notes/helpers/fakeSpreadsheetReader.js';
 import { fixtureGrid, loadFixture } from '../../guided-notes/helpers/gridBuilder.js';
 
-// Substitutes for 004's ActivityStore / GroupMembership and 005's SubmissionStore (temp-deps), plus
-// 003's ImportStore and SpreadsheetReader filled with the "group + single" template
+// For unit tests: what 006 reads from 004's ActivityStore and 005's SubmissionStore (integration
+// tests use the real `app.activity` and `app.submissions`, see loadScenario), plus 003's ImportStore and
+// SpreadsheetReader filled with the "group + single" template
 // (tests/guided-notes/fixtures/group.json: questions 1 and 2 are groups, 3 and 4 single).
 
-export class FakeActivityStore implements ActivityStore {
-  private revision = 0;
-
+export class FakeActivityStore implements Pick<ActivityStore, 'current'> {
   constructor(private state: ActivityState | null = null) {}
 
   set(state: ActivityState | null): this {
     this.state = state;
-    this.revision++;
     return this;
   }
 
   current(): ActivityState | null {
     return this.state;
   }
-
-  version(): number {
-    return this.revision;
-  }
-
-  subscribe(): () => void {
-    return () => {};
-  }
 }
 
-export class FakeGroupMembership implements GroupMembership {
-  private readonly groups = new Map<string, number>();
-
-  assign(socketId: string, groupNumber: number): this {
-    this.groups.set(socketId, groupNumber);
-    return this;
-  }
-
-  groupOf(socket: SocketRef): number | null {
-    return this.groups.get(socket.id) ?? null;
-  }
-}
-
-export class FakeSubmissionStore implements SubmissionStore {
+export class FakeSubmissionStore implements Pick<SubmissionStore, 'list' | 'winner'> {
   private readonly byQuestion = new Map<number, Submission[]>();
 
   set(questionNumber: number, submissions: Submission[]): this {
@@ -173,4 +150,18 @@ export function finishedActivityScenario(): ResultScenario {
       submission(4, 3, 3, 5000, 'UNJUDGED', ['IP']),
     ]),
   };
+}
+
+// Integration tests: puts the scenario into the real `app.activity` and `app.submissions`. The
+// activity goes first, since 005 drops every submission when the activity disappears.
+export function loadScenario(
+  app: { activity: { store: Pick<ActivityStore, 'commit'> }; submissions: Pick<SubmissionStore, 'append'> },
+  scenario: ResultScenario,
+): void {
+  app.activity.store.commit(scenario.activities.current());
+  for (const questionNumber of [1, 2, 3, 4]) {
+    for (const s of scenario.submissions.list(questionNumber)) {
+      app.submissions.append({ ...s, requestId: `${questionNumber}-${s.groupNumber}`, acceptedAt: s.elapsedMs });
+    }
+  }
 }

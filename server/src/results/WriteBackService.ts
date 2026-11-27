@@ -5,7 +5,7 @@ import { GuidedNotesParser } from '../guided-notes/GuidedNotesParser.js';
 import type { BlankMarkers, ImportStore } from '../guided-notes/ImportStore.js';
 import { isImportError } from '@quiz-buzzer/shared/guards';
 import { SheetsReadError, type LoadedSpreadsheet, type SpreadsheetReader } from '../guided-notes/SpreadsheetReader.js';
-import type { ActivityStore } from '../temp-deps/activity.js';
+import type { ActivityStore } from '../activity/index.js';
 import type { ImportError, ImportSuccess, QuestionResult, WriteBackResult } from '@quiz-buzzer/shared/entities';
 import { backupName, composeCellText } from './cellText.js';
 import type { ResultQuery } from './ResultQuery.js';
@@ -64,7 +64,7 @@ export const WriteBackStep = {
 export type WriteBackStep = (typeof WriteBackStep)[keyof typeof WriteBackStep];
 
 export interface WriteBackDeps {
-  activities: ActivityStore;
+  activities: Pick<ActivityStore, 'current'>;
   imports: Pick<ImportStore, 'latest' | 'latestMarkers'>;
   reader: SpreadsheetReader;
   query: ResultQuery;
@@ -78,7 +78,7 @@ export interface WriteBackDeps {
 export class WriteBackService {
   // research RD-08: one write-back at a time (a single Node process).
   private inProgress = false;
-  private readonly activities: ActivityStore;
+  private readonly activities: Pick<ActivityStore, 'current'>;
   private readonly imports: Pick<ImportStore, 'latest' | 'latestMarkers'>;
   private readonly reader: SpreadsheetReader;
   private readonly parser = new GuidedNotesParser();

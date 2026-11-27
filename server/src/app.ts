@@ -14,14 +14,12 @@ import type { SpreadsheetReader } from './guided-notes/SpreadsheetReader.js';
 import { errorHandler } from './http/errors.js';
 import { loggerOptions } from './logger.js';
 import { attachSocketServer } from './realtime/socketServer.js';
-import { submissionRoutes } from './submission/index.js';
 import { GoogleSheetsWriter } from './results/GoogleSheetsWriter.js';
 import { ResultQuery } from './results/ResultQuery.js';
 import { registerResultHandlers } from './results/resultSocketHandlers.js';
 import { resultsRoutes } from './results/resultsRoutes.js';
 import { WriteBackService } from './results/WriteBackService.js';
-import type { ActivityStore, GroupMembership } from './temp-deps/activity.js';
-import type { SubmissionStore } from './temp-deps/submission.js';
+import { submissionRoutes } from './submission/index.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -39,12 +37,6 @@ export interface AppDeps {
   gateway?: GoogleOAuthGateway;
   logStream?: { write(line: string): void };
   spreadsheetReader?: SpreadsheetReader;
-  // 006 reads 004's ActivityStore / GroupMembership and 005's SubmissionStore. 004 and 005 are not
-  // implemented yet, so for now these come only from tests; once they land, buildApp creates them
-  // and these three fields go away. Without all three, 006's routes and events are not registered.
-  activityStore?: ActivityStore;
-  groupMembership?: GroupMembership;
-  submissionStore?: SubmissionStore;
 }
 
 // Server composition root. 003–006 register their routes here with `app.register(...)`.
@@ -74,22 +66,21 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
   // 005: submissions and judging, on 004's command queue and app.io.
   app.register(submissionRoutes);
 
-  // 006. TEMPORARY: until 004 and 005 exist the stores only come from deps (tests), and without
-  // them the result events and the write-back route are not registered.
-  const { activityStore, submissionStore, groupMembership } = deps;
-  if (activityStore && submissionStore && groupMembership) {
-    const resultQuery = new ResultQuery(activityStore, submissionStore);
-    registerResultHandlers(io, resultQuery, groupMembership);
+  // 006: only reads 004's `app.activity` and 005's `app.submissions`, so it is registered after both.
+  app.register(async (scope) => {
+    const { store, membership } = scope.activity;
+    const resultQuery = new ResultQuery(store, scope.submissions);
+    registerResultHandlers(io, resultQuery, membership);
     const writeBack = new WriteBackService({
-      activities: activityStore,
-      imports: app.importStore,
-      reader: app.spreadsheetReader,
+      activities: store,
+      imports: scope.importStore,
+      reader: scope.spreadsheetReader,
       query: resultQuery,
       writer: new GoogleSheetsWriter(googleClients),
-      log: app.log,
+      log: scope.log,
     });
-    app.register(resultsRoutes, { writeBack });
-  }
+    await scope.register(resultsRoutes, { writeBack });
+  });
 
   return app;
 }
