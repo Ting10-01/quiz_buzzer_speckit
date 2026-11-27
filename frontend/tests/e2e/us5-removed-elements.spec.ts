@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
 import { fakeTeacherApi, googleWill } from './googleSignIn';
 import {
+  GROUP,
   SHEET_SINGLE,
   advance,
   endQuestion,
@@ -19,7 +20,7 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
-import { connectTestServer } from './testServer';
+import { connectTestServer, judgeGroup } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
@@ -130,8 +131,7 @@ test.describe('US5 removed elements (SC-004)', () => {
     });
   }
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('student pages', async ({ page }) => {
+  test('student pages', async ({ page }) => {
     await toJoin(page);
     await check(page, 'S-JoinEmpty');
     await advance(page);
@@ -142,15 +142,15 @@ test.describe('US5 removed elements (SC-004)', () => {
     await check(page, 'S-Answer');
     await submit(page);
     await check(page, 'S-Submitted');
-    await page.getByRole('button', { name: '模擬：不接受' }).click();
+    // 005 T043: the teacher rejects through the test server instead of "模擬：不接受".
+    await judgeGroup(GROUP, 'REJECTED');
     await check(page, 'S-Rejected');
     await advance(page);
     await check(page, 'S-QuestionDone');
     await toLastAnswer(page);
     await submit(page);
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // 005 T043: the teacher accepts through the test server instead of "模擬：接受".
+    await judgeGroup(GROUP, 'ACCEPTED');
     await check(page, 'S-Results');
   });
 });

@@ -29,7 +29,7 @@ import {
   toWait,
   type PageId,
 } from './us5-walk';
-import { connectTestServer, groupmateSubmits } from './testServer';
+import { connectTestServer, groupmateSubmits, judgeGroup } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
@@ -100,9 +100,10 @@ test.describe('US5 screen flow: labelled arrows (teacher round)', () => {
     await expectOn(page, 'T-Live');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('T-Live → T-QuestionEnd: 接受（非最後一題）', async ({ page }) => {
+  test('T-Live → T-QuestionEnd: 接受（非最後一題）', async ({ page }) => {
     await toLive(page);
+    // 005 T043: a student submits through the test server instead of the mock's prefilled list.
+    await groupmateSubmits(1);
     await acceptEarliest(page);
     await expectOn(page, 'T-QuestionEnd');
   });
@@ -120,9 +121,10 @@ test.describe('US5 screen flow: labelled arrows (teacher round)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('第 2 題');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('T-Live → T-Results: 接受（最後一題）', async ({ page }) => {
+  test('T-Live → T-Results: 接受（最後一題）', async ({ page }) => {
     await liveOn(page, 4);
+    // 005 T043: a student submits through the test server instead of the mock's prefilled list.
+    await groupmateSubmits(1);
     await acceptEarliest(page);
     await expectOn(page, 'T-Results');
   });
@@ -184,10 +186,10 @@ test.describe('US5 screen flow: labelled arrows (student round)', () => {
     await expectOn(page, 'S-QuestionDone');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('S-Open (S-Submitted 不接受) → S-QuestionDone: 階段：本題結束（非最後一題）', async ({ page }) => {
+  test('S-Open (S-Submitted 不接受) → S-QuestionDone: 階段：本題結束（非最後一題）', async ({ page }) => {
     await toSubmitted(page);
-    await page.getByRole('button', { name: '模擬：不接受' }).click();
+    // 005 T043: the teacher rejects through the test server instead of "模擬：不接受".
+    await judgeGroup(GROUP, 'REJECTED');
     await expectOn(page, 'S-Rejected');
     await advance(page);
     await expectOn(page, 'S-QuestionDone');
@@ -214,7 +216,7 @@ test.describe('US5 screen flow: labelled arrows (student round)', () => {
     await expectOn(page, 'S-Results');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
+  // 005 T043 (2026-11-27 使用者決定): checks the question results, which stay on the result mock until 006; skipped until 006.
   test.skip('S-Submitted → S-QuestionDone: 判定：接受（本題結束）', async ({ page }) => {
     await toSubmitted(page);
     await page.getByRole('button', { name: '模擬：接受' }).click();
@@ -224,10 +226,10 @@ test.describe('US5 screen flow: labelled arrows (student round)', () => {
     await expect(page.getByRole('region', { name: '本題結果' })).toContainText(`第 ${GROUP} 組`);
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('S-Submitted → S-Submitted（不接受）: 判定：不接受', async ({ page }) => {
+  test('S-Submitted → S-Submitted（不接受）: 判定：不接受', async ({ page }) => {
     await toSubmitted(page);
-    await page.getByRole('button', { name: '模擬：不接受' }).click();
+    // 005 T043: the teacher rejects through the test server instead of "模擬：不接受".
+    await judgeGroup(GROUP, 'REJECTED');
     await expectOn(page, 'S-Rejected');
   });
 });
@@ -374,9 +376,12 @@ test.describe('US5 screen flow: coded arrows T1–T17', () => {
     await expect(page.getByRole('button', { name: '儲存設定' })).toBeVisible();
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('T13: T-Live → T-Live: 不接受（只能判定最早一筆）', async ({ page }) => {
+  test('T13: T-Live → T-Live: 不接受（只能判定最早一筆）', async ({ page }) => {
     await toLive(page);
+    // 005 T043: two students submit through the test server instead of the mock's prefilled list.
+    await groupmateSubmits(1);
+    await groupmateSubmits(2);
+    await expect(answerRows(page)).toHaveCount(2);
     const first = answerRows(page).first();
     await first.getByRole('button', { name: '不接受', exact: true }).click();
     await expectOn(page, 'T-Live');
@@ -455,14 +460,13 @@ test.describe('US5 screen flow: coded arrows S1–S9', () => {
     await expect(page.getByRole('textbox').first()).toHaveAccessibleDescription('每一格都填才能送出');
   });
 
-  // 005 T041: needs judging, which Phase 4 adds; skipped until T043.
-  test.skip('S6: S-Submitted → S-Results: 判定：接受（最後一題）', async ({ page }) => {
+  test('S6: S-Submitted → S-Results: 判定：接受（最後一題）', async ({ page }) => {
     await toLastAnswer(page);
     await submit(page);
     await expectOn(page, 'S-Submitted');
-    await page.getByRole('button', { name: '模擬：接受' }).click();
-    // 004 (RA-14): accepting on a student tab no longer moves the server; the teacher ends the question.
-    await advance(page);
+    // 005 T043: the teacher accepts through the test server instead of "模擬：接受".
+    await judgeGroup(GROUP, 'ACCEPTED');
+    // 005 T043: accepting ends the question on the server, so the walk no longer advances it.
     await expectOn(page, 'S-Results');
   });
 
