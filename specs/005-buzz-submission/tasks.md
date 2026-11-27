@@ -83,7 +83,7 @@ description: "Task list for 005 搶答與判定"
     - 改斷言：`us4-student`「a validation failure」與 `us5-screen-flow` S5 改為送出空白格，預期訊息改為「每一格都填才能送出」；`us5-mock-controls` 的 S-Answer 只剩「模擬：非預期錯誤」、S-Submitted 沒有控制列；`createServiceRegistry.test.ts` 第一個案例改為 `submission` 是 `ServerSubmissionService`、三個控制不存在。
     - 刪除：`us5-mock-controls`「AC-8: 模擬：驗證失敗」；`createServiceRegistry.test.ts` 中測 MockSession 組別與模擬判定橋接的案例（加入、離開組別、取消活動時忘記組別、模擬判定接受與不接受）。
     - 暫時 skip，到 T043 處理：需要判定或老師列表資料的測試，即 `us3-hosting` 兩個案例；`us4-student` Q7；`us5-mock-controls` 的 S-Rejected 與 AC-5 三個案例；`us5-screen-flow` 的「T-Live → T-QuestionEnd：接受」「T-Live → T-Results：接受」、T13、「S-Open（S-Submitted 不接受）」「S-Submitted → S-QuestionDone：接受」「S-Submitted → S-Submitted（不接受）」、S6；`us5-removed-elements` 的「student pages」。T043 時再逐一決定恢復、改斷言，或等 006。理由：判定在 Phase 4 才完成，不 skip 的話 Phase 3 結束時一定有測試失敗。
-- [ ] T042 [US1] 人工驗證：依 quickstart「US1」情境 1–4 在瀏覽器操作，結果記在 `specs/005-buzz-submission/manual-verification.md`（原則 VIII），依 T024
+- [X] T042 [US1] 人工驗證：依 quickstart「US1」情境 1–4 在瀏覽器操作，結果記在 `specs/005-buzz-submission/manual-verification.md`（原則 VIII），依 T024
 
 **Checkpoint**: 學生可以送出，伺服器記錄順位，同組分頁跟著切換，老師看到答案列表；組合根已換綁，001 的測試接上測試伺服器
 
