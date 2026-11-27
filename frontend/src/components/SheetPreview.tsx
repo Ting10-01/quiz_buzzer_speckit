@@ -1,6 +1,7 @@
 // Worksheet preview (FR-021): built only from the recognition result, so cells outside it
 // are never shown. T-Results passes `filled` to preview what write-back will put in each cell;
 // it has the activity's questions but not the import's header row, so the header is optional (C-5).
+// The columns follow what was recognised: no text column when the sheet has none (FR-021, #16).
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 import styles from './SheetPreview.module.css';
 
@@ -12,6 +13,27 @@ interface SheetPreviewProps {
   filled?: Record<string, string>;
 }
 
+type ColumnKind = 'number' | 'text' | 'answer';
+
+const COLUMN_NAMES: Record<ColumnKind, string> = { number: '題號', text: '題目', answer: '作答' };
+
+export interface RecognisedColumn {
+  kind: ColumnKind;
+  /** Column letter, e.g. "B". */
+  letter: string;
+  /** "題號", "題目" or "作答". */
+  name: string;
+}
+
+/**
+ * What each of `headerColumns` was recognised as. They are in the order number, text (only when
+ * the sheet has one) and answer (003 data-model), so two columns mean there is no text column (#16).
+ */
+export function recognisedColumns(headerColumns: string[]): RecognisedColumn[] {
+  const kinds: ColumnKind[] = headerColumns.length >= 3 ? ['number', 'text', 'answer'] : ['number', 'answer'];
+  return kinds.map((kind, i) => ({ kind, letter: headerColumns[i] ?? '', name: COLUMN_NAMES[kind] }));
+}
+
 /** Row number of a cell reference such as "G5"; the preview has no other source of rows. */
 function rowOf(cell: string): string {
   return cell.match(/\d+$/)?.[0] ?? '';
@@ -19,16 +41,22 @@ function rowOf(cell: string): string {
 
 export function SheetPreview({ result, filled }: SheetPreviewProps) {
   const hasHeader = result.headerRow !== undefined && result.headerColumns !== undefined;
-  const [numberColumn, textColumn, answerColumn] = result.headerColumns ?? ['題號', '題目', '作答'];
+  // Without the import's header (T-Results, C-5), three columns with generic names are shown.
+  const columns = hasHeader
+    ? recognisedColumns(result.headerColumns ?? [])
+    : recognisedColumns(['題號', '題目', '作答']).map((column) => ({ ...column, letter: column.name }));
+  const hasText = columns.some((column) => column.kind === 'text');
   return (
     <section aria-label="學習單預覽" className={styles.preview}>
       <table className={styles.sheet}>
         <thead>
           <tr>
             <th scope="col" className={styles.rowHead} aria-label="列" />
-            <th scope="col">{numberColumn}</th>
-            <th scope="col">{textColumn}</th>
-            <th scope="col">{answerColumn}</th>
+            {columns.map((column) => (
+              <th key={column.kind} scope="col">
+                {column.letter}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -38,9 +66,9 @@ export function SheetPreview({ result, filled }: SheetPreviewProps) {
                 {result.headerRow}
               </th>
               {/* The result has no header texts, so the row names what each column was recognised as. */}
-              <td>題號欄</td>
-              <td>題目欄</td>
-              <td>作答欄</td>
+              {columns.map((column) => (
+                <td key={column.kind}>{column.name}欄</td>
+              ))}
             </tr>
           )}
           {result.questions.flatMap((question) =>
@@ -54,9 +82,11 @@ export function SheetPreview({ result, filled }: SheetPreviewProps) {
                     <td rowSpan={question.subQuestions.length} className={styles.number}>
                       {question.number}
                     </td>
-                    <td rowSpan={question.subQuestions.length} className={styles.text}>
-                      {question.text}
-                    </td>
+                    {hasText && (
+                      <td rowSpan={question.subQuestions.length} className={styles.text}>
+                        {question.text}
+                      </td>
+                    )}
                   </>
                 )}
                 <td className={styles.blank}>

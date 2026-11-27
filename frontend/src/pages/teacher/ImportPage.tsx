@@ -9,7 +9,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { ErrorArea } from '../../components/ErrorArea';
 import { errorMessage } from '../../components/errorMessage';
 import { blankCellsLabel, questionTypeLabel } from '../../components/questionLabels';
-import { SheetPreview } from '../../components/SheetPreview';
+import { recognisedColumns, SheetPreview } from '../../components/SheetPreview';
 import { useServiceRegistry } from '../../services/ServiceRegistryContext';
 import { pickToPage, readToPage } from './importNavigation';
 import styles from './ImportPage.module.css';
@@ -88,7 +88,9 @@ function ImportResult({ result, onSelectWorksheet, onRepick, onCancel, onConfirm
         <h1 className={styles.title}>確認辨識結果</h1>
         <p className={styles.lead}>
           表頭在「{spreadsheet.selectedWorksheet}」工作表第 {result.headerRow} 列，
-          題號、題目、作答依序在 {result.headerColumns.join('、')} 欄。
+          {`${recognisedColumns(result.headerColumns)
+            .map((column) => `${column.name}在 ${column.letter} 欄`)
+            .join('、')}。`}
         </p>
       </div>
 
