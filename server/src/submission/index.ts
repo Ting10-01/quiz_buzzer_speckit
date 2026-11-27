@@ -15,7 +15,7 @@ export async function submissionRoutes(app: FastifyInstance): Promise<void> {
   const visibility = new SubmissionVisibility();
   const submissions = new SubmissionStore();
   const notifier = new SubmissionNotifier(app.io, submissions, visibility, membership);
-  const engine = new SubmissionEngine(submissions, visibility, notifier, activityStore, manager, clock);
+  const engine = new SubmissionEngine(submissions, visibility, notifier, activityStore, manager, clock, app.log);
 
   activityStore.subscribe((version) => engine.onActivityChange(version));
   new SubmissionGateway(engine, membership, queue).register(app.io);

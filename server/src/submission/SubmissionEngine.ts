@@ -1,5 +1,6 @@
 import type { Judgement, JudgeOutcome, Submission, ValidationError } from '@quiz-buzzer/shared/entities';
 import type { SubmitReply, SubmitRequest } from '@quiz-buzzer/shared/submissionEvents';
+import type { FastifyBaseLogger } from 'fastify';
 import type { ActivityManager } from '../activity/ActivityManager.js';
 import type { ActivityStore } from '../activity/ActivityStore.js';
 import { Audience } from '../activity/ActivityView.js';
@@ -9,7 +10,8 @@ import type { SubmissionRecord, SubmissionStore } from './SubmissionStore.js';
 import type { SubmissionVisibility } from './SubmissionVisibility.js';
 
 // Submission and judging rules (data-model section 4). Every method runs inside 004's CommandQueue.run,
-// so it is synchronous, only changes SubmissionStore and leaves sending to SubmissionNotifier.
+// so it is synchronous, only changes SubmissionStore, leaves sending to SubmissionNotifier and writes
+// log entries (research RD-09: never the answers or a credential).
 const ANSWER_MAX_LENGTH = 200;
 const NOT_JOINED: ValidationError = { field: 'answers', message: '請先加入組別' };
 const BAD_FORMAT: ValidationError = { field: 'answers', message: '送出的資料格式不正確' };
@@ -29,6 +31,8 @@ export class SubmissionEngine {
     private readonly activityStore: ActivityStore,
     private readonly activityManager: ActivityManager,
     private readonly clock: SequenceClock,
+    /** 002's logger (app.log); without it nothing is logged. */
+    private readonly log?: FastifyBaseLogger,
   ) {
     this.openQuestion = this.currentOpenQuestion();
   }
@@ -39,15 +43,23 @@ export class SubmissionEngine {
    */
   submit(group: number | null, request: SubmitRequest): SubmitReply {
     this.processed++;
+    const seq = this.processed;
+    const requestId = typeof request?.requestId === 'string' ? request.requestId : null;
     const error = this.validate(group, request);
     if (error === ALREADY_SUBMITTED) {
       const first = this.submissions.question(request.questionNumber)!.byGroup(group as number)!;
-      if (first.requestId === request.requestId) return { ok: true, submission: this.visibility.forStudent(first) };
+      if (first.requestId === request.requestId) {
+        this.log?.info({ seq, groupNumber: group, requestId }, 'submission.duplicate');
+        return { ok: true, submission: this.visibility.forStudent(first) };
+      }
     }
-    if (error !== null) return { ok: false, error };
+    if (error !== null) {
+      this.log?.info({ seq, groupNumber: group, requestId, reason: error.message }, 'submission.rejected');
+      return { ok: false, error };
+    }
 
     const accepted = group as number;
-    const { questionNumber, requestId } = request;
+    const { questionNumber } = request;
     const acceptedAt = this.clock.stamp();
     const openedAt = this.activityStore.current()?.openedAt.get(questionNumber) ?? acceptedAt;
     const record: SubmissionRecord = {
@@ -57,10 +69,14 @@ export class SubmissionEngine {
       rank: (this.submissions.question(questionNumber)?.records.length ?? 0) + 1,
       elapsedMs: Math.round(acceptedAt - openedAt),
       judgement: 'PENDING',
-      requestId,
+      requestId: request.requestId,
       acceptedAt,
     };
     this.submissions.append(record);
+    this.log?.info(
+      { seq, questionNumber, groupNumber: accepted, rank: record.rank, elapsedMs: record.elapsedMs, requestId },
+      'submission.accepted',
+    );
     this.notifier.groupSubmitted(record);
     this.notifier.submissionsChanged(questionNumber);
     return { ok: true, submission: this.visibility.forStudent(record) };
@@ -117,8 +133,11 @@ export class SubmissionEngine {
         // Question n was just checked to be open, so 004 does not throw QUESTION_NOT_OPEN (plan A-4).
         this.activityManager.endQuestion(questionNumber);
       }
+      this.log?.info({ questionNumber, groupNumber, judgement }, 'judgement.applied');
       this.notifier.judged(record);
       this.notifier.submissionsChanged(questionNumber);
+    } else {
+      this.log?.info({ questionNumber, groupNumber, judgement }, 'judgement.ignored');
     }
     return {
       submissions: this.submissions.list(questionNumber),
