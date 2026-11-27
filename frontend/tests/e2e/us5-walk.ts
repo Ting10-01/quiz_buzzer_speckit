@@ -138,6 +138,9 @@ export async function toLogin(page: Page) {
 
 export async function toPick(page: Page) {
   await toLogin(page);
+  // 004 T063: with 001 C1 a signed-in teacher goes to the current activity, so a walk to T-Pick
+  // starts from no activity, as 001 did before C1.
+  await resetTestServer();
   await signInAsPageTeacher(page);
   await expectOn(page, 'T-Pick');
 }

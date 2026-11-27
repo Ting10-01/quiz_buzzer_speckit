@@ -13,6 +13,8 @@ export class FakeRealtimeClient {
 
   readonly connect = vi.fn();
   readonly reconnect = vi.fn();
+  /** RealtimeClient.followTeacherCredential: true when it reconnected; tests that need it set the result. */
+  readonly followTeacherCredential = vi.fn((): boolean => false);
   readonly emitWithAck = vi.fn<(event: string, payload: object) => Promise<unknown>>();
 
   on<T>(event: string, listener: (payload: T) => void): Unsubscribe {

@@ -165,13 +165,14 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證（任何人登入都取代前一位老師）：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）（AC-32）
-- [ ] T049 [P] [US4] `frontend/tests/unit/HttpActivityService.reconnect.test.ts`：`TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同時，`getCurrentActivity` 與五個老師指令先 `reconnect()`；憑證等於 `rejectedTeacherToken`（002 #18：被取代的分頁保留作廢的憑證）時不重新連線，連續兩次老師指令都不多一次 handshake，並回傳重新連線後的快照；`disconnect` 原因為 `io server disconnect` 時自動重連；`connect_error` `UNAUTHORIZED` 且憑證沒換時，記下 `rejectedTeacherToken` 並以一般連線重連（research RA-07）
+- [X] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證（任何人登入都取代前一位老師）：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）（AC-32）
+- [X] T049 [P] [US4] `frontend/tests/unit/HttpActivityService.reconnect.test.ts`：`TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同時，`getCurrentActivity` 與五個老師指令先 `reconnect()`；憑證等於 `rejectedTeacherToken`（002 #18：被取代的分頁保留作廢的憑證）時不重新連線，連續兩次老師指令都不多一次 handshake，並回傳重新連線後的快照；`disconnect` 原因為 `io server disconnect` 時自動重連；`connect_error` `UNAUTHORIZED` 且憑證沒換時，記下 `rejectedTeacherToken` 並以一般連線重連（research RA-07）
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] （實作已移到 T062，Phase 5）在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：`OPEN(2)` 時老師重新整理並登入（002 的測試替身），直接回到 T-Live（第 2 題），學生分頁的階段不變（AC-25、AC-26、SC-005）；`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd（第 n 題）、`FINISHED` → T-Results（AC-26）；沒有活動時登入進入 T-Pick（AC-27）；`OPEN(2)` 時另一個瀏覽器分頁登入取代老師，新分頁進入 T-Live（第 2 題），學生分頁的階段不變（AC-32）。（2026-11-27 依 spec Session 2026-11-27 改寫：C1 已完成，刪除暫時限制的情境）
-- [ ] T063 [US4] 依 spec Session 2026-11-27 與 C2 補充，修改 `frontend/tests/e2e/us5-walk.ts` 的 `toPick`：登入前以 `resetTestServer()` 讓測試伺服器回到沒有活動的狀態，讓 001 先建立活動再走到 T-Pick 的 e2e（`us5-removed-elements.spec.ts`）在 C1 之後仍進入 T-Pick；不修改 001 的頁面與既有測試的斷言
+- [X] T050 [US4] （實作已移到 T062，Phase 5）在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：`OPEN(2)` 時老師重新整理並登入（002 的測試替身），直接回到 T-Live（第 2 題），學生分頁的階段不變（AC-25、AC-26、SC-005）；`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd（第 n 題）、`FINISHED` → T-Results（AC-26）；沒有活動時登入進入 T-Pick（AC-27）；`OPEN(2)` 時另一個瀏覽器分頁登入取代老師，新分頁進入 T-Live（第 2 題），學生分頁的階段不變（AC-32）。（2026-11-27 依 spec Session 2026-11-27 改寫：C1 已完成，刪除暫時限制的情境）
+- [X] T063 [US4] 依 spec Session 2026-11-27 與 C2 補充，修改 `frontend/tests/e2e/us5-walk.ts` 的 `toPick`：登入前以 `resetTestServer()` 讓測試伺服器回到沒有活動的狀態，讓 001 先建立活動再走到 T-Pick 的 e2e（`us5-removed-elements.spec.ts`）在 C1 之後仍進入 T-Pick；不修改 001 的頁面與既有測試的斷言
+- [ ] T064 [US4] 依 T049 的 Phase 7 測試，把 `HttpActivityService` 建構子的 `realtime` 型別中 `followTeacherCredential` 改為必填，移除可選呼叫與「Optional until T050」的註解；`frontend/tests/helpers/fakeRealtimeClient.ts` 補上 `followTeacherCredential`（預設回傳 `false`），讓既有測試不必修改（refactor，行為不變）
 
 **Checkpoint**: 老師誤重新整理不會毀掉活動
 
@@ -237,7 +238,7 @@ T056 frontend/tests/unit/HttpActivityService.cancel.test.ts
 | REQ-ACT-18 | AC-30 | T008、T039 | T007、T035 |
 | REQ-ACT-19 | AC-16 | T014、T016、T017 | T013、T030、T044 |
 | REQ-ACT-20 | AC-31 | T018、T020 | T019、T044 |
-| REQ-ACT-21 | AC-25～27、AC-32 | T062 | T048、T049、T050、T063 |
+| REQ-ACT-21 | AC-25～27、AC-32 | T062、T064 | T048、T049、T050、T063 |
 | REQ-ACT-22 | AC-33～36 | T010、T012、T058、T059、T060、T042 | T009、T011、T054、T055、T056、T044 |
 | REQ-ACT-23 | AC-01、AC-02、AC-09 | T002 | T002、T028、T044（頁面部分依賴 001 C2） |
 | REQ-ACT-NFR-01 | AC-28 | T016、T047 | T045、T046 |
