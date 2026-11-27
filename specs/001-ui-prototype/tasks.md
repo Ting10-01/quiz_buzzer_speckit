@@ -484,7 +484,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T167 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx`，並新增 `frontend/tests/component/SheetPreview.test.tsx`（沒有表頭資訊的情況）：`headerColumns` 為 `["B","C","G"]` 時說明文字含「題號在 B 欄、題目在 C 欄、作答在 G 欄」，預覽的欄名為 B、C、G，表頭列為「題號欄、題目欄、作答欄」；為 `["B","G"]` 時說明文字含「題號在 B 欄、作答在 G 欄」且不含「題目」，預覽的欄名只有 B、G，表頭列只有「題號欄、作答欄」；沒有表頭資訊時（T-Results）維持「題號、題目、作答」三欄（FR-021；issue #16）
+- [X] T167 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx`，並新增 `frontend/tests/component/SheetPreview.test.tsx`（沒有表頭資訊的情況）：`headerColumns` 為 `["B","C","G"]` 時說明文字含「題號在 B 欄、題目在 C 欄、作答在 G 欄」，預覽的欄名為 B、C、G，表頭列為「題號欄、題目欄、作答欄」；為 `["B","G"]` 時說明文字含「題號在 B 欄、作答在 G 欄」且不含「題目」，預覽的欄名只有 B、G，表頭列只有「題號欄、作答欄」；沒有表頭資訊時（T-Results）維持「題號、題目、作答」三欄（FR-021；issue #16）
 
 ### Implementation
 
