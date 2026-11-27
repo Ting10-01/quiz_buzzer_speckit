@@ -121,7 +121,7 @@ description: "Task list for 005 搶答與判定"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T025 [P] [US3] `server/tests/integration/submission/isolation.test.ts`：第 4 組連線在第 2 組送出、老師判定第 2 組前後收到的所有 Socket.IO 訊息，序列化後找不到第 2 組的答案與組別編號（AC-17、SC-004）；第 2 組連線收到的 `submit` ack、`submission:own` ack、`submission:groupSubmitted`、`submission:judged` 中 `rank` 全為 0（AC-18）；學生連線不帶老師憑證呼叫兩個 HTTP 路由被拒絕，也收不到 `submissions:changed`（AC-16、AC-19）
+- [X] T025 [P] [US3] `server/tests/integration/submission/isolation.test.ts`：第 4 組連線在第 2 組送出、老師判定第 2 組前後收到的所有 Socket.IO 訊息，序列化後找不到第 2 組的答案與組別編號（AC-17、SC-004）；第 2 組連線收到的 `submit` ack、`submission:own` ack、`submission:groupSubmitted`、`submission:judged` 中 `rank` 全為 0（AC-18）；學生連線不帶老師憑證呼叫兩個 HTTP 路由被拒絕，也收不到 `submissions:changed`（AC-16、AC-19）
 
 ### Implementation for User Story 3
 
