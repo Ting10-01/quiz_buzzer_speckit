@@ -449,6 +449,31 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 8.7: 規格修訂（2026-11-28）：成功規則文字與 004 的組數規則（issue #26、#28）
+
+**Purpose**: 套用 spec Session 2026-11-28（commit `spec(001): ...`）：活動設定頁「成功規則」改為 issue #26 的文字（FR-023、D18；005 AC-26）；依 004 spec「需請 001 修改」C2，活動設定頁與等待開放頁引用 004 的 `shared/src/activityRules.ts`（FR-023、FR-051、US2 AC-6、AC-7、D4、D5）。
+
+- **只改兩個頁面**：`SetupPage.tsx`、`StudentPlayPage.tsx` 的 `WaitView`；不增減欄位、按鈕或頁面，按鈕位置不變（RD-09 不受影響）。
+- **測試先寫、一次確認失敗**（T160–T162 一筆 `test(001)` commit），再一次實作到全部通過（T163–T165 一筆 `fix(001)` commit）。
+- **既有測試的斷言不修改**。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T160 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：「這一輪」的「成功規則」內容完全等於「老師依送出順序判定，第一個被接受的組別搶答成功，這一題隨即結束；老師只能判定最早一筆還沒判定的答案。每組每題只能送出一次，被拒絕後不能重送。」（FR-023、D18；issue #26）
+- [ ] T161 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：建立模式的組數初始值為 `GROUP_COUNT_DEFAULT`；按「−」到 `GROUP_COUNT_MIN` 時「−」不可用、「+」可用，再點「−」組數不變；按「+」到 `GROUP_COUNT_MAX` 時「+」不可用、「−」可用，再點「+」組數不變；修改模式的初始值為活動目前的組數；「學生加入」內容完全等於 `JOIN_METHOD_TEXT`（FR-023、US2 AC-6、AC-7；004 C2）
+- [ ] T162 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait「這一輪」顯示「共 n 題」，其下方顯示 `WAIT_ROUND_TEXT`（FR-051；004 C2）
+
+### Implementation
+
+- [ ] T163 [US2] 修改 `frontend/src/pages/teacher/SetupPage.tsx`：`SUCCESS_RULE` 改為 T160 的文字；以 `@quiz-buzzer/shared/activityRules` 的 `GROUP_COUNT_DEFAULT` 取代 `INITIAL_GROUP_COUNT`；「−」「+」在 `GROUP_COUNT_MIN`、`GROUP_COUNT_MAX` 時 `disabled`，點擊結果夾在範圍內；「學生加入」改用 `JOIN_METHOD_TEXT`；更新檔頭註解（依賴 T160、T161）
+- [ ] T164 [US4] 修改 `frontend/src/pages/student/StudentPlayPage.tsx` 的 `WaitView`：「這一輪」在「共 n 題」下方加上 `WAIT_ROUND_TEXT`（依賴 T162）
+- [ ] T165 解除 004 `frontend/tests/e2e/activity-sync.spec.ts` 中等待 C2 的 2 個 `test.skip`（AC-01、AC-02 與 AC-09），執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T160–T162 與這 2 個 E2E 通過，且其他測試沒有退步（SC-002）
+- [ ] T166 依 `quickstart.md` Q15 人工驗證：T-Setup 組數 2／20 時「−」「+」的狀態、「學生加入」與「成功規則」的文字、S-Wait「這一輪」的輪次文字，記錄於 `manual-verification.md`
+
+**Checkpoint**: 005 AC-26 與 004 AC-01、AC-02、AC-09 的頁面部分完成；004 不再有等待 001 的 skip。
+
+---
+
 ## 需求與任務對照
 
 | 需求 | 任務 |
@@ -467,13 +492,13 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-015 | T157–T159 |
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063 |
-| FR-023、FR-024 | T058、T064、T066a |
+| FR-023、FR-024 | T058、T064、T066a、T160、T161、T163、T165、T166 |
 | FR-025 | T059、T065 |
 | FR-026 | T135–T138、T139–T142、T152、T155 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076、T143–T145 |
 | FR-050 | T047、T053、T079、T085、T147、T150、T154 |
-| FR-051 | T080、T086、T148、T151、T155 |
+| FR-051 | T080、T086、T148、T151、T155、T162、T164–T166 |
 | FR-052、FR-053 | T081、T087 |
 | FR-054 | T029、T084、T087 |
 | FR-055、FR-056 | T082、T088、T113、T124、T126 |
@@ -482,7 +507,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-058 | T083、T090 |
 | FR-060（M1–M9） | M1 T018/T026、T104/T109、M2 T019/T027、M3 T020/T028、T135/T140、M4–M6 T021/T029、T113/T123/T126、M7 T020/T028、T114/T125、M8 T022/T030、M9 T017/T025 |
 | FR-061 | T037、T041、T094、T107、T111、T116、T128 |
-| SC-001、SC-002 | T093、T095、T149–T152、T156、T157、T159 |
+| SC-001、SC-002 | T093、T095、T149–T152、T156、T157、T159、T165 |
 | SC-003 | T037、T093、T097 |
 | SC-004 | T096 |
 | SC-005、SC-006 | T055、T092（人工驗證計時）、T134 |
@@ -506,6 +531,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - **US5 (Phase 7)**: 依賴 US1–US4 全部完成（驗證整張畫面流程圖）
 - **Polish (Phase 8)**: 依賴所有 Story
 - **規格修訂 (Phase 8.5)**: 依賴 T102；修改 US1、US4 已完成的 `HomePage.tsx`、`JoinPage.tsx`、`StudentPlayPage.tsx` 與 `interfaces.ts`；完成後才做 T103 與圖表一致性驗證（重做 F4）
+- **規格修訂 (Phase 8.7)**: 依賴 Phase 8.6；修改 US2、US4 已完成的 `SetupPage.tsx`、`StudentPlayPage.tsx`；T165 解除 004 的 2 個 E2E skip，需要 004 已在 main
 
 所有 Story 都會修改 `AppRouter.tsx`，因此 Story 之間依序執行（P1 依 US1 → US2 → US3 → US4，最後 US5）。CLAUDE.md 規定 implement 一次只執行一個 Phase。
 
