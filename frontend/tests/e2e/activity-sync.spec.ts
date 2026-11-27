@@ -2,7 +2,7 @@
 import { expect, test, type Browser, type BrowserContext, type Page, type Request } from '@playwright/test';
 import { GROUP_COUNT_MAX, GROUP_COUNT_MIN, JOIN_METHOD_TEXT, WAIT_ROUND_TEXT } from '@quiz-buzzer/shared/activityRules';
 import { signInAsPageTeacher } from './googleSignIn';
-import { advanceActivity, connectTestServer, socketFramesOf } from './testServer';
+import { advanceActivity, bypassGroupCountOnce, connectTestServer, socketFramesOf } from './testServer';
 import { endQuestion, errorArea, expectOn, pick, SHEET_OK, STUDENT_ACTIVITY, toLobby, toSetup, type PageId } from './us5-walk';
 
 test.beforeEach(async ({ page }) => {
@@ -18,18 +18,16 @@ test.describe('T028 活動設定頁 (AC-01, AC-02, AC-04)', () => {
     await expect(groupField(page)).toContainText('6 組');
   });
 
-  // T042 binds HttpActivityService, so the server's group count check is reached from the page.
+  // The page stops at 2 (001 C2), so the request is rewritten to 1 groups, bypassing the page.
   test('refuses an out-of-range group count and shows why next to the field (AC-04)', async ({ page }) => {
     await toSetup(page);
-    for (let i = 0; i < 5; i += 1) await stepButton(page, '−').click();
-    await expect(groupField(page)).toContainText('1 組');
+    await bypassGroupCountOnce(page, 1);
     await page.getByRole('button', { name: '建立活動' }).click();
     await expect(groupField(page)).toContainText('組數必須是 2 到 20 之間的整數');
     await expectOn(page, 'T-Setup');
   });
 
-  // Needs 001 change request C2: SetupPage does not use activityRules yet.
-  test.skip('disables "−" at 2 and "+" at 20, and shows the join method text (AC-01, AC-02)', async ({ page }) => {
+  test('disables "−" at 2 and "+" at 20, and shows the join method text (AC-01, AC-02)', async ({ page }) => {
     await toSetup(page);
     for (let n = 6; n > GROUP_COUNT_MIN; n -= 1) await stepButton(page, '−').click();
     await expect(stepButton(page, '−')).toBeDisabled();
@@ -215,8 +213,7 @@ test.describe('T044 第 1 題開放後 (AC-12, AC-14)', () => {
     await expect(questionLabel(student, 1)).toBeVisible();
   });
 
-  // Needs 001 change request C2: S-Wait does not show WAIT_ROUND_TEXT yet.
-  test.skip('S-Wait shows the round text under the question count (AC-09)', async ({ page }) => {
+  test('S-Wait shows the round text under the question count (AC-09)', async ({ page }) => {
     await openJoin(page);
     await advanceActivity(STUDENT_ACTIVITY);
     await joinGroup(page, 3);

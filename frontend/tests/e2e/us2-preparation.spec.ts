@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pickerWill } from './googlePicker';
 import { signInAsPageTeacher } from './googleSignIn';
-import { connectTestServer } from './testServer';
+import { bypassGroupCountOnce, connectTestServer } from './testServer';
 
 // 004 (T061): every page talks to this worker's test server, reset before each test.
 test.beforeEach(async ({ page }) => {
@@ -118,13 +118,13 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
 
     // Validation failure stays and shows the message beside the field (US2 AC-9). 004: the real
     // server refuses an out-of-range group count (004 AC-04) instead of the removed mock control.
-    await setGroupCount(page, initial, 1);
+    // The page stops at 2 (001 C2), so the request is rewritten to 1 groups, bypassing the page.
+    await bypassGroupCountOnce(page, 1);
     await page.getByRole('button', { name: '建立活動' }).click();
     await expect(groupField(page).getByText(GROUP_COUNT_INVALID)).toBeVisible();
     await expect(page.getByRole('button', { name: '建立活動' })).toBeVisible();
 
     // The second attempt creates the activity (US2 AC-8).
-    await setGroupCount(page, 1, initial);
     await page.getByRole('button', { name: '建立活動' }).click();
     await onLobby(page);
     const groups = page.getByRole('list', { name: '組別' });
@@ -142,10 +142,10 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
 
     // Edit mode: validation failure, then a successful save returns to T-Lobby.
     await page.getByRole('button', { name: '修改設定' }).click();
-    await setGroupCount(page, initial, 1);
+    await bypassGroupCountOnce(page, 1);
     await page.getByRole('button', { name: '儲存設定' }).click();
     await expect(groupField(page).getByText(GROUP_COUNT_INVALID)).toBeVisible();
-    await setGroupCount(page, 1, initial + 1);
+    await setGroupCount(page, initial, initial + 1);
     await page.getByRole('button', { name: '儲存設定' }).click();
     await onLobby(page);
     await expect(groups.getByRole('listitem')).toHaveCount(initial + 1);

@@ -7,7 +7,7 @@
 // S-Join (FR-051); the later pages ignore it, since the activity cannot be cancelled once
 // question 1 has opened (FR-026).
 // Students get no way back home once they joined (FR-007), and the rules text and time
-// limits of the design are not shown (SC-004).
+// limits of the design are not shown (SC-004); S-Wait shows 004's round text instead.
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityPhase,
@@ -17,6 +17,7 @@ import {
   type QuestionResult,
   type Submission,
 } from '@quiz-buzzer/shared/entities';
+import { WAIT_ROUND_TEXT } from '@quiz-buzzer/shared/activityRules';
 import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { AppHeader } from '../../components/AppHeader';
@@ -152,10 +153,11 @@ function WaitView({ navigate, groupNumber, activity }: ViewProps) {
       <ErrorArea message={error} />
       <section className={styles.card}>
         <h1 className={styles.title}>等老師開放第 1 題</h1>
-        {/* FR-051: only the place for this round's notes; their wording belongs to 004 and 005. */}
+        {/* FR-051: the question count, then 004's round text (004 C2). */}
         <section aria-label="這一輪" className={styles.notes}>
           <h2 className={styles.cardTitle}>這一輪</h2>
           <p className={styles.muted}>共 {activity.questions.length} 題</p>
+          <p className={styles.muted}>{WAIT_ROUND_TEXT}</p>
         </section>
       </section>
       {/* The page's only back-type button sits right under the card (RD-09). */}
