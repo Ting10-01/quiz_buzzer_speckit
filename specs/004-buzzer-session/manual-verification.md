@@ -23,6 +23,7 @@
 | 15 | 2026-11-27 | Ting10-01 | #13 | – | 通過 | 學生分頁收到的 `activity:snapshot`（第 1 題搶答中、6 組）`spreadsheet` 為 `{ id: "", title: "", editable: false, worksheets: [], selectedWorksheet: "" }`，只有題目與各組人數，沒有作答資料；只有 `socket.io` 的 WebSocket 連線，沒有 `polling` 請求 |
 | 16 | 2026-11-27 | Ting10-01 | #14 | – | 通過 | `POST /api/activity/questions/1/open`、`DELETE /api/activity` 都回 `401`，回應沒有看到訊息內容 |
 | 17 | 2026-11-27 | Ting10-01 | #15 | – | 通過 | `409 { code: 'CANCEL_LOCKED', message: '第 1 題開放後不能取消活動' }` |
+| 18 | 2026-11-27 | Ting10-01 | #11 | – | 通過 | 老師重新整理後，從首頁登入即回到控制台；學生頁面沒有受到影響 |
 
 ## 觀察到的問題
 
@@ -36,4 +37,4 @@
 ## 尚未驗證
 
 - Phase 3～5：無
-- Phase 7（US4）：#11
+- Phase 7（US4）：無
