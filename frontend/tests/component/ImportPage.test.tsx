@@ -47,7 +47,7 @@ describe('ImportPage (T-Import) display (FR-021)', () => {
     expect(screen.getByText('可編輯')).toBeInTheDocument();
     expect(screen.queryByText('僅檢視')).not.toBeInTheDocument();
     expect(screen.getByText(/第 4 列/)).toBeInTheDocument();
-    expect(screen.getByText(/B、C、G/)).toBeInTheDocument();
+    expect(screen.getByText(/題號在 B 欄、題目在 C 欄、作答在 G 欄/)).toBeInTheDocument();
     expect(statValue('題數')).toBe('4');
     expect(statValue('題組數')).toBe('2');
     expect(statValue('填空格數')).toBe('6');
@@ -238,5 +238,37 @@ describe('ImportPage (T-ImportError) (FR-022)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('模擬：連不上伺服器');
     expect(navigate).not.toHaveBeenCalled();
     expect(screen.getByText('Header row was not found')).toBeInTheDocument();
+  });
+});
+
+// Phase 8.8 (issue #16): headerColumns are number, text (only if found) and answer (FR-021).
+describe('ImportPage (T-Import) header columns as recognised (FR-021, #16)', () => {
+  const preview = () => screen.getByRole('region', { name: '學習單預覽' });
+  const previewColumns = () =>
+    within(preview())
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent)
+      .filter((text) => text !== '');
+  const previewHeaderRow = () =>
+    within(preview())
+      .getAllByRole('row')[1]
+      .querySelectorAll('td');
+
+  it('names the number, text and answer columns when there are three (T167)', () => {
+    renderImport(makeImportSuccess({ headerColumns: ['B', 'C', 'G'] }));
+    expect(screen.getByText(/題號在 B 欄、題目在 C 欄、作答在 G 欄。/)).toBeInTheDocument();
+    expect(previewColumns()).toEqual(['B', 'C', 'G']);
+    expect([...previewHeaderRow()].map((td) => td.textContent)).toEqual(['題號欄', '題目欄', '作答欄']);
+  });
+
+  it('names only the number and answer columns when there is no text column (T167)', () => {
+    renderImport(makeImportSuccess({ headerColumns: ['B', 'G'] }));
+    expect(screen.getByText(/題號在 B 欄、作答在 G 欄。/)).toBeInTheDocument();
+    expect(screen.queryByText(/題目在/)).not.toBeInTheDocument();
+    expect(previewColumns()).toEqual(['B', 'G']);
+    expect([...previewHeaderRow()].map((td) => td.textContent)).toEqual(['題號欄', '作答欄']);
+    for (const cell of ['G5', 'G6', 'G8', 'G9', 'G11', 'G13']) {
+      expect(within(preview()).getByText(cell)).toBeInTheDocument();
+    }
   });
 });
