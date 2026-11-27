@@ -11,7 +11,7 @@
 | `Judgement`（enum） | `PENDING`、`ACCEPTED`、`REJECTED`、`UNJUDGED` | 四種都使用（REQ-SUB-14） |
 | `Submission` | `questionNumber`、`groupNumber`、`answers: string[]`、`rank: number`、`elapsedMs: number`、`judgement` | 老師視角 `rank` 為真正的順位；學生視角 `rank` 一律 0（REQ-SUB-16）。`answers` 順序對應 `Question.subQuestions` |
 | `JudgeOutcome` | `submissions: Submission[]`、`activity: Activity` | `judge` 的回傳：判定後本題的完整列表（老師視角）與目前的活動（REQ-SUB-11、REQ-SUB-12） |
-| `ValidationError` | `field: string`、`message: string` | 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`（i 從 0 開始），不屬於某一格為 `answers`。001 頁面一律顯示在第一個答案欄旁 |
+| `ValidationError` | `field: string`、`message: string` | 沿用 001 模擬實作的寫法：某一格為 `answers.<i>`（i 從 0 開始），不屬於某一格為 `answers`。001 頁面把某一格的錯誤（`answers.<i>`）顯示在該格旁，不屬於某一格的錯誤（`answers`）顯示在第一個答案欄旁 |
 
 ## 2. 共用事件型別（`shared/src/submissionEvents.ts`）
 

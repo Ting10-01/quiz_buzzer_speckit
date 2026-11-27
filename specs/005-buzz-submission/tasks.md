@@ -156,7 +156,7 @@ description: "Task list for 005 搶答與判定"
 ## Phase 7: Polish & Cross-Cutting Concerns
 
 - [ ] T031 [P] 在 `frontend/tests/e2e/submission-texts.spec.ts` 檢查：T-Setup 摘要的成功規則說明有「老師依送出順序判定，第一個被接受的組別搶答成功」與「每組每題只能送出一次，被拒絕後不能重送」（AC-26、REQ-SUB-18）。文字由 001 依 feature-split 3.2 寫在頁面上；005 不改頁面。若文字不符，回報給 001，不在 005 修改
-- [ ] T032 [P] `frontend/tests/e2e/submission.spec.ts`（Playwright，1 個老師分頁、4 個學生分頁）：依 quickstart 人工驗證情境 1–9 自動化，照 001 最終版的頁面行為：空白格送出後第一個答案欄旁出現「每一格都填才能送出」（AC-02）、同組同時送出後兩人都在等待判定頁（AC-04、AC-27）、題組一列兩個答案（AC-03、AC-09）、只有 #1 可判定（AC-10）、拒絕後該組停在等待判定頁的不接受狀態且沒有送出按鈕（AC-08、AC-11）、新分頁加入已送出的組直接進入等待判定頁（AC-28）、接受後 1 秒內老師到 T-QuestionEnd、學生到 S-QuestionDone（AC-12）、手動結束後未判定（AC-14）；擷取學生分頁的 WebSocket 訊息確認沒有他組資料、`rank` 全為 0（AC-17、AC-18）
+- [ ] T032 [P] `frontend/tests/e2e/submission.spec.ts`（Playwright，1 個老師分頁、4 個學生分頁）：依 quickstart 人工驗證情境 1–9 自動化，照 001 最終版的頁面行為：空白格送出後空白的那一格旁出現「每一格都填才能送出」（AC-02）、同組同時送出後兩人都在等待判定頁（AC-04、AC-27）、題組一列兩個答案（AC-03、AC-09）、只有 #1 可判定（AC-10）、拒絕後該組停在等待判定頁的不接受狀態且沒有送出按鈕（AC-08、AC-11）、新分頁加入已送出的組直接進入等待判定頁（AC-28）、接受後 1 秒內老師到 T-QuestionEnd、學生到 S-QuestionDone（AC-12）、手動結束後未判定（AC-14）；擷取學生分頁的 WebSocket 訊息確認沒有他組資料、`rank` 全為 0（AC-17、AC-18）
 - [ ] T033 依 `specs/005-buzz-submission/quickstart.md` 執行所有自動化測試（含 001–004 既有的測試），並把人工驗證情境 1–16 從頭走一次，結果寫入 `specs/005-buzz-submission/manual-verification.md`（原則 VIII）
 - [ ] T034 圖表一致性驗證：比對 `server/src/submission/`、`frontend/src/services/server/ServerSubmissionService.ts`、`shared/src/submissionEvents.ts` 與 `diagrams/005-*.puml` 的組件、類別、方法與呼叫順序，結果寫入 `specs/005-buzz-submission/diagram-verification.md`（原則 I）
 - [ ] T035 （等 001 把 `Submission.rank` 改成可選後才做）修改 `server/src/submission/SubmissionVisibility.ts` 的 `forStudent` 為不放 `rank`，並把 T006、T025、T027 中「學生的 `rank` 為 0」的檢查改成「學生的資料沒有 `rank` 屬性」（spec「需請 001 修改」、research RD-06）
