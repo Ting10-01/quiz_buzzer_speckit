@@ -474,6 +474,27 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 8.8: 規格修訂（2026-11-28）：沒有題目欄時的表頭說明與預覽（issue #16）
+
+**Purpose**: 套用 spec Session 2026-11-28 的 #16 問答（commit `spec(001): ...`）：確認辨識結果頁依 `headerColumns` 的順序（題號、題目（有才列）、作答；003 data-model）逐欄說明表頭位置，學習單預覽只列辨識到的欄位（FR-021）。
+
+- **只改 `ImportPage.tsx` 與 `SheetPreview.tsx`**；版面與按鈕不變。T-Results 傳入的預覽沒有表頭資訊，維持三欄的通用欄名（C-5）。
+- **測試先寫、一次確認失敗**（T167 一筆 `test(001)` commit），再一次實作到全部通過（T168 一筆 `fix(001)` commit）。
+- **既有測試只改一處斷言**：`ImportPage.test.tsx` 的「表頭列與欄」原本斷言舊格式 `B、C、G`，改為 T167 的逐欄說明；其他斷言不修改。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T167 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx`，並新增 `frontend/tests/component/SheetPreview.test.tsx`（沒有表頭資訊的情況）：`headerColumns` 為 `["B","C","G"]` 時說明文字含「題號在 B 欄、題目在 C 欄、作答在 G 欄」，預覽的欄名為 B、C、G，表頭列為「題號欄、題目欄、作答欄」；為 `["B","G"]` 時說明文字含「題號在 B 欄、作答在 G 欄」且不含「題目」，預覽的欄名只有 B、G，表頭列只有「題號欄、作答欄」；沒有表頭資訊時（T-Results）維持「題號、題目、作答」三欄（FR-021；issue #16）
+
+### Implementation
+
+- [ ] T168 [US2] 修改 `frontend/src/pages/teacher/ImportPage.tsx` 的說明文字與 `frontend/src/components/SheetPreview.tsx` 的欄位：依 `headerColumns` 的長度判斷有沒有題目欄（3 欄有、2 欄沒有）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T167 通過，且其他測試沒有退步（依賴 T167）
+- [ ] T169 依 `quickstart.md` Q16 人工驗證：有題目欄與沒有題目欄的學習單各匯入一次，檢查說明文字與預覽，記錄於 `manual-verification.md`
+
+**Checkpoint**: 沒有題目欄的學習單，確認辨識結果頁的說明與預覽和實際欄位一致。
+
+---
+
 ## 需求與任務對照
 
 | 需求 | 任務 |
@@ -491,7 +512,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-010–FR-013 | T044、T045、T050、T051、T105、T110、T149、T153 |
 | FR-015 | T157–T159 |
 | FR-020 | T046、T052、T056、T062 |
-| FR-021、FR-022 | T057、T061、T063 |
+| FR-021、FR-022 | T057、T061、T063、T167–T169 |
 | FR-023、FR-024 | T058、T064、T066a、T160、T161、T163、T165、T166 |
 | FR-025 | T059、T065 |
 | FR-026 | T135–T138、T139–T142、T152、T155 |
@@ -532,6 +553,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 - **Polish (Phase 8)**: 依賴所有 Story
 - **規格修訂 (Phase 8.5)**: 依賴 T102；修改 US1、US4 已完成的 `HomePage.tsx`、`JoinPage.tsx`、`StudentPlayPage.tsx` 與 `interfaces.ts`；完成後才做 T103 與圖表一致性驗證（重做 F4）
 - **規格修訂 (Phase 8.7)**: 依賴 Phase 8.6；修改 US2、US4 已完成的 `SetupPage.tsx`、`StudentPlayPage.tsx`；T165 解除 004 的 2 個 E2E skip，需要 004 已在 main
+- **規格修訂 (Phase 8.8)**: 依賴 Phase 8.7；修改 US2 已完成的 `ImportPage.tsx`、`SheetPreview.tsx`
 
 所有 Story 都會修改 `AppRouter.tsx`，因此 Story 之間依序執行（P1 依 US1 → US2 → US3 → US4，最後 US5）。CLAUDE.md 規定 implement 一次只執行一個 Phase。
 
