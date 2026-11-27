@@ -183,6 +183,18 @@ export async function seedImport(result: ImportSuccess): Promise<void> {
   });
 }
 
+/** One call 006's write-back made to the test server's fake Google Sheets (server FakeSpreadsheetWriter). */
+export interface SheetWrite {
+  method: 'duplicateSheet' | 'writeTexts';
+  spreadsheetId: string;
+  cells?: { cell: string; text: string }[];
+}
+
+/** What the write-back sent to the fake Google Sheets in this test, in order (006 T032). */
+export async function writtenToSheet(): Promise<SheetWrite[]> {
+  return (await fetch(`${testServerUrl()}/test/written`)).json() as Promise<SheetWrite[]>;
+}
+
 /** The server's activity as the teacher sees it. */
 export async function serverActivity(): Promise<ActivitySnapshot> {
   return (await fetch(`${testServerUrl()}/test/activity`)).json() as Promise<ActivitySnapshot>;
