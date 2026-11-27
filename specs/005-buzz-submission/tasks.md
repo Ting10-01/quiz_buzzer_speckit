@@ -145,9 +145,9 @@ description: "Task list for 005 搶答與判定"
 
 ### Implementation for User Story 4
 
-- [ ] T028 [US4] 在 `server/src/submission/SubmissionEngine.ts` 加入 pino log（002 的 logger）：`submission.accepted`（`seq` = `processed`、`questionNumber`、`groupNumber`、`rank`、`elapsedMs`、`requestId`）、`submission.duplicate`（`seq`、`groupNumber`、`requestId`）、`submission.rejected`（`seq`、`groupNumber`、`requestId`、`reason`）、`judgement.applied`、`judgement.ignored`；不記錄答案與憑證（research RD-09、AC-22）
-- [ ] T029 [US4] 檢查 `server/src/submission/` 中在 004 `CommandQueue.run` 內執行的程式（`submit`、`judge`、`onActivityChange`）沒有 `await`、沒有任何 `emit`（推送都經 `SubmissionNotifier` 以 `setImmediate` 排程）、沒有檔案 I/O；`run` 內只允許改 `SubmissionStore`、排程推送與寫 log（REQ-SUB-07、REQ-SUB-NFR-01、004 RA-04），依 T027、T028
-- [ ] T030 [US4] 依 T027 的結果調整 `server/src/submission/SubmissionNotifier.ts`（例如合併間隔、序列化方式），直到 20 輪全部通過；結果記在 `specs/005-buzz-submission/load-test.md`（同 004：壓力測試是自動化量測，不放進人工驗證紀錄；REQ-SUB-NFR-02、NFR-04）
+- [X] T028 [US4] 在 `server/src/submission/SubmissionEngine.ts` 加入 pino log（002 的 logger）：`submission.accepted`（`seq` = `processed`、`questionNumber`、`groupNumber`、`rank`、`elapsedMs`、`requestId`）、`submission.duplicate`（`seq`、`groupNumber`、`requestId`）、`submission.rejected`（`seq`、`groupNumber`、`requestId`、`reason`）、`judgement.applied`、`judgement.ignored`；不記錄答案與憑證（research RD-09、AC-22）
+- [X] T029 [US4] 檢查 `server/src/submission/` 中在 004 `CommandQueue.run` 內執行的程式（`submit`、`judge`、`onActivityChange`）沒有 `await`、沒有任何 `emit`（推送都經 `SubmissionNotifier` 以 `setImmediate` 排程）、沒有檔案 I/O；`run` 內只允許改 `SubmissionStore`、排程推送與寫 log（REQ-SUB-07、REQ-SUB-NFR-01、004 RA-04），依 T027、T028
+- [X] T030 [US4] 依 T027 的結果調整 `server/src/submission/SubmissionNotifier.ts`（例如合併間隔、序列化方式），直到 20 輪全部通過；結果記在 `specs/005-buzz-submission/load-test.md`（同 004：壓力測試是自動化量測，不放進人工驗證紀錄；REQ-SUB-NFR-02、NFR-04）
 - [ ] T046 [US4] 人工驗證：依 quickstart「US4」情境 14–16 在瀏覽器操作，結果記在 `specs/005-buzz-submission/manual-verification.md`，依 T030
 
 **Checkpoint**: 高併發下順序與延遲達標
