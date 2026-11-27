@@ -63,7 +63,7 @@ SP --> S : 每題所有組別的順位與答案，本組醒目標示
 
 == 寫回 Google Sheets（R5、R5.1；REQ-RES-07～20） ==
 T -> TP : 按「寫回 Google Sheets」
-TP --> T : T-WriteBack：「這些填空格原本的內容會被覆蓋，\n寫回前會先建立備份工作表」
+TP --> T : T-WriteBack：「這些填空格原本的內容會被覆蓋。」
 T -> TP : 按「寫回」
 TP -> SRS : writeBack()
 SRS -> CL : request('POST', '/api/results/write-back')
