@@ -1,7 +1,8 @@
-import type { Submission, ValidationError } from '@quiz-buzzer/shared/entities';
+import type { Judgement, JudgeOutcome, Submission, ValidationError } from '@quiz-buzzer/shared/entities';
 import type { SubmitReply, SubmitRequest } from '@quiz-buzzer/shared/submissionEvents';
 import type { ActivityManager } from '../activity/ActivityManager.js';
 import type { ActivityStore } from '../activity/ActivityStore.js';
+import { Audience } from '../activity/ActivityView.js';
 import type { SequenceClock } from '../activity/SequenceClock.js';
 import type { SubmissionNotifier } from './SubmissionNotifier.js';
 import type { SubmissionRecord, SubmissionStore } from './SubmissionStore.js';
@@ -9,7 +10,6 @@ import type { SubmissionVisibility } from './SubmissionVisibility.js';
 
 // Submission and judging rules (data-model section 4). Every method runs inside 004's CommandQueue.run,
 // so it is synchronous, only changes SubmissionStore and leaves sending to SubmissionNotifier.
-// judge is added by US2 (T021).
 const ANSWER_MAX_LENGTH = 200;
 const NOT_JOINED: ValidationError = { field: 'answers', message: '請先加入組別' };
 const BAD_FORMAT: ValidationError = { field: 'answers', message: '送出的資料格式不正確' };
@@ -89,6 +89,41 @@ export class SubmissionEngine {
     if (group === null) return null;
     const record = this.submissions.question(questionNumber)?.byGroup(group);
     return record === undefined ? null : this.visibility.forStudent(record);
+  }
+
+  /**
+   * The teacher judges a submission (research RD-07). It takes effect only while question n is open,
+   * nothing is ACCEPTED yet and the group's record is the earliest PENDING; otherwise nothing changes.
+   * ACCEPTED ends the question inside this same CommandQueue.run, so no later submission gets in.
+   * Answers the teacher list and activity after judging; the caller makes sure an activity exists.
+   */
+  judge(questionNumber: number, groupNumber: number, judgement: Judgement): JudgeOutcome {
+    const state = this.activityStore.current();
+    const question = this.submissions.question(questionNumber);
+    const record = question?.byGroup(groupNumber);
+    const judgeable =
+      state?.phase === 'OPEN' &&
+      state.currentQuestion === questionNumber &&
+      question !== undefined &&
+      !question.closed &&
+      question.records.every((r) => r.judgement !== 'ACCEPTED') &&
+      record !== undefined &&
+      question.firstPending() === record &&
+      (judgement === 'ACCEPTED' || judgement === 'REJECTED');
+    if (judgeable) {
+      record.judgement = judgement;
+      if (judgement === 'ACCEPTED') {
+        question.winnerGroup = groupNumber;
+        // Question n was just checked to be open, so 004 does not throw QUESTION_NOT_OPEN (plan A-4).
+        this.activityManager.endQuestion(questionNumber);
+      }
+      this.notifier.judged(record);
+      this.notifier.submissionsChanged(questionNumber);
+    }
+    return {
+      submissions: this.submissions.list(questionNumber),
+      activity: this.activityManager.snapshot(Audience.TEACHER).activity!,
+    };
   }
 
   /**

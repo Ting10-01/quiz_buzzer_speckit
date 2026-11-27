@@ -19,5 +19,5 @@ export async function submissionRoutes(app: FastifyInstance): Promise<void> {
 
   activityStore.subscribe((version) => engine.onActivityChange(version));
   new SubmissionGateway(engine, membership, queue).register(app.io);
-  await app.register(submissionHttpRoutes, { submissions });
+  await app.register(submissionHttpRoutes, { submissions, engine, queue, activityStore });
 }
