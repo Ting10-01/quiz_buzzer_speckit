@@ -89,6 +89,12 @@
   cursor: pointer;
 }
 
+/* Same look as .btn:disabled in global.css. */
+.step:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .step:focus-visible {
   outline: 2px solid var(--accent-stroke);
   outline-offset: 2px;

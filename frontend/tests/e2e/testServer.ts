@@ -224,3 +224,19 @@ export async function advanceActivity(source: ImportSuccess, groupCount = 6): Pr
   else if (activity.phase === 'OPEN') await teacherApi('POST', `/api/activity/questions/${n}/end`);
   else if (activity.phase === 'QUESTION_ENDED') await teacherApi('POST', `/api/activity/questions/${n + 1}/open`);
 }
+
+/**
+ * Sends the next "建立活動" or "儲存設定" with this group count instead of the page's, as someone
+ * bypassing the page would (004 AC-04). The page cannot enter it, since "−" and "+" stop at 2 and
+ * 20 (001 C2).
+ */
+export async function bypassGroupCountOnce(page: Page, groupCount: number): Promise<void> {
+  await page.route(
+    /\/api\/activity(\/settings)?$/,
+    (route) => {
+      if (!['POST', 'PUT'].includes(route.request().method())) return route.fallback();
+      return route.fallback({ postData: JSON.stringify({ ...route.request().postDataJSON(), groupCount }) });
+    },
+    { times: 1 },
+  );
+}

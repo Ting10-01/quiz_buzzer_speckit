@@ -465,9 +465,9 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T163 [US2] 修改 `frontend/src/pages/teacher/SetupPage.tsx`：`SUCCESS_RULE` 改為 T160 的文字；以 `@quiz-buzzer/shared/activityRules` 的 `GROUP_COUNT_DEFAULT` 取代 `INITIAL_GROUP_COUNT`；「−」「+」在 `GROUP_COUNT_MIN`、`GROUP_COUNT_MAX` 時 `disabled`，點擊結果夾在範圍內；「學生加入」改用 `JOIN_METHOD_TEXT`；更新檔頭註解（依賴 T160、T161）
-- [ ] T164 [US4] 修改 `frontend/src/pages/student/StudentPlayPage.tsx` 的 `WaitView`：「這一輪」在「共 n 題」下方加上 `WAIT_ROUND_TEXT`（依賴 T162）
-- [ ] T165 解除 004 `frontend/tests/e2e/activity-sync.spec.ts` 中等待 C2 的 2 個 `test.skip`（AC-01、AC-02 與 AC-09）；C2 之後頁面無法把組數減到 1，所以 004 AC-04 的 E2E（`activity-sync.spec.ts`）與 001 Q4 的驗證失敗步驟（`us2-preparation.spec.ts`，US2 AC-9）改為攔截 `POST /api/activity`，把 `groupCount` 改成 1 後送到測試伺服器（004 AC-04「繞過頁面直接要求」），斷言不變；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T160–T162 與這 2 個 E2E 通過，且其他測試沒有退步（SC-002）
+- [X] T163 [US2] 修改 `frontend/src/pages/teacher/SetupPage.tsx`：`SUCCESS_RULE` 改為 T160 的文字；以 `@quiz-buzzer/shared/activityRules` 的 `GROUP_COUNT_DEFAULT` 取代 `INITIAL_GROUP_COUNT`；「−」「+」在 `GROUP_COUNT_MIN`、`GROUP_COUNT_MAX` 時 `disabled`，點擊結果夾在範圍內；「學生加入」改用 `JOIN_METHOD_TEXT`；更新檔頭註解（依賴 T160、T161）
+- [X] T164 [US4] 修改 `frontend/src/pages/student/StudentPlayPage.tsx` 的 `WaitView`：「這一輪」在「共 n 題」下方加上 `WAIT_ROUND_TEXT`（依賴 T162）
+- [X] T165 解除 004 `frontend/tests/e2e/activity-sync.spec.ts` 中等待 C2 的 2 個 `test.skip`（AC-01、AC-02 與 AC-09）；C2 之後頁面無法把組數減到 1，所以 004 AC-04 的 E2E（`activity-sync.spec.ts`）與 001 Q4 的驗證失敗步驟（`us2-preparation.spec.ts`，US2 AC-9）改為攔截 `POST /api/activity`，把 `groupCount` 改成 1 後送到測試伺服器（004 AC-04「繞過頁面直接要求」），斷言不變；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T160–T162 與這 2 個 E2E 通過，且其他測試沒有退步（SC-002）
 - [ ] T166 依 `quickstart.md` Q15 人工驗證：T-Setup 組數 2／20 時「−」「+」的狀態、「學生加入」與「成功規則」的文字、S-Wait「這一輪」的輪次文字，記錄於 `manual-verification.md`
 
 **Checkpoint**: 005 AC-26 與 004 AC-01、AC-02、AC-09 的頁面部分完成；004 不再有等待 001 的 skip。

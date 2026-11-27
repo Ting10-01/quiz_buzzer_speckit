@@ -1,8 +1,15 @@
 // T-Setup: group count and the round summary, in create or edit mode (FR-023, FR-024).
 // No activity name, fair mode, time limit or student join URL (SC-004).
-// Group count range and default belong to 004 (D4, D5); "−" and "+" only change the entered value.
+// Group count range, default and the join text come from 004's activityRules (D4, D5, 004 C2);
+// "−" and "+" stop at the range, and the activity service still validates the count (FR-008).
 import { useState } from 'react';
 import { QuestionType, type ActivitySettings } from '@quiz-buzzer/shared/entities';
+import {
+  GROUP_COUNT_DEFAULT,
+  GROUP_COUNT_MAX,
+  GROUP_COUNT_MIN,
+  JOIN_METHOD_TEXT,
+} from '@quiz-buzzer/shared/activityRules';
 import { isValidationError } from '@quiz-buzzer/shared/guards';
 import type { Navigate, PageState } from '../../app/AppRouter';
 import { ActionBar } from '../../components/ActionBar';
@@ -14,18 +21,14 @@ import styles from './SetupPage.module.css';
 
 type SetupPageState = Extract<PageState, { id: 'T-Setup' }>;
 
-/** Starting value in create mode, for display only; the real default is decided by 004 (D5). */
-const INITIAL_GROUP_COUNT = 6;
-
-/** Rule texts follow docs/feature-split.md 3.2, not the design's rule text (FR-023). */
+/** Success rule from docs/feature-split.md 3.2 and section 4, not the design's rule text (FR-023, D18). */
 const SUCCESS_RULE =
-  '老師依送出順序判定，只能判定最早一筆還沒判定的答案；第一個被接受的組別搶答成功，這一題隨即結束。每組每題只能送出一次。';
-const JOIN_METHOD = '學生在首頁選「我是學生」，再選自己的組別加入。同一組可以有多位同學，任何人送出都代表整組。';
+  '老師依送出順序判定，第一個被接受的組別搶答成功，這一題隨即結束；老師只能判定最早一筆還沒判定的答案。每組每題只能送出一次，被拒絕後不能重送。';
 
 export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupPageState }) {
   const { activity: activityService } = useServiceRegistry();
   const [groupCount, setGroupCount] = useState(
-    page.mode === 'edit' ? page.activity.groupCount : INITIAL_GROUP_COUNT,
+    page.mode === 'edit' ? page.activity.groupCount : GROUP_COUNT_DEFAULT,
   );
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string>();
@@ -81,12 +84,18 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
                 <button
                   type="button"
                   className={styles.step}
-                  onClick={() => setGroupCount((n) => Math.max(0, n - 1))}
+                  disabled={groupCount <= GROUP_COUNT_MIN}
+                  onClick={() => setGroupCount((n) => Math.max(GROUP_COUNT_MIN, n - 1))}
                 >
                   −
                 </button>
                 <span className={styles.count}>{groupCount} 組</span>
-                <button type="button" className={styles.step} onClick={() => setGroupCount((n) => n + 1)}>
+                <button
+                  type="button"
+                  className={styles.step}
+                  disabled={groupCount >= GROUP_COUNT_MAX}
+                  onClick={() => setGroupCount((n) => Math.min(GROUP_COUNT_MAX, n + 1))}
+                >
                   +
                 </button>
               </div>
@@ -119,7 +128,7 @@ export function SetupPage({ navigate, page }: { navigate: Navigate; page: SetupP
               <dt>成功規則</dt>
               <dd>{SUCCESS_RULE}</dd>
               <dt>學生加入</dt>
-              <dd>{JOIN_METHOD}</dd>
+              <dd>{JOIN_METHOD_TEXT}</dd>
             </dl>
           </section>
         </div>
