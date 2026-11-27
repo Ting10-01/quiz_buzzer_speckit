@@ -20,7 +20,7 @@ const ALREADY_SUBMITTED: ValidationError = { field: 'answers', message: '本組�
 
 export class SubmissionEngine {
   /** Each processed submission adds 1, whatever the result; logged as `seq` (research RD-01). */
-  protected processed = 0;
+  private processed = 0;
   /** The question that was OPEN at the last activity change. */
   private openQuestion: number | null;
 
@@ -83,7 +83,7 @@ export class SubmissionEngine {
   }
 
   /** The checks of submit in data-model order; the first error, or null when it can be accepted. */
-  validate(group: number | null, request: SubmitRequest): ValidationError | null {
+  private validate(group: number | null, request: SubmitRequest): ValidationError | null {
     if (group === null) return NOT_JOINED;
     if (!isWellFormed(request)) return BAD_FORMAT;
     const state = this.activityStore.current();
