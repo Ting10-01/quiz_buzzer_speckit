@@ -51,7 +51,7 @@ description: "Task list for 006 結果與寫回"
 - [X] T004 [P] [US1] `server/tests/unit/results/ResultQuery.question.test.ts`：已結束的題目回傳成功組別、各小題答案與 `submissionCount`（AC-01）；第 5 組只多拿到本組的送出、看不到其他沒有成功的組別，回傳的 `winner` 與本組送出 `rank` 為 0、`behindFirstMs` 與 `submissions` 同長度且都是 0（AC-02、REQ-RES-03）；有送出但沒有成功組別、沒有送出兩種情況（AC-03、AC-04）；`endedAt` 沒有該題時丟 `QUESTION_NOT_ENDED`（AC-05、REQ-RES-02）；`viewerGroup` 為 `null` 時 `submissions` 為空（AC-06）；沒有活動 → `NO_ACTIVITY`、題號 0、5、`1.5` → `QUESTION_NOT_FOUND`（REQ-RES-06）；活動結束後 `winner`、`submissions` 分別等於 005 替身的 `winner(n)`、`list(n)`（REQ-RES-05）
 - [X] T005 [P] [US1] `server/tests/integration/results/resultSocketHandlers.test.ts`：以 `socket.io-client` 連上 `buildApp` 建立的測試伺服器（`app.io`），`result:question` 的 ack 格式依 contracts；組別取自 `GroupMembership.groupOf(socket)`，payload 夾帶 `groupNumber` 也不影響結果（AC-06）；未結束的題目 ack `{ ok: false, code: "QUESTION_NOT_ENDED", message: "這一題還沒結束，結果尚未公布" }`（AC-05）
 - [X] T006 [P] [US1] `server/tests/integration/results/resultLoad.test.ts`：200 個連線在題目結束後同時 emit `result:question`，全部在 1 秒內收到 ack（SC-005）
-- [ ] T007 [P] [US1] `frontend/tests/unit/ServerResultService.test.ts`（getQuestionResult 部分）：以假的 `RealtimeClient` 斷言呼叫 `emitWithAck("result:question", { questionNumber })`；ack 成功回傳 `QuestionResult`；ack `ok: false` → reject `UnexpectedError(message)`；`emitWithAck` reject 時原樣往上丟
+- [X] T007 [P] [US1] `frontend/tests/unit/ServerResultService.test.ts`（getQuestionResult 部分）：以假的 `RealtimeClient` 斷言呼叫 `emitWithAck("result:question", { questionNumber })`；ack 成功回傳 `QuestionResult`；ack `ok: false` → reject `UnexpectedError(message)`；`emitWithAck` reject 時原樣往上丟
 
 ### Implementation for User Story 1
 
@@ -73,7 +73,7 @@ description: "Task list for 006 結果與寫回"
 
 - [X] T011 [P] [US2] `server/tests/unit/results/ResultQuery.all.test.ts`：`FINISHED` 時每題所有送出依 `rank` 排序，學生、老師、未加入組別的連線拿到相同內容（AC-07、AC-08、REQ-RES-04）；結束時待判定的送出為 `UNJUDGED` 且不是 `winner`（AC-09）；`behindFirstMs` 以順位 1 的 `elapsedMs` 為基準，`elapsedMs` 3200、5000、5000 且第 2 名被接受時為 `[0, 1800, 1800]`，沒有送出時為 `[]`（AC-30、REQ-RES-21）；最後一題沒有 `endedAt` 但 `phase` 為 `FINISHED` 時仍算已結束；活動進行中只回第 1、2 題，每題只含呼叫者本組的送出且 `rank`、`behindFirstMs` 為 0（AC-10）；窮舉「題目未結束／已結束 × 活動未結束／已結束 × 6 組與 `null`」，未結束的題目送出出現 0 次、活動結束前他組未成功的送出出現 0 次（SC-006）
 - [X] T012 [P] [US2] 在 `server/tests/integration/results/resultSocketHandlers.test.ts` 加入 `result:all`：ack 格式、只含已結束的題目、沒有活動 → `NO_ACTIVITY`
-- [ ] T013 [P] [US2] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `getAllResults`：成功、`ok: false`、逾時
+- [X] T013 [P] [US2] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `getAllResults`：成功、`ok: false`、逾時
 
 ### Implementation for User Story 2
 
@@ -96,7 +96,7 @@ description: "Task list for 006 結果與寫回"
 - [X] T017 [P] [US3] `server/tests/unit/results/WriteBackService.success.test.ts`：呼叫順序為 `SpreadsheetReader.load` → `GuidedNotesParser.parse`（003 真正的 parser）→ `duplicateSheet`（`sheetId` 為該工作表的 `SheetGrid.sheetId`）→ `writeTexts`，`writeTexts` 只呼叫一次；`ImportStore.save` 沒有被呼叫（AC-12、REQ-RES-12、13、14）；寫入的儲存格恰好是有成功組別題目的每個小題 `blankCell`，沒有其他儲存格（AC-14、AC-15、REQ-RES-07、09、10）；題組小題的文字為「`latestMarkers()[blankCell]` ＋答案」，沒有標記的格子只寫答案（AC-13）；所有題目都沒有成功組別 → 不呼叫 `load`、`duplicateSheet`、`writeTexts`，回 `{ ok: true, cellCount: 0 }`（AC-18）；連續寫回兩次，兩次 `writeTexts` 的內容相同、`duplicateSheet` 各一次（AC-19、REQ-RES-18）；`cellCount` 等於寫入格數（REQ-RES-20）
 - [X] T018 [P] [US3] `server/tests/unit/results/GoogleSheetsWriter.test.ts`（以假的 `@googleapis/sheets` 回應）：`writeTexts` 只送一次 `spreadsheets.values.batchUpdate`，`valueInputOption` 為 `RAW`，「=1+1」原樣送出（AC-16、REQ-RES-11）；範圍為 `'<工作表>'!<cell>`，名稱中的 `'` 變成 `''`；`duplicateSheet` 送出一個 `duplicateSheet` 請求（`sourceSheetId`、`newSheetName`）；每個請求設定 15 秒逾時；每次呼叫都向 `app.googleClients.authorizedClient()` 取授權
 - [X] T019 [P] [US3] `server/tests/integration/results/resultsRoutes.test.ts`（Fastify `inject()`）：帶有效老師憑證 `POST /api/results/write-back` → `200` 與 `WriteBackResult`；`WriteBackService` 丟出 `WriteBackFailure` 時回 `200` 與 `{ ok: false, cellCount: 0, failureReason }`，只有 `GOOGLE_AUTH_EXPIRED` 回 `401` 與 `ErrorBody { code, message }`（以假的 `WriteBackService`）
-- [ ] T020 [P] [US3] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `writeBack`：以假的 `ApiClient` 斷言呼叫 `request("POST", "/api/results/write-back")`；成功原樣回傳 body
+- [X] T020 [P] [US3] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入 `writeBack`：以假的 `ApiClient` 斷言呼叫 `request("POST", "/api/results/write-back")`；成功原樣回傳 body
 
 ### Implementation for User Story 3
 
@@ -126,7 +126,7 @@ description: "Task list for 006 結果與寫回"
   - research RD-07 對應表的每一格（`READ`：`TeacherNotSignedInError`、`SheetsReadError` 的 `AUTH_EXPIRED`、`NO_ACCESS`、`UNAVAILABLE`；`BACKUP`／`WRITE`：401／403／404／逾時／500）（AC-23～AC-26）；`duplicateSheet` 失敗時不呼叫 `writeTexts`（REQ-RES-13）
   - 第一個寫回尚未完成時第二個 → `IN_PROGRESS`，`duplicateSheet` 只被呼叫一次；任何失敗後 `inProgress` 恢復為 false，可再寫回（AC-28、REQ-RES-18）
 - [X] T027 [P] [US4] 在 `server/tests/integration/results/resultsRoutes.test.ts` 加入：沒有 `Authorization`、憑證錯誤、舊的老師憑證（重新登入後作廢）→ `401 UNAUTHORIZED`，`WriteBackService.writeBack` 沒有被呼叫（AC-27、REQ-RES-15）；並把 `POST /api/results/write-back` 加入 002 `server/tests/integration/requireTeacher.test.ts` 的老師專用路由清單（002 T043）
-- [ ] T028 [P] [US4] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入：`200` 且 `ok: false` → 原樣回傳；`ApiError` `401 GOOGLE_AUTH_EXPIRED` → `{ ok: false, cellCount: 0, failureReason: message }`；`401 UNAUTHORIZED` → `{ ok: false, cellCount: 0, failureReason: "老師登入已失效，請回首頁重新登入。沒有寫入任何格子。" }`；`NETWORK` 與 500 → 原樣 reject `ApiError`
+- [X] T028 [P] [US4] 在 `frontend/tests/unit/ServerResultService.test.ts` 加入：`200` 且 `ok: false` → 原樣回傳；`ApiError` `401 GOOGLE_AUTH_EXPIRED` → `{ ok: false, cellCount: 0, failureReason: message }`；`401 UNAUTHORIZED` → `{ ok: false, cellCount: 0, failureReason: "老師登入已失效，請回首頁重新登入。沒有寫入任何格子。" }`；`NETWORK` 與 500 → 原樣 reject `ApiError`
 
 ### Implementation for User Story 4
 
