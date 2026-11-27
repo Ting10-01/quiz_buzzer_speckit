@@ -2,6 +2,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { WAIT_ROUND_TEXT } from '@quiz-buzzer/shared/activityRules';
 import { makeActivity, makeGroups } from '../helpers/fixtures';
 import { goBack } from '../helpers/pageQueries';
 import {
@@ -119,5 +120,16 @@ describe('S-Wait inside AppRouter', () => {
     expect(
       within(screen.getByTestId('student-column')).getByRole('button', { name: '選錯組別？重新選擇' }),
     ).toBeInTheDocument();
+  });
+});
+
+// Phase 8.7 (issue #28): 004's round text under the question count.
+describe('StudentPlayPage S-Wait round text (FR-051, 004 C2)', () => {
+  it('shows WAIT_ROUND_TEXT right under the question count (T162)', () => {
+    const { activity } = setup();
+    const round = screen.getByRole('region', { name: '這一輪' });
+    const count = within(round).getByText(`共 ${activity.questions.length} 題`);
+    const text = within(round).getByText(WAIT_ROUND_TEXT);
+    expect(count.nextElementSibling).toBe(text);
   });
 });

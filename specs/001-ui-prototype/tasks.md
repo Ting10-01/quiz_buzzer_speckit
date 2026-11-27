@@ -459,9 +459,9 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T160 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：「這一輪」的「成功規則」內容完全等於「老師依送出順序判定，第一個被接受的組別搶答成功，這一題隨即結束；老師只能判定最早一筆還沒判定的答案。每組每題只能送出一次，被拒絕後不能重送。」（FR-023、D18；issue #26）
-- [ ] T161 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：建立模式的組數初始值為 `GROUP_COUNT_DEFAULT`；按「−」到 `GROUP_COUNT_MIN` 時「−」不可用、「+」可用，再點「−」組數不變；按「+」到 `GROUP_COUNT_MAX` 時「+」不可用、「−」可用，再點「+」組數不變；修改模式的初始值為活動目前的組數；「學生加入」內容完全等於 `JOIN_METHOD_TEXT`（FR-023、US2 AC-6、AC-7；004 C2）
-- [ ] T162 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait「這一輪」顯示「共 n 題」，其下方顯示 `WAIT_ROUND_TEXT`（FR-051；004 C2）
+- [X] T160 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：「這一輪」的「成功規則」內容完全等於「老師依送出順序判定，第一個被接受的組別搶答成功，這一題隨即結束；老師只能判定最早一筆還沒判定的答案。每組每題只能送出一次，被拒絕後不能重送。」（FR-023、D18；issue #26）
+- [X] T161 [P] [US2] 擴充 `frontend/tests/component/SetupPage.test.tsx`：建立模式的組數初始值為 `GROUP_COUNT_DEFAULT`；按「−」到 `GROUP_COUNT_MIN` 時「−」不可用、「+」可用，再點「−」組數不變；按「+」到 `GROUP_COUNT_MAX` 時「+」不可用、「−」可用，再點「+」組數不變；修改模式的初始值為活動目前的組數；「學生加入」內容完全等於 `JOIN_METHOD_TEXT`（FR-023、US2 AC-6、AC-7；004 C2）
+- [X] T162 [P] [US4] 擴充 `frontend/tests/component/StudentPlayPage.wait.test.tsx`：S-Wait「這一輪」顯示「共 n 題」，其下方顯示 `WAIT_ROUND_TEXT`（FR-051；004 C2）
 
 ### Implementation
 
