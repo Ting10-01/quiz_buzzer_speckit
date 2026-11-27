@@ -13,7 +13,7 @@
 ```bash
 npm test -w server -- results
 npm test -w frontend -- ServerResultService
-npx playwright test -c frontend/playwright.config.ts results
+npm run test:e2e -w frontend -- results
 ```
 
 不需要網路與 Google 憑證（research RD-11）。
