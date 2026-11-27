@@ -1,5 +1,5 @@
-import type { ActivityState, ActivityStore } from '../temp-deps/activity.js';
-import type { SubmissionStore } from '../temp-deps/submission.js';
+import type { ActivityState, ActivityStore } from '../activity/index.js';
+import type { SubmissionStore } from '../submission/index.js';
 import type { QuestionResult, Submission } from '@quiz-buzzer/shared/entities';
 
 export const ResultQueryErrorCode = {
@@ -31,8 +31,8 @@ function hideRank(submission: Submission): Submission {
 // stored, constitution V) and filters it for the viewer on the server (constitution VI).
 export class ResultQuery {
   constructor(
-    private readonly activities: ActivityStore,
-    private readonly submissions: SubmissionStore,
+    private readonly activities: Pick<ActivityStore, 'current'>,
+    private readonly submissions: Pick<SubmissionStore, 'list' | 'winner'>,
   ) {}
 
   questionResult(questionNumber: number, viewerGroup: number | null): QuestionResult {

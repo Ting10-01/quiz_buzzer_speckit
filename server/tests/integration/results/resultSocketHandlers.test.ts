@@ -1,14 +1,13 @@
 import { io as connect, type Socket } from 'socket.io-client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { listenTestApp, type TestApp } from '../../helpers/testApp.js';
-import { FakeGroupMembership, midActivityScenario, submission, type ResultScenario } from '../../results/helpers/resultFakes.js';
+import { loadScenario, midActivityScenario, submission, type ResultScenario } from '../../results/helpers/resultFakes.js';
 
 let t: TestApp & { url: string };
 let scenario: ResultScenario;
-let membership: FakeGroupMembership;
 const sockets: Socket[] = [];
 
-// A connected student socket; `group` is what 004 would know about this connection.
+// A connected student socket; `group` is the group 004 puts this connection in.
 async function student(group: number | null): Promise<Socket> {
   const socket = connect(t.url, { transports: ['websocket'], reconnection: false, forceNew: true });
   sockets.push(socket);
@@ -16,18 +15,14 @@ async function student(group: number | null): Promise<Socket> {
     socket.once('connect', resolve);
     socket.once('connect_error', reject);
   });
-  if (group !== null) membership.assign(socket.id!, group);
+  if (group !== null) t.app.activity.membership.join({ id: socket.id! }, group);
   return socket;
 }
 
 beforeEach(async () => {
   scenario = midActivityScenario();
-  membership = new FakeGroupMembership();
-  t = await listenTestApp({
-    activityStore: scenario.activities,
-    submissionStore: scenario.submissions,
-    groupMembership: membership,
-  });
+  t = await listenTestApp();
+  loadScenario(t.app, scenario);
 });
 
 afterEach(async () => {
@@ -77,7 +72,7 @@ describe('result:question', () => {
   });
 
   it('acks NO_ACTIVITY without an activity', async () => {
-    scenario.activities.set(null);
+    t.app.activity.store.commit(null);
     const socket = await student(5);
     const ack = await socket.timeout(2000).emitWithAck('result:question', { questionNumber: 1 });
     expect(ack).toEqual({ ok: false, code: 'NO_ACTIVITY', message: '目前沒有活動' });
@@ -100,7 +95,7 @@ describe('result:all', () => {
   });
 
   it('acks NO_ACTIVITY without an activity', async () => {
-    scenario.activities.set(null);
+    t.app.activity.store.commit(null);
     const socket = await student(5);
     const ack = await socket.timeout(2000).emitWithAck('result:all', {});
     expect(ack).toEqual({ ok: false, code: 'NO_ACTIVITY', message: '目前沒有活動' });

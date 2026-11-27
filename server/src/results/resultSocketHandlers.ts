@@ -1,5 +1,5 @@
 import type { Server } from 'socket.io';
-import type { GroupMembership } from '../temp-deps/activity.js';
+import type { GroupMembership } from '../activity/index.js';
 import { ResultQueryError, type ResultQuery } from './ResultQuery.js';
 
 type Ack = (response: unknown) => void;
@@ -18,7 +18,7 @@ function answer(ack: unknown, run: () => object): void {
 
 // result:* on 002's app.io. Reading needs no teacher token; the group is the one 004 knows for
 // this connection, never one from the payload (constitution VI).
-export function registerResultHandlers(io: Server, query: ResultQuery, members: GroupMembership): void {
+export function registerResultHandlers(io: Server, query: ResultQuery, members: Pick<GroupMembership, 'groupOf'>): void {
   io.on('connection', (socket) => {
     socket.on('result:question', (payload: unknown, ack: unknown) => {
       const questionNumber = (payload as { questionNumber?: unknown } | null)?.questionNumber;

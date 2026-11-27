@@ -2,8 +2,6 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../../src/app.js';
 import type { AppConfig, GoogleConfig } from '../../src/config.js';
 import type { SpreadsheetReader } from '../../src/guided-notes/SpreadsheetReader.js';
-import type { ActivityStore, GroupMembership } from '../../src/temp-deps/activity.js';
-import type { SubmissionStore } from '../../src/temp-deps/submission.js';
 import { FakeGoogleGateway } from './fakeGoogleGateway.js';
 import { LogCapture } from './logCapture.js';
 
@@ -27,10 +25,6 @@ export interface TestAppOptions {
   gateway?: FakeGoogleGateway;
   // 003: replaces GoogleSheetsReader (e.g. tests/guided-notes/helpers/fakeSpreadsheetReader.ts).
   spreadsheetReader?: SpreadsheetReader;
-  // 006: substitutes for 004 / 005 (tests/results/helpers/resultFakes.ts) until those exist.
-  activityStore?: ActivityStore;
-  groupMembership?: GroupMembership;
-  submissionStore?: SubmissionStore;
   // Runs before app.ready(), e.g. to register a test-only route.
   beforeReady?: (app: FastifyInstance) => void;
 }
@@ -49,9 +43,6 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     gateway,
     logStream: logs,
     spreadsheetReader: options.spreadsheetReader,
-    activityStore: options.activityStore,
-    groupMembership: options.groupMembership,
-    submissionStore: options.submissionStore,
   });
   options.beforeReady?.(app);
   await app.ready();

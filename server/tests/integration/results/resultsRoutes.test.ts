@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resultsRoutes } from '../../../src/results/resultsRoutes.js';
-import { WriteBackFailure } from '../../../src/results/WriteBackService.js';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { WriteBackFailure, WriteBackService } from '../../../src/results/WriteBackService.js';
 import type { WriteBackResult } from '@quiz-buzzer/shared/entities';
 import { signInFor } from '../../helpers/fakeGoogleGateway.js';
 import { createTestApp, type TestApp } from '../../helpers/testApp.js';
@@ -8,7 +7,7 @@ import { createTestApp, type TestApp } from '../../helpers/testApp.js';
 const URL = '/api/results/write-back';
 
 let t: TestApp;
-const writeBack = vi.fn<() => Promise<WriteBackResult>>();
+let writeBack: MockInstance<() => Promise<WriteBackResult>>;
 
 async function signIn(code: string): Promise<string> {
   const res = await t.app.inject({
@@ -25,13 +24,14 @@ async function post(token: string) {
 }
 
 beforeEach(async () => {
-  writeBack.mockReset();
-  // A fake WriteBackService: buildApp registers the real one only once 004 and 005 exist.
-  t = await createTestApp({ beforeReady: (app) => app.register(resultsRoutes, { writeBack: { writeBack } }) });
+  // The route buildApp registers, with WriteBackService.writeBack replaced (its own tests are unit tests).
+  writeBack = vi.spyOn(WriteBackService.prototype, 'writeBack');
+  t = await createTestApp();
   t.gateway.set('code-a', signInFor('teacher.a@example.com')).set('code-b', signInFor('teacher.b@example.com'));
 });
 
 afterEach(async () => {
+  writeBack.mockRestore();
   await t.app.close();
 });
 
