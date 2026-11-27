@@ -16,7 +16,7 @@
 | `QuestionType`（enum） | `SINGLE`、`GROUP` | — | — |
 | `Question` | `number: number`、`type: QuestionType`、`text?: string` | `subQuestions: SubQuestion[]`（1..*） | 題目 |
 | `SubQuestion` | `index: number`、`blankCell: string` | — | 小題 |
-| `ImportSuccess` | `spreadsheet: Spreadsheet`、`headerRow: number`、`headerColumns: string[]` | `questions: Question[]`（1..*） | — |
+| `ImportSuccess` | `spreadsheet: Spreadsheet`、`headerRow: number`、`headerColumns: string[]`（欄字母，依「題號欄、題目欄（有才列）、作答欄」排列，例如 `["B","C","G"]` 或 `["B","G"]`；003 data-model，FR-021） | `questions: Question[]`（1..*） | — |
 | `ImportError` | `code: string`、`reason: string`、`foundHeaders: string[]`、`acceptedHeaders: string[]`、`fixSteps: string[]` | — | 辨識錯誤 |
 | `ActivityPhase`（enum） | `NO_ACTIVITY`、`PREPARING`、`OPEN`、`QUESTION_ENDED`、`FINISHED` | — | 活動階段 |
 | `ActivitySettings` | `groupCount: number` | — | — |
