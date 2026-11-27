@@ -56,6 +56,10 @@ package "介面層（Service Interfaces）" {
   component "ServiceRegistry\n綁定介面與實作" as Registry
 }
 
+package "共用規則（004 提供）" {
+  component "activityRules\n組數 2–20、預設 6、說明文字" as Rules
+}
+
 package "模擬實作（001 提供）" {
   component "MockAuthService (M1)" as MAuth
   component "MockGuidedNotesService (M2)" as MNotes
@@ -88,6 +92,8 @@ PPlay ..> IActivity
 PPlay ..> ISub
 PPlay ..> IResult
 PSResults ..> IResult
+PSetup ..> Rules : GROUP_COUNT_*、JOIN_METHOD_TEXT
+PPlay ..> Rules : WAIT_ROUND_TEXT
 
 PConsole --> CSubTable
 PConsole --> CProgress
