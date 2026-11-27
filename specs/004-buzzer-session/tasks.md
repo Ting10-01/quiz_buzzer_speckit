@@ -19,7 +19,7 @@ description: "Task list for 004 活動與階段同步"
 
 ## 依賴 001 的修改
 
-spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到控制台；001 已完成但沒有納入）與 C2（活動設定頁、等待開放頁引用 004 的組數規則與說明文字）。004 不修改 001 的頁面與測試（原則 III）。001 完成 C1 前，T050 中「回到控制台」的 e2e 以 `test.skip` 標記並註明原因；001 完成 C2 前，T028、T044 中檢查「−」「+」不可用與說明文字的 e2e 以 `test.skip` 標記；「暫時限制」的部分（老師重新登入後進入 T-Pick、活動不變、再建立活動被拒絕）現在就測。其餘頁面行為照 001 最終版：結束最後一題直接 `FINISHED`、加入後依階段切換、取消活動（FR-026、FR-050、FR-051，`onPhaseChange(null)`），001 已完成。組數範圍與預設值、說明文字是 001 spec 交給 004 定義的規則，004 以 `shared/src/activityRules.ts` 提供（T002），頁面由 001 依 C2 引用（research RA-16）。
+spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到控制台；2026-11-27 001 已完成，見 spec Session 2026-11-27）與 C2（活動設定頁、等待開放頁引用 004 的組數規則與說明文字）。004 不修改 001 的頁面與測試（原則 III）。C1 已完成，T050 中「回到控制台」的 e2e 直接測，原本「暫時限制」的部分（老師重新登入後進入 T-Pick、再建立活動被拒絕）隨 AC-32 改寫而刪除；001 的 e2e 先建立活動再登入時改由走法輔助檔處理（T063）。001 完成 C2 前，T028、T044 中檢查「−」「+」不可用與說明文字的 e2e 以 `test.skip` 標記。其餘頁面行為照 001 最終版：結束最後一題直接 `FINISHED`、加入後依階段切換、取消活動（FR-026、FR-050、FR-051，`onPhaseChange(null)`），001 已完成。組數範圍與預設值、說明文字是 001 spec 交給 004 定義的規則，004 以 `shared/src/activityRules.ts` 提供（T002），頁面由 001 依 C2 引用（research RA-16）。
 
 ---
 
@@ -159,18 +159,19 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 
 ## Phase 7: User Story 4 - 老師重新整理後回到控制台 (Priority: P2)
 
-**Goal**: 老師分頁重新整理或關閉時活動繼續；001 C1 完成前，老師重新登入後進入 T-Pick（暫時限制），完成後回到控制台目前的階段
+**Goal**: 老師分頁重新整理或關閉時活動繼續；老師重新登入後回到控制台目前的階段（001 C1 已完成）
 
 **Independent Test**: 第 2 題搶答中老師連線斷開，學生連線不受影響；以新的老師憑證連線後收到老師版快照
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證（任何人登入都取代前一位老師）：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）
+- [ ] T048 [P] [US4] `server/tests/integration/activity/teacherRefresh.test.ts`：`OPEN(2)` 時老師連線斷線，活動與版本不變，學生連線照常收到之後的推送（AC-25）；模擬 002 換發老師憑證（任何人登入都取代前一位老師）：舊老師連線被中斷、帶舊憑證重連被拒絕（`UNAUTHORIZED`）；以新憑證連線加入 `TEACHER_ROOM` 並收到 `TEACHER` 快照（`spreadsheet.id` 不是空字串）（AC-32）
 - [ ] T049 [P] [US4] `frontend/tests/unit/HttpActivityService.reconnect.test.ts`：`TeacherCredentialStore.get()` 與 `connectedTeacherToken` 不同時，`getCurrentActivity` 與五個老師指令先 `reconnect()`；憑證等於 `rejectedTeacherToken`（002 #18：被取代的分頁保留作廢的憑證）時不重新連線，連續兩次老師指令都不多一次 handshake，並回傳重新連線後的快照；`disconnect` 原因為 `io server disconnect` 時自動重連；`connect_error` `UNAUTHORIZED` 且憑證沒換時，記下 `rejectedTeacherToken` 並以一般連線重連（research RA-07）
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] （實作已移到 T062，Phase 5）在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：（現在測）`OPEN(2)` 時老師重新整理並登入（002 的測試替身），進入 T-Pick，學生分頁的階段不變；再走到 T-Setup 按「建立活動」，共通錯誤訊息區顯示暫時限制的說明（AC-25、AC-32、SC-005）；沒有活動時登入進入 T-Pick（AC-27）；（需 001 C1，先 `test.skip`）登入後直接回到 T-Live（第 2 題），`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd、`FINISHED` → T-Results（AC-26）
+- [ ] T050 [US4] （實作已移到 T062，Phase 5）在 `frontend/tests/e2e/activity-sync.spec.ts` 加入：`OPEN(2)` 時老師重新整理並登入（002 的測試替身），直接回到 T-Live（第 2 題），學生分頁的階段不變（AC-25、AC-26、SC-005）；`PREPARING` → T-Lobby、`QUESTION_ENDED` → T-QuestionEnd（第 n 題）、`FINISHED` → T-Results（AC-26）；沒有活動時登入進入 T-Pick（AC-27）；`OPEN(2)` 時另一個瀏覽器分頁登入取代老師，新分頁進入 T-Live（第 2 題），學生分頁的階段不變（AC-32）。（2026-11-27 依 spec Session 2026-11-27 改寫：C1 已完成，刪除暫時限制的情境）
+- [ ] T063 [US4] 依 spec Session 2026-11-27 與 C2 補充，修改 `frontend/tests/e2e/us5-walk.ts` 的 `toPick`：登入前以 `resetTestServer()` 讓測試伺服器回到沒有活動的狀態，讓 001 先建立活動再走到 T-Pick 的 e2e（`us5-removed-elements.spec.ts`）在 C1 之後仍進入 T-Pick；不修改 001 的頁面與既有測試的斷言
 
 **Checkpoint**: 老師誤重新整理不會毀掉活動
 
@@ -187,7 +188,7 @@ spec「需請 001 修改」有兩項：C1（D21：老師登入後依階段回到
 ## Dependencies & Execution Order
 
 - Phase 1 → Phase 2 → US1 → US2 → US3 → US5；US4 在 US3 之後。
-- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2 與 T061；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1；T028、T044 中頁面規則與說明文字的 e2e 依賴 001 C2。
+- US2 依賴 US1（加入需要活動）；US3 依賴 US1；US3 的 e2e（T044）依賴 US2 與 T061；US5 依賴 US2、US3；US4 依賴 US3；US4 中回到控制台的 e2e 依賴 001 C1（2026-11-27 已完成）；T028、T044 中頁面規則與說明文字的 e2e 依賴 001 C2。
 - 同一檔案的任務依序執行：`ActivityManager.ts`（T015 → T026 → T058 → T032 → T039 → T043）、`HttpActivityService.ts`（T022 → T028 → T060 → T034 → T041 → T062）、`activityRoutes.ts`（T027 → T059 → T040）、`ActivityGateway.ts`（T017 → T033 → T043）。
 
 ### Parallel Opportunities
@@ -209,7 +210,7 @@ T056 frontend/tests/unit/HttpActivityService.cancel.test.ts
 
 1. **MVP**：Phase 1、2 → US1 → US2 → US3。完成後即可展示完整的活動流程（SC-004）。
 2. 加上 US5，以壓力測試確認時序與量級。
-3. US4 的伺服器與服務層現在就做；001 C1 完成後解除回到控制台的 e2e skip；001 C2 完成後解除 T028、T044 中頁面規則與說明文字的 e2e skip。
+3. US4 的伺服器與服務層現在就做；001 C1 已完成（2026-11-27），回到控制台的 e2e 直接測；001 C2 完成後解除 T028、T044 中頁面規則與說明文字的 e2e skip。
 4. Polish：人工驗證、圖表一致性驗證、回報測試結果。
 
 ## 需求追溯
@@ -236,7 +237,7 @@ T056 frontend/tests/unit/HttpActivityService.cancel.test.ts
 | REQ-ACT-18 | AC-30 | T008、T039 | T007、T035 |
 | REQ-ACT-19 | AC-16 | T014、T016、T017 | T013、T030、T044 |
 | REQ-ACT-20 | AC-31 | T018、T020 | T019、T044 |
-| REQ-ACT-21 | AC-25～27、AC-32 | T062 | T048、T049、T050 |
+| REQ-ACT-21 | AC-25～27、AC-32 | T062 | T048、T049、T050、T063 |
 | REQ-ACT-22 | AC-33～36 | T010、T012、T058、T059、T060、T042 | T009、T011、T054、T055、T056、T044 |
 | REQ-ACT-23 | AC-01、AC-02、AC-09 | T002 | T002、T028、T044（頁面部分依賴 001 C2） |
 | REQ-ACT-NFR-01 | AC-28 | T016、T047 | T045、T046 |

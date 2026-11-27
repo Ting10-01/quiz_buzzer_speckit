@@ -10,7 +10,7 @@ actor "老師" as Teacher
 actor "學生（各組，每組可多個分頁）" as Student
 
 package "前端（瀏覽器分頁）" {
-  package "001 頁面（001 最終版，004 不修改；D21、組數規則與說明文字見 spec「需請 001 修改」C1、C2）" #EEEEEE {
+  package "001 頁面（001 最終版，004 不修改；D21 已由 001 完成 C1，組數規則與說明文字見 spec「需請 001 修改」C2）" #EEEEEE {
     component "HomePage (Main)\nJoinPage (S-Join)\nStudentPlayPage / StudentResultsPage\n（S-Wait「這一輪」：C2 後引用 004 的文字）" as StudentPages
     component "TeacherLoginPage (T-Login)\nSetupPage (T-Setup：C2 後引用 004 的規則與文字)\nConsolePage (T-Lobby「取消活動」/ T-Live / T-QuestionEnd)" as TeacherPages
     component "ActivityService" <<interface>> as IActivity

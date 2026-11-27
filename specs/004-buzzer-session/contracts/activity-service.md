@@ -31,9 +31,9 @@ return false
 ```
 
 - 連線成功（含重新連線）時 `latest = null`，下一份快照一定被採用（伺服器重啟後版本號重新開始）。`lastPhaseKey` 不清除，所以斷線期間活動被取消，重新連線後仍會通知 `null`。
-- 老師登入後連線要改以老師身分加入 `TEACHER_ROOM`：`RealtimeClient` 記住目前連線用的 `connectedTeacherToken`；`getCurrentActivity()` 與五個老師指令執行前，若 `TeacherCredentialStore.get()` 與它不同、且不是 `rejectedTeacherToken`，先 `reconnect()`（`latest` 因此清為 `null`），再等新的快照。目前老師登入後的第一個活動指令是 T-Setup 的 `createActivity`；001 完成 C1 後則是 `getCurrentActivity()`。兩種情況都會先重新連線，所以控制台收到的一定是老師版的快照。
+- 老師登入後連線要改以老師身分加入 `TEACHER_ROOM`：`RealtimeClient` 記住目前連線用的 `connectedTeacherToken`；`getCurrentActivity()` 與五個老師指令執行前，若 `TeacherCredentialStore.get()` 與它不同、且不是 `rejectedTeacherToken`，先 `reconnect()`（`latest` 因此清為 `null`），再等新的快照。001 完成 C1（2026-11-27）後，老師登入後的第一個活動呼叫是登入頁的 `getCurrentActivity()`；沒有活動時之後是 T-Setup 的 `createActivity`。兩者都會先重新連線，所以控制台收到的一定是老師版的快照。
 - 任何人登入時 002 換發老師憑證、中斷舊老師連線（`io server disconnect`），`RealtimeClient` 自動重連；被 `UNAUTHORIZED` 拒絕時的處理見 research RA-07。002 #18 之後被取代的分頁保留作廢的憑證，所以比較時要排除 `rejectedTeacherToken`，否則每次呼叫都會多一次被拒絕的重新連線。
 
 ## 頁面依回傳值切換
 
-頁面切換不在本契約；依 001 spec「頁面與按鈕」與「階段推動的切換」，以及 001 research RD-14（加入後依階段切換）。老師登入後依階段回到控制台是 spec「需請 001 修改」C1。
+頁面切換不在本契約；依 001 spec「頁面與按鈕」與「階段推動的切換」，以及 001 research RD-14（加入後依階段切換）。老師登入後依階段回到控制台是 spec「需請 001 修改」C1（001 FR-015，2026-11-27 完成）。
