@@ -67,6 +67,11 @@ export class SubmissionStore {
     }
   }
 
+  /** The activity disappeared: nothing of it is kept, as after a restart (spec Edge Cases). */
+  clear(): void {
+    this.questions.clear();
+  }
+
   /** Teacher view, ordered by rank; [] when the question has no submissions. */
   list(questionNumber: number): Submission[] {
     return (this.questions.get(questionNumber)?.records ?? []).map((record) => this.visibility.forTeacher(record));
