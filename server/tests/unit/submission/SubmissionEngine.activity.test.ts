@@ -136,4 +136,17 @@ describe('SubmissionEngine.onActivityChange', () => {
     activity.commit(activityState({ phase: 'QUESTION_ENDED', currentQuestion: 1 }));
     expect(submissions.list(1).map((s) => s.judgement)).toEqual(['REJECTED', 'ACCEPTED', 'UNJUDGED']);
   });
+
+  // T047: spec Edge Cases 活動消失 (2026-11-27).
+  it('empties SubmissionStore when the activity disappears, so a new activity starts without submissions', () => {
+    const { activity, submissions } = setup();
+    activity.commit(open(1));
+    submissions.append(submissionRecord({ groupNumber: 1, rank: 1 }));
+    activity.commit(null);
+    expect(submissions.list(1)).toEqual([]);
+
+    activity.commit(activityState());
+    activity.commit(open(1));
+    expect(submissions.question(1)).toBeUndefined();
+  });
 });

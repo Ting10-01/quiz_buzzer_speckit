@@ -110,7 +110,7 @@ describe('SubmissionEngine.submit: accepting', () => {
     const { submit, submissions } = setup();
     const reply = submit(1, request({ answers: ['  光合作用 \n'] }));
     expect(reply.submission?.answers).toEqual(['光合作用']);
-    expect(submissions.list(2)[0].answers).toEqual(['光合作用']);
+    expect(submissions.list(2)[0]?.answers).toEqual(['光合作用']);
   });
 
   it('keeps a group question as one record with one rank and both answers (AC-03)', () => {
@@ -134,8 +134,8 @@ describe('SubmissionEngine.submit: accepting', () => {
     const { submit, submissions } = setup();
     fakeNow(2500.6);
     submit(1, request());
-    expect(submissions.list(2)[0].elapsedMs).toBe(Math.round(performance.timeOrigin + 2500.6 - OPENED_AT));
-    expect(Number.isInteger(submissions.list(2)[0].elapsedMs)).toBe(true);
+    expect(submissions.list(2)[0]?.elapsedMs).toBe(Math.round(performance.timeOrigin + 2500.6 - OPENED_AT));
+    expect(Number.isInteger(submissions.list(2)[0]?.elapsedMs)).toBe(true);
   });
 
   it('never gives a later submission a smaller elapsedMs, even if performance.now goes back (REQ-SUB-NFR-03)', () => {
@@ -145,8 +145,8 @@ describe('SubmissionEngine.submit: accepting', () => {
     submit(2, request());
     submit(3, request());
     const elapsed = submissions.list(2).map((s) => s.elapsedMs);
-    expect(elapsed[1]).toBeGreaterThanOrEqual(elapsed[0]);
-    expect(elapsed[2]).toBeGreaterThanOrEqual(elapsed[1]);
+    expect(elapsed[1]).toBeGreaterThanOrEqual(elapsed[0]!);
+    expect(elapsed[2]).toBeGreaterThanOrEqual(elapsed[1]!);
   });
 
   it('runs inside 004 CommandQueue.run and adds 1 to processed for every submission, whatever the result', () => {
@@ -259,7 +259,7 @@ describe('SubmissionEngine.submit: the question must be open (AC-06)', () => {
 
     setState(openState(2));
     submit(1, request());
-    expect(submissions.list(2)[0].rank).toBe(1);
+    expect(submissions.list(2)[0]?.rank).toBe(1);
   });
 
   it('rejects a question that is not the open one', () => {

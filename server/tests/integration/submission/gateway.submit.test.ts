@@ -194,13 +194,16 @@ describe('submission:own (AC-28)', () => {
 
 describe('submitting while 004 ends the question (AC-25)', () => {
   it('rejects submissions handled after the end and keeps those handled before it as UNJUDGED, 100 times', async () => {
-    const socket = await student();
     let before = 0;
     let after = 0;
     for (let i = 0; i < 100; i++) {
-      await teacher('DELETE', '/api/activity');
+      // 004 cannot cancel an activity once question 1 opened, so every round gets its own server.
+      if (i > 0) {
+        await server.close();
+        server = await startActivityTestServer();
+      }
       await openQuestion(1, 2);
-      await emitWithAck<GroupAck>(socket, 'group:join', { groupNumber: 1 });
+      const socket = await student(1);
 
       // Both commands are in flight together; the CommandQueue decides which is handled first.
       // Half the rounds start the submission first, half start the end first.
