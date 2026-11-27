@@ -141,7 +141,7 @@ description: "Task list for 005 搶答與判定"
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T027 [P] [US4] 建立 `server/tests/load/submission.load.ts`（research RD-10）：子程序啟動伺服器並把 pino 輸出到暫存檔；1 個老師與 200 個學生連線（20 組 × 10，只用 WebSocket）；1 秒內 1,000 筆送出，含同一 `requestId` 重送與同組多條連線搶送；檢查每筆恰好一個 ack、每組恰好一筆被接受且是 log 中該組 `seq` 最小者、老師端 `rank` 為 1..20、學生收到的 `rank` 全為 0、每條學生連線恰好收到一次自己組的 `submission:groupSubmitted`（AC-20）；ack 延遲 p95 ≤ 1 秒、最大 ≤ 2 秒，老師列表落後 ≤ 1 秒（AC-21）；老師最後一份列表、`GET` 列表、log 的順位一致（AC-22）；另開一個暫停讀取的慢連線，其他連線延遲仍在範圍內（AC-24）；重複 20 輪並輸出每輪的 p95、最大延遲與被接受筆數（SC-002、SC-003）
+- [X] T027 [P] [US4] 建立 `server/tests/load/submission.load.ts`（research RD-10）：子程序啟動伺服器並把 pino 輸出到暫存檔；1 個老師與 200 個學生連線（20 組 × 10，只用 WebSocket）；1 秒內 1,000 筆送出，含同一 `requestId` 重送與同組多條連線搶送；檢查每筆恰好一個 ack、每組恰好一筆被接受且是 log 中該組 `seq` 最小者、老師端 `rank` 為 1..20、學生收到的 `rank` 全為 0、每條學生連線恰好收到一次自己組的 `submission:groupSubmitted`（AC-20）；ack 延遲 p95 ≤ 1 秒、最大 ≤ 2 秒，老師列表落後 ≤ 1 秒（AC-21）；老師最後一份列表、`GET` 列表、log 的順位一致（AC-22）；另開一個暫停讀取的慢連線，其他連線延遲仍在範圍內（AC-24）；重複 20 輪並輸出每輪的 p95、最大延遲與被接受筆數（SC-002、SC-003）
 
 ### Implementation for User Story 4
 
