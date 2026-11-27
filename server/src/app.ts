@@ -18,6 +18,7 @@ import { GoogleSheetsWriter } from './results/GoogleSheetsWriter.js';
 import { ResultQuery } from './results/ResultQuery.js';
 import { registerResultHandlers } from './results/resultSocketHandlers.js';
 import { resultsRoutes } from './results/resultsRoutes.js';
+import type { SpreadsheetWriter } from './results/SpreadsheetWriter.js';
 import { WriteBackService } from './results/WriteBackService.js';
 import { submissionRoutes } from './submission/index.js';
 
@@ -37,6 +38,8 @@ export interface AppDeps {
   gateway?: GoogleOAuthGateway;
   logStream?: { write(line: string): void };
   spreadsheetReader?: SpreadsheetReader;
+  // 006: replaces GoogleSheetsWriter, e.g. in the E2E test server.
+  spreadsheetWriter?: SpreadsheetWriter;
 }
 
 // Server composition root. 003–006 register their routes here with `app.register(...)`.
@@ -76,7 +79,7 @@ export function buildApp(config: AppConfig, deps: AppDeps = {}): FastifyInstance
       imports: scope.importStore,
       reader: scope.spreadsheetReader,
       query: resultQuery,
-      writer: new GoogleSheetsWriter(googleClients),
+      writer: deps.spreadsheetWriter ?? new GoogleSheetsWriter(googleClients),
       log: scope.log,
     });
     await scope.register(resultsRoutes, { writeBack });
