@@ -488,7 +488,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T168 [US2] 修改 `frontend/src/pages/teacher/ImportPage.tsx` 的說明文字與 `frontend/src/components/SheetPreview.tsx` 的欄位：依 `headerColumns` 的長度判斷有沒有題目欄（3 欄有、2 欄沒有）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T167 通過，且其他測試沒有退步（依賴 T167）
+- [X] T168 [US2] 修改 `frontend/src/pages/teacher/ImportPage.tsx` 的說明文字與 `frontend/src/components/SheetPreview.tsx` 的欄位：依 `headerColumns` 的長度判斷有沒有題目欄（3 欄有、2 欄沒有）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T167 通過，且其他測試沒有退步（依賴 T167）
 - [ ] T169 依 `quickstart.md` Q16 人工驗證：有題目欄與沒有題目欄的學習單各匯入一次，檢查說明文字與預覽，記錄於 `manual-verification.md`
 
 **Checkpoint**: 沒有題目欄的學習單，確認辨識結果頁的說明與預覽和實際欄位一致。
