@@ -1,5 +1,5 @@
 // 001's SubmissionService over 005's server (contracts/submission-api.md): student events through 004's
-// RealtimeClient, the teacher list through 002's ApiClient. After a reconnection the server sends nothing
+// RealtimeClient, the teacher list and judging through 002's ApiClient. After a reconnection the server sends nothing
 // old, so this service asks again itself (research RD-08).
 import type { Judgement, JudgeOutcome, Submission, ValidationError } from '@quiz-buzzer/shared/entities';
 import {
@@ -97,10 +97,9 @@ export class ServerSubmissionService implements SubmissionService {
     };
   }
 
-  // ponytail: judging is 005 Phase 4 (T023); until then the page shows this in its error area.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async judge(questionNumber: number, groupNumber: number, judgement: Judgement): Promise<JudgeOutcome> {
-    throw new Error('判定功能尚未完成（005 Phase 4）');
+    this.realtime.followTeacherCredential();
+    return this.api.request<JudgeOutcome>('POST', `/api/questions/${questionNumber}/judgements`, { groupNumber, judgement });
   }
 
   /** The same question and answers as the request that got no answer reuse its requestId. */
