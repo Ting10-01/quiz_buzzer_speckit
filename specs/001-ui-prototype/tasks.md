@@ -495,6 +495,27 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 8.9: 規格修訂（2026-11-28）：寫回確認視窗的格數與題數（issue #31）
+
+**Purpose**: 套用 spec Session 2026-11-28 的 #31 問答（commit `spec(001): ...`）：寫回確認視窗的「寫入答案 N 格（M 題）」只計算有搶答成功組別的題目（006 REQ-RES-09），模擬實作寫回成功時的格數用同一規則（FR-041、M8）。
+
+- **只改 `TeacherResultsPage.tsx` 與 `MockResultService.ts`**；版面、按鈕與文字格式不變，不改介面或契約。N 取自頁面已算出的寫回預覽填空格（`filledCells`），M 為有成功組別的題數。
+- **測試先寫、一次確認失敗**（T170 一筆 `test(001)` commit），再一次實作到全部通過（T171 一筆 `fix(001)` commit）。
+- **既有測試只改兩處斷言**：`TeacherResultsPage.test.tsx` 確認視窗原本斷言「6 格」「4 題」（假資料只有第 1、4 題有成功組別），改為「3 格」「2 題」；`MockResultService.test.ts` 原本斷言寫回 6 格（沒有送出），改為 0 格；其他斷言不修改。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T170 [US3] 擴充 `frontend/tests/component/TeacherResultsPage.test.tsx` 與 `frontend/tests/unit/MockResultService.test.ts`：四題中只有第 1 題（2 格）與第 4 題（1 格）有成功組別時，確認視窗顯示「3 格（2 題）」；沒有任何題目有成功組別時顯示「0 格（0 題）」；模擬寫回在沒有成功組別時回傳 0 格，有成功組別時回傳的格數只計算那些題目的填空格（FR-041、M8、US3 AC-10、AC-11；issue #31）
+
+### Implementation
+
+- [ ] T171 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx` 的格數與題數（改用 `filledCells` 的格數與有成功組別的題數），以及 `frontend/src/services/mock/MockResultService.ts` 的寫回格數（只計算有成功組別的題目）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T170 通過，且其他測試沒有退步（依賴 T170）
+- [ ] T172 依 `quickstart.md` Q17 人工驗證：讓至少一題沒有成功組別，比對確認視窗的格數與寫回成功後的格數，記錄於 `manual-verification.md`
+
+**Checkpoint**: 有題目沒人答對時，寫回確認視窗的格數與題數和實際寫入的一致。
+
+---
+
 ## 需求與任務對照
 
 | 需求 | 任務 |
@@ -517,7 +538,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-025 | T059、T065 |
 | FR-026 | T135–T138、T139–T142、T152、T155 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
-| FR-040–FR-042 | T070、T076、T143–T145 |
+| FR-040–FR-042 | T070、T076、T143–T145、T170–T172 |
 | FR-050 | T047、T053、T079、T085、T147、T150、T154 |
 | FR-051 | T080、T086、T148、T151、T155、T162、T164–T166 |
 | FR-052、FR-053 | T081、T087 |
