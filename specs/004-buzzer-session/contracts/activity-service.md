@@ -13,7 +13,7 @@
 | `leaveGroup()` | `RealtimeClient.emitWithAck("group:leave", {})` | 有 `error`：reject `UnexpectedError(error.message)`；否則 `apply(snapshot)` 後 resolve |
 | `getCurrentActivity()` | 不送請求；來自 `RealtimeClient.on("activity:snapshot", …)` | 手上有快照：回傳其 `activity`（可能是 `null`）；沒有：等下一份 `activity:snapshot`，5 秒逾時 reject。呼叫者：Main、S-Join（T-Lobby 不呼叫，001 最終版） |
 | `onPhaseChange(listener)` | 訂閱 | 採用新快照、`activity` 不是 `null`，且 `phase:currentQuestion:groupCount` 與上一次通知的不同時以 `Activity` 呼叫；採用的快照 `activity` 為 `null` 且上一次通知的是活動（活動被取消）時以 `null` 呼叫（001 RD-12） |
-| `onActivityChange(listener)` | 訂閱 | 採用新快照且 `activity` 不是 `null` 時都呼叫 |
+| `onActivityChange(listener)` | 訂閱 | 採用新快照且 `activity` 不是 `null` 時都呼叫。訂閱時 `latest?.activity` 不是 `null`：在下一個 microtask 以當時的 `latest.activity` 呼叫一次（這之前已取消訂閱、或已收到新快照的通知則不呼叫），補上頁面訂閱之前的變化（001 C-1，issue #22） |
 
 ## `apply(snapshot)`
 
