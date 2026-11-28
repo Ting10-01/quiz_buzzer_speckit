@@ -551,7 +551,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T177 [US2] 修改 `frontend/src/components/SheetPreview.tsx`（作答欄的欄字母改由各小題 `blankCell` 取得）、`frontend/src/pages/teacher/ImportPage.tsx`（說明文字用同一份欄字母）與 `frontend/src/services/mock/MockFixtures.ts`（題組填空格改為 H 欄）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T176 通過，且其他測試沒有退步（依賴 T176）
+- [X] T177 [US2] 修改 `frontend/src/components/SheetPreview.tsx`（作答欄的欄字母改由各小題 `blankCell` 取得）、`frontend/src/pages/teacher/ImportPage.tsx`（說明文字用同一份欄字母）與 `frontend/src/services/mock/MockFixtures.ts`（題組填空格改為 H 欄）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T176 通過，且其他測試沒有退步（依賴 T176）
 - [ ] T178 依 `quickstart.md` Q19 人工驗證：匯入「02_題組範本」與填空格都在同一欄的學習單，檢視說明與預覽，記錄於 `manual-verification.md`
 
 **Checkpoint**: 填空格分散在多欄時，說明與預覽列出每一個作答欄；都在同一欄時與原本相同。
