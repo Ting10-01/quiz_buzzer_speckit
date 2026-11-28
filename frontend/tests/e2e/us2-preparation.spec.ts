@@ -73,7 +73,9 @@ test.describe('US2 preparation (quickstart Q3, Q4, Q14)', () => {
     await expectImportCounts(page, '4', '2', '6');
     await expect(page.getByText('可編輯')).toBeVisible();
     await expect(page.getByRole('row', { name: /第 1 題/ })).toContainText('題組・2 小題');
-    await expect(page.getByRole('row', { name: /第 1 題/ })).toContainText('G5、G6');
+    await expect(page.getByRole('row', { name: /第 1 題/ })).toContainText('H5、H6');
+    // Group blanks are in H and single ones in G (003 REQ-IMP-10), so both columns are named (FR-021, #35).
+    await expect(page.getByText(/作答在 G、H 欄。/)).toBeVisible();
     await expect(page.getByRole('row', { name: /第 3 題/ })).toContainText('單題');
     await expectNoMockBadge(page);
 

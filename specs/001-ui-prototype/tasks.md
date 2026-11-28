@@ -547,7 +547,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T176 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx` 與 `frontend/tests/component/SheetPreview.test.tsx`：`headerColumns` 為 `["B","C","G"]`、填空格為 H5、H6、H8、H9、G11、G13 時，說明文字含「題號在 B 欄、題目在 C 欄、作答在 G、H 欄。」，預覽的欄名為 B、C、「G、H」，黃框的填空格位置不變；填空格為 H5、AA6、Z8 時作答欄為「H、Z、AA」；填空格都在 G 欄時維持「作答在 G 欄」；擴充 `frontend/tests/e2e/us2-preparation.spec.ts` Q3：選「題組＋單題範本」後說明含「作答在 G、H 欄。」，並改上述一處斷言（FR-021、M2；issue #35）
+- [X] T176 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx` 與 `frontend/tests/component/SheetPreview.test.tsx`：`headerColumns` 為 `["B","C","G"]`、填空格為 H5、H6、H8、H9、G11、G13 時，說明文字含「題號在 B 欄、題目在 C 欄、作答在 G、H 欄。」，預覽的欄名為 B、C、「G、H」，黃框的填空格位置不變；填空格為 H5、AA6、Z8 時作答欄為「H、Z、AA」；填空格都在 G 欄時維持「作答在 G 欄」；擴充 `frontend/tests/e2e/us2-preparation.spec.ts` Q3：選「題組＋單題範本」後說明含「作答在 G、H 欄。」，並改上述一處斷言（FR-021、M2；issue #35）
 
 ### Implementation
 

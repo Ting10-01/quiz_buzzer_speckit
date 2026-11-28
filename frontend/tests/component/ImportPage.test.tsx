@@ -8,6 +8,7 @@ import { createFakeRegistry, renderWithRegistry } from '../helpers/createFakeReg
 import {
   makeImportError,
   makeImportSuccess,
+  makeMixedQuestions,
   makeQuestions,
   makeSpreadsheet,
 } from '../helpers/fixtures';
@@ -270,5 +271,48 @@ describe('ImportPage (T-Import) header columns as recognised (FR-021, #16)', () 
     for (const cell of ['G5', 'G6', 'G8', 'G9', 'G11', 'G13']) {
       expect(within(preview()).getByText(cell)).toBeInTheDocument();
     }
+  });
+});
+
+// Phase 8.11 (issue #35): the answer columns come from where the blank cells actually are (FR-021).
+describe('ImportPage (T-Import) answer columns from blank cells (FR-021, #35)', () => {
+  const preview = () => screen.getByRole('region', { name: '學習單預覽' });
+  const previewColumns = () =>
+    within(preview())
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent)
+      .filter((text) => text !== '');
+
+  /** The mixed questions with their blank cells replaced in order, e.g. ['H5', 'H6', ...]. */
+  function withBlankCells(cells: string[]) {
+    let next = 0;
+    return makeMixedQuestions().map((question) => ({
+      ...question,
+      subQuestions: question.subQuestions.map((sub) => ({ ...sub, blankCell: cells[next++] ?? sub.blankCell })),
+    }));
+  }
+
+  it('lists every answer column when the blank cells sit in G and H (T176)', () => {
+    const cells = ['H5', 'H6', 'H8', 'H9', 'G11', 'G13'];
+    renderImport(makeImportSuccess({ headerColumns: ['B', 'C', 'G'], questions: withBlankCells(cells) }));
+    expect(screen.getByText(/題號在 B 欄、題目在 C 欄、作答在 G、H 欄。/)).toBeInTheDocument();
+    expect(previewColumns()).toEqual(['B', 'C', 'G、H']);
+    for (const cell of cells) {
+      expect(within(preview()).getByText(cell)).toBeInTheDocument();
+    }
+  });
+
+  it('orders the answer columns left to right, Z before AA (T176)', () => {
+    renderImport(
+      makeImportSuccess({ headerColumns: ['B', 'G'], questions: withBlankCells(['H5', 'AA6', 'Z8', 'H9', 'Z11', 'AA13']) }),
+    );
+    expect(screen.getByText(/題號在 B 欄、作答在 H、Z、AA 欄。/)).toBeInTheDocument();
+    expect(previewColumns()).toEqual(['B', 'H、Z、AA']);
+  });
+
+  it('keeps a single answer column when every blank cell is in G (T176)', () => {
+    renderImport(makeImportSuccess({ headerColumns: ['B', 'C', 'G'] }));
+    expect(screen.getByText(/作答在 G 欄。/)).toBeInTheDocument();
+    expect(previewColumns()).toEqual(['B', 'C', 'G']);
   });
 });
