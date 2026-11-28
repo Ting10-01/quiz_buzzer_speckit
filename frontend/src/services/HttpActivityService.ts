@@ -105,10 +105,23 @@ export class HttpActivityService implements ActivityService {
     };
   }
 
+  /**
+   * A view that subscribes later than a change (T-Lobby while the teacher was on T-Setup) would miss
+   * it, so a listener subscribing while an activity is held gets it once in a microtask, unless it
+   * unsubscribed or a newer snapshot reached it first (001 C-1, issue #22).
+   */
   onActivityChange(listener: (activity: Activity) => void): Unsubscribe {
-    this.activityListeners.add(listener);
+    const subscribed = (activity: Activity) => listener(activity);
+    this.activityListeners.add(subscribed);
+    const held = this.latest;
+    if (held?.activity) {
+      queueMicrotask(() => {
+        if (!this.activityListeners.has(subscribed) || this.latest !== held) return;
+        if (held.activity) listener(held.activity);
+      });
+    }
     return () => {
-      this.activityListeners.delete(listener);
+      this.activityListeners.delete(subscribed);
     };
   }
 
