@@ -167,6 +167,21 @@ description: "Task list for 005 搶答與判定"
 
 ---
 
+## Phase 8: 修正（2026-11-28）：題目結束後以同一 `requestId` 重送（issue #32）
+
+**Purpose**: 修正 issue #32：`SubmissionEngine.validate` 先檢查題目是否開放、才比對同一 `requestId`，題目結束後同一次送出重複抵達時回覆「這一題目前不能作答」，而不是第一次的結果，違反 REQ-SUB-06（AC-05、001 D15）。spec 與契約不變，頁面不改；時序圖 `diagrams/005-sequence.puml` 已把「同一個 `requestId` 再次抵達」列在第一個分支，不用改。
+
+- **設計文件**：`data-model.md` 第 4 節 `submit` 的檢查順序與 spec 衝突，2026-11-28 使用者決定修改 data-model（T064）。
+- **測試先寫、確認失敗**（T065 一筆 `test(005)` commit），再實作到全部通過（T066 一筆 `fix(005)` commit）。既有測試不改。
+
+- [X] T064 修改 `specs/005-buzz-submission/data-model.md` 第 4 節 `submit` 的檢查順序：`group` 存在、請求格式正確之後，先比對本組在該題的紀錄是否為同一 `requestId`（是則回第一次的結果），才檢查題目是否開放與其他輸入（REQ-SUB-06；issue #32）
+- [ ] T065 [US1] 在 `server/tests/unit/submission/SubmissionEngine.submit.test.ts` 的「the same requestId again (AC-05)」加入：送出後題目結束（`QUESTION_ENDED`、`FINISHED`、下一題開放）再以同一 `requestId` 重送，回覆與第一次相同、不產生新紀錄、不再通知 `groupSubmitted`，log 為 `submission.duplicate` 而不是 `submission.rejected`；不同 `requestId` 仍回「這一題目前不能作答」（AC-05、AC-06；issue #32），依 T064
+- [ ] T066 [US1] 修改 `server/src/submission/SubmissionEngine.ts` 的 `submit`／`validate`：`group` 存在、格式正確且本組在該題已有同一 `requestId` 的紀錄時，記 `submission.duplicate` 並回 `forStudent(第一筆)`，不檢查題目是否開放；其餘檢查順序不變。執行 server 的 `npm run typecheck`、`npm run lint`、`npm test`，確認 T065 通過且其他測試沒有退步（REQ-SUB-06；issue #32），依 T065
+
+**Checkpoint**: 題目結束後同一次送出重複抵達，學生收到的回覆與第一次相同。
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -225,7 +240,7 @@ US3（隔離驗證）→ US4（壓力測試）→ Polish。每個 User Story 的
 | REQ-SUB-03 | AC-04、AC-08 | T012、T013、T015、T032、T042、T044 |
 | REQ-SUB-04 | AC-03 | T012、T015、T032、T037、T042 |
 | REQ-SUB-05 | AC-02、AC-07 | T012、T015、T032、T042 |
-| REQ-SUB-06 | AC-05 | T012、T014、T015、T017 |
+| REQ-SUB-06 | AC-05 | T012、T014、T015、T017、T064、T065、T066 |
 | REQ-SUB-07 | AC-04、AC-20、AC-25 | T011、T012、T013、T016、T022、T029 |
 | REQ-SUB-08 | AC-09、AC-20 | T004、T005、T012、T015、T027 |
 | REQ-SUB-09 | AC-09、AC-23 | T012、T015 |

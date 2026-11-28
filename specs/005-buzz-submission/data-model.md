@@ -89,7 +89,7 @@
 | 成員 | 說明 |
 | --- | --- |
 | `processed: number` | 每處理一筆送出（不論結果）加 1，寫進 log 的 `seq`；只在 `CommandQueue.run` 內遞增，順序與佇列相同（research RD-01） |
-| `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `answers`「請先加入組別」）→ 請求格式（`answers`「送出的資料格式不正確」）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`answers`「這一題目前不能作答」）→ 本組已有紀錄（`requestId` 相同回第一次的結果；否則 `answers`「本組已送出此題」）→ 格數等於小題數（`answers`「送出的資料格式不正確」）→ 每格非空白（`answers.<i>`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers.<i>`「每一格最多 200 字」）→ 建立紀錄。建立後通知 `SubmissionNotifier.groupSubmitted`、`submissionsChanged` |
+| `submit(group, request): SubmitReply` | 在 004 的 `CommandQueue.run` 內執行。依序檢查：`group` 存在（否則 `answers`「請先加入組別」）→ 請求格式（`answers`「送出的資料格式不正確」）→ 本組在 `request.questionNumber` 已有紀錄且 `requestId` 相同（回第一次的結果，不論題目是否仍開放；issue #32）→ `request.questionNumber` 是 `ActivityStore` 目前開放的題（`answers`「這一題目前不能作答」）→ 本組已有紀錄（`answers`「本組已送出此題」）→ 格數等於小題數（`answers`「送出的資料格式不正確」）→ 每格非空白（`answers.<i>`「每一格都填才能送出」）→ 每格 ≤ 200 字（`answers.<i>`「每一格最多 200 字」）→ 建立紀錄。建立後通知 `SubmissionNotifier.groupSubmitted`、`submissionsChanged` |
 | `ownSubmission(group, q): Submission [0..1]` | 本組第 q 題的紀錄，以 `forStudent` 產生；`group` 為空或沒有紀錄時為空（REQ-SUB-21） |
 | `judge(q, group, judgement): JudgeOutcome` | 在 004 的 `CommandQueue.run` 內執行；`ACCEPTED` 時就地呼叫 004 `ActivityManager.endQuestion(n)`；規則見 research RD-07；回傳 `{ submissions: SubmissionStore.list(q), activity: ActivityManager.snapshot(Audience.TEACHER).activity }` |
 | `onActivityChange(version)` | 以 004 `ActivityStore.subscribe` 註冊的 listener（在 `commit` 當下、仍在 `CommandQueue.run` 內被呼叫，參數是新的版本號）：以 `ActivityStore.current()` 讀取狀態；先前開放的第 n 題不再是 `OPEN(n)`（`QUESTION_ENDED`、`FINISHED`、活動消失）→ `closeQuestion(n)` 並通知老師列表；活動消失（`current()` 為空）時再 `SubmissionStore.clear()` |
