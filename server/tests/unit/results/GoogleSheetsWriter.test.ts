@@ -66,13 +66,15 @@ describe('GoogleSheetsWriter.writeTexts', () => {
 });
 
 describe('GoogleSheetsWriter.duplicateSheet', () => {
-  it('sends one duplicateSheet request', async () => {
-    await writer.duplicateSheet(ID, 42, '學習單-備份-20261123-0905');
+  it('sends one duplicateSheet request that puts the copy at insertIndex (REQ-RES-13, #33)', async () => {
+    await writer.duplicateSheet(ID, 42, '學習單-備份-20261123-0905', 3);
     expect(api.batchUpdate).toHaveBeenCalledTimes(1);
     expect(api.batchUpdate).toHaveBeenCalledWith(
       {
         spreadsheetId: ID,
-        requestBody: { requests: [{ duplicateSheet: { sourceSheetId: 42, newSheetName: '學習單-備份-20261123-0905' } }] },
+        requestBody: {
+          requests: [{ duplicateSheet: { sourceSheetId: 42, newSheetName: '學習單-備份-20261123-0905', insertSheetIndex: 3 } }],
+        },
       },
       TIMEOUT,
     );
@@ -82,13 +84,13 @@ describe('GoogleSheetsWriter.duplicateSheet', () => {
   it('rethrows what Google throws', async () => {
     const error = googleError(403);
     api.batchUpdate.mockRejectedValue(error);
-    await expect(writer.duplicateSheet(ID, 0, 'x')).rejects.toBe(error);
+    await expect(writer.duplicateSheet(ID, 0, 'x', 1)).rejects.toBe(error);
   });
 });
 
 describe('GoogleSheetsWriter authorization', () => {
   it('asks app.googleClients for the authorized client on every call', async () => {
-    await writer.duplicateSheet(ID, 0, 'x');
+    await writer.duplicateSheet(ID, 0, 'x', 1);
     expect(vi.mocked(sheets).mock.calls[0]?.[0]).toEqual(expect.objectContaining({ version: 'v4', auth: gateway.lastClient }));
     clients.replace(signInFor('teacher.b@example.com').tokens);
     await writer.writeTexts(ID, '學習單', [{ cell: 'G5', text: 'x' }]);
@@ -98,7 +100,7 @@ describe('GoogleSheetsWriter authorization', () => {
   it('throws TeacherNotSignedInError without a signed-in teacher and calls nothing', async () => {
     writer = new GoogleSheetsWriter(new GoogleClientProvider(gateway));
     await expect(writer.writeTexts(ID, '學習單', [{ cell: 'G5', text: 'x' }])).rejects.toBeInstanceOf(TeacherNotSignedInError);
-    await expect(writer.duplicateSheet(ID, 0, 'x')).rejects.toBeInstanceOf(TeacherNotSignedInError);
+    await expect(writer.duplicateSheet(ID, 0, 'x', 1)).rejects.toBeInstanceOf(TeacherNotSignedInError);
     expect(api.valuesBatchUpdate).not.toHaveBeenCalled();
     expect(api.batchUpdate).not.toHaveBeenCalled();
   });
