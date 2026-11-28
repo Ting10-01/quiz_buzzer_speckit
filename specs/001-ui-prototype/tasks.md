@@ -531,7 +531,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 ### Implementation
 
 - [X] T174 [US2] 修改 `frontend/src/services/HttpActivityService.ts` 的 `onActivityChange`：訂閱時 `latest?.activity` 不是 `null`，在下一個 microtask 以當時的 `latest.activity` 通知一次；已取消訂閱或已收到新通知則不通知（004 contracts/activity-service.md）；更新 `ConsolePage.tsx` 引用 C-1 的註解；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T173 通過，且其他測試沒有退步（依賴 T173）
-- [ ] T175 依 `quickstart.md` Q18 人工驗證：老師在活動設定頁期間讓學生加入與離開，回到控制台・準備中後檢查人數，記錄於 `manual-verification.md`
+- [X] T175 依 `quickstart.md` Q18 人工驗證：老師在活動設定頁期間讓學生加入與離開，回到控制台・準備中後檢查人數，記錄於 `manual-verification.md`
 
 **Checkpoint**: 老師從活動設定頁回到控制台・準備中，各組人數與學生端一致，不必等下一次加入或離開。
 
