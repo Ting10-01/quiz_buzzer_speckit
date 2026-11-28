@@ -43,8 +43,8 @@
 
 ## RD-05 備份工作表
 
-- **Decision**: 版面檢查通過後，`SpreadsheetWriter.duplicateSheet(spreadsheetId, sheetId, newTitle)` 以 `spreadsheets.batchUpdate` 的 `duplicateSheet` 請求複製學習單工作表（`sourceSheetId` 為 RD-04 那次 `load` 的 `SheetGrid.sheetId`）。名稱由純函式 `backupName(worksheet, now, existing)` 產生：`${worksheet}-備份-YYYYMMDD-HHmm`（伺服器本機時間），已存在時依序加 `-2`、`-3`。`existing` 是同一次 `load` 的所有工作表名稱。
-- **Rationale**: `duplicateSheet` 連同格式與合併範圍一起複製（SC-008）；放在同一份試算表，`drive.file` 範圍就夠，不會在老師的雲端硬碟多出檔案。
+- **Decision**: 版面檢查通過後，`SpreadsheetWriter.duplicateSheet(spreadsheetId, sheetId, newTitle, insertIndex)` 以 `spreadsheets.batchUpdate` 的 `duplicateSheet` 請求複製學習單工作表（`sourceSheetId` 為 RD-04 那次 `load` 的 `SheetGrid.sheetId`；`insertSheetIndex` 為學習單在同一次 `load` 的位置 + 1，讓備份緊接在學習單後面）。名稱由純函式 `backupName(worksheet, now, existing)` 產生：`${worksheet}-備份-YYYYMMDD-HHmm`（伺服器本機時間），已存在時依序加 `-2`、`-3`。`existing` 是同一次 `load` 的所有工作表名稱。
+- **Rationale**: `duplicateSheet` 連同格式與合併範圍一起複製（SC-008）；放在同一份試算表，`drive.file` 範圍就夠，不會在老師的雲端硬碟多出檔案。不指定 `insertSheetIndex` 時 Google 把複本放在第一個位置，003 匯入時會預設選到備份（#33），所以一定要指定。
 - **Alternatives considered**: 複製整份試算表（多一個檔案）；把寫回前的值存在伺服器（伺服器重啟就消失，老師在 Google 上看不到）。
 
 ## RD-06 一次批次、純文字寫入

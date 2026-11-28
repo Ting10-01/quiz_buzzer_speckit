@@ -112,7 +112,7 @@ package "Server（server/src/results）" {
     +backupName(worksheet: string, now: Date, existing: string[]): string
   }
   interface SpreadsheetWriter {
-    +duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string): Promise<void>
+    +duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string, insertIndex: number): Promise<void>
     +writeTexts(spreadsheetId: string, worksheet: string, cells: CellText[]): Promise<void>
   }
   class GoogleSheetsWriter {

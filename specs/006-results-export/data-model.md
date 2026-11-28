@@ -82,7 +82,7 @@
 3. `stored = imports.latest()`、`markers = imports.latestMarkers()`；`stored` 為 `null`，或 `stored.spreadsheet.id`、`stored.spreadsheet.selectedWorksheet` 與 `state.spreadsheet` 不同 → `IMPORT_CHANGED`。
 4. `cells = planCells(stored, markers, query.allResults(null))`；為空 → 回 `{ ok: true, cellCount: 0 }`，不讀取、不備份、不寫入。
 5. `loaded = reader.load(id)`（錯誤 → `mapGoogleError(·, READ)`）；`grid` 為 `loaded.sheets` 中名稱等於 `selectedWorksheet` 的一個，沒有 → `SHEET_NOT_FOUND`；`loaded.editable === false` → `NO_EDIT_PERMISSION`；`current = parser.parse(grid, stored.spreadsheet)`；`firstLayoutMismatch(stored, current)` 有題號 → `LAYOUT_CHANGED`。
-6. `writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, now(), loaded.sheets.map(s => s.name)))`（錯誤 → `BACKUP`）。
+6. `writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, now(), loaded.sheets.map(s => s.name)), loaded.sheets.indexOf(grid) + 1)`（錯誤 → `BACKUP`）。003 的 `GoogleSheetsReader` 依 Google 的工作表順序排列 `loaded.sheets`，所以 `indexOf(grid) + 1` 是學習單的下一個位置。
 7. `writer.writeTexts(id, selectedWorksheet, cells)`（錯誤 → `WRITE`）。
 8. 回 `{ ok: true, cellCount: cells.length }`。
 
@@ -127,7 +127,7 @@
 
 | 方法 | `GoogleSheetsWriter` 的做法 |
 | --- | --- |
-| `duplicateSheet(spreadsheetId, sheetId, newTitle): Promise<void>` | `spreadsheets.batchUpdate` 一個 `duplicateSheet` 請求（`sourceSheetId: sheetId`、`newSheetName: newTitle`） |
+| `duplicateSheet(spreadsheetId, sheetId, newTitle, insertIndex): Promise<void>` | `spreadsheets.batchUpdate` 一個 `duplicateSheet` 請求（`sourceSheetId: sheetId`、`newSheetName: newTitle`、`insertSheetIndex: insertIndex`） |
 | `writeTexts(spreadsheetId, worksheet, cells): Promise<void>` | 一次 `spreadsheets.values.batchUpdate`，`valueInputOption: 'RAW'`，`data` 每格一個 `{ range: "'<worksheet>'!<cell>", values: [[text]] }`；工作表名稱中的 `'` 改為 `''` |
 
 `GoogleSheetsWriter` 用 `@googleapis/sheets`；`clients` 為 002 的 `app.googleClients`（`GoogleClientProvider`），每次呼叫前取 `authorizedClient()`；所有請求 `timeout: 15000`。錯誤原樣丟出，由 `WriteBackService.mapGoogleError` 對應。

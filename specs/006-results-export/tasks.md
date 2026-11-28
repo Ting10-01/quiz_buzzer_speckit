@@ -148,6 +148,16 @@ description: "Task list for 006 結果與寫回"
 
 ---
 
+## Fix: 備份工作表放在學習單後面（#33）
+
+**Goal**: 寫回建立的備份工作表緊接在學習單後面，老師之後匯入同一份試算表時，003 仍預設選到學習單（AC-12、REQ-RES-13）
+
+- [ ] T037 [P] 測試：`server/tests/unit/results/GoogleSheetsWriter.test.ts` 的 `duplicateSheet` 請求帶 `insertSheetIndex`；`server/tests/unit/results/WriteBackService.success.test.ts` 傳給 `duplicateSheet` 的 `insertIndex` 是學習單在 `loaded.sheets` 的位置 + 1（學習單不在第一個工作表時也對）；`FakeSpreadsheetWriter` 記錄 `insertIndex`
+- [ ] T038 `SpreadsheetWriter.duplicateSheet` 加上 `insertIndex`，`GoogleSheetsWriter` 送出 `insertSheetIndex`，`WriteBackService` 傳入 `loaded.sheets.indexOf(grid) + 1`，依 T037 與 data-model 第 4 節
+- [ ] T039 人工驗證 quickstart #7：寫回後備份緊接在學習單後面，再匯入同一份試算表時預設選到學習單，記到 `manual-verification.md`
+
+---
+
 ## Fix: 標記在左邊另一格時只寫答案（#34）
 
 **Goal**: 依 003 的 `inBlankCell`，標記在填空格內時寫「標記＋答案」，在左邊另一格時只寫答案（REQ-RES-08、AC-13、AC-13a）。依 003 T051。
@@ -183,7 +193,7 @@ description: "Task list for 006 結果與寫回"
 | REQ-RES-10 | AC-15、SC-002、SC-003 | T017、T023、T033 |
 | REQ-RES-11 | AC-16 | T018、T022 |
 | REQ-RES-12 | AC-21 | T026、T023、T029 |
-| REQ-RES-13 | AC-12、AC-17、SC-008 | T016、T017、T026、T021、T022、T033 |
+| REQ-RES-13 | AC-12、AC-17、SC-008 | T016、T017、T026、T021、T022、T033、T037、T038、T039 |
 | REQ-RES-14 | AC-25、AC-26、SC-007 | T017、T018、T026、T029 |
 | REQ-RES-15 | AC-27 | T027、T024 |
 | REQ-RES-16 | AC-20 | T026、T029 |
