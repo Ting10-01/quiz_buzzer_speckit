@@ -53,7 +53,7 @@ export const GROUP_SPREADSHEET: Spreadsheet = {
   selectedWorksheet: WORKSHEET,
 };
 
-// What 003 saved when the teacher imported the template: blank cells G5, G6 (Q1), G8, G9 (Q2),
+// What 003 saved when the teacher imported the template: blank cells H5, H6 (Q1), H8, H9 (Q2),
 // G11 (Q3), G13 (Q4); markers "（1）" / "（2）" on the group sub-questions, "" on the others.
 export function groupNotesImport(): { result: ImportSuccess; markers: BlankMarkers } {
   const parser = new GuidedNotesParser();

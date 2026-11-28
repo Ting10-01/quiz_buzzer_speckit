@@ -94,7 +94,8 @@ describe('GuidedNotesImporter.read (success)', () => {
     });
     expect(result.questions).toHaveLength(6);
     expect(store.latest()).toEqual(result);
-    expect(store.latestMarkers()).toEqual({ G5: '', G7: '', G9: '', G11: '', G13: '', G15: '' });
+    const none = { marker: '', inBlankCell: true };
+    expect(store.latestMarkers()).toEqual({ G5: none, G7: none, G9: none, G11: none, G13: none, G15: none });
   });
 
   it('replaces the stored result when another worksheet is read (AC-06)', async () => {

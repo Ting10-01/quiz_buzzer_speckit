@@ -134,11 +134,12 @@ test.describe('T032 results and write-back', () => {
     await expect(writeBackDialog(page)).toContainText('寫回成功：已寫入 5 格');
     const writes = await writtenToSheet();
     expect(writes.map((w) => w.method)).toEqual(['duplicateSheet', 'writeTexts']);
+    // Group answers go right of the markers in G, so only the answer is written (006 AC-13a, #34).
     expect(writes[1]!.cells).toEqual([
-      { cell: 'G5', text: 'CPU' },
-      { cell: 'G6', text: '作業系統' },
-      { cell: 'G8', text: '演算法' },
-      { cell: 'G9', text: '堆疊' },
+      { cell: 'H5', text: 'CPU' },
+      { cell: 'H6', text: '作業系統' },
+      { cell: 'H8', text: '演算法' },
+      { cell: 'H9', text: '堆疊' },
       { cell: 'G13', text: 'IP' },
     ]);
   });

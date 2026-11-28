@@ -4,7 +4,9 @@ import { QuestionScanner, type ScannedQuestion } from '../../src/guided-notes/Qu
 import type { ImportError } from '@quiz-buzzer/shared/entities';
 import { buildGrid, fixtureGrid, rowsFrom, type CellValue } from './helpers/gridBuilder.js';
 
-const HEADER: HeaderMatch = { row: 1, numberCol: 2, answerCol: 7, questionCol: 3 };
+const HEADER: HeaderMatch = { row: 1, numberCol: 2, answerCol: 7, answerLastCol: 7, questionCol: 3 };
+// The answer header merged over G:H, as in the templates.
+const WIDE: HeaderMatch = { ...HEADER, answerLastCol: 8 };
 const scanner = new QuestionScanner();
 
 function scan(cells: Record<number, Record<string, CellValue>>, merges: string[] = [], header = HEADER) {
@@ -19,7 +21,7 @@ function scanned(cells: Record<number, Record<string, CellValue>>, merges: strin
 
 describe('QuestionScanner.scan (single questions)', () => {
   it('reads the single template', () => {
-    const result = scanner.scan(fixtureGrid('single'), { row: 4, numberCol: 2, answerCol: 7, questionCol: 3 });
+    const result = scanner.scan(fixtureGrid('single'), { row: 4, numberCol: 2, answerCol: 7, answerLastCol: 8, questionCol: 3 });
     expect(Array.isArray(result)).toBe(true);
     const questions = result as ScannedQuestion[];
     expect(questions.map((q) => [q.row, q.question.number, q.question.subQuestions[0]?.blankCell])).toEqual([
@@ -60,7 +62,11 @@ describe('QuestionScanner.scan (single questions)', () => {
 
   it('makes a single question with exactly one sub-question', () => {
     expect(scanned({ 2: { B: 1, C: '題目一' } })).toEqual([
-      { row: 2, question: { number: 1, type: 'SINGLE', text: '題目一', subQuestions: [{ index: 1, blankCell: 'G2' }] } },
+      {
+        row: 2,
+        question: { number: 1, type: 'SINGLE', text: '題目一', subQuestions: [{ index: 1, blankCell: 'G2' }] },
+        markers: { G2: { marker: '', inBlankCell: true } },
+      },
     ]);
   });
 
@@ -76,7 +82,7 @@ describe('QuestionScanner.scan (single questions)', () => {
   });
 
   it('leaves out text without a question column (AC-04)', () => {
-    const [q] = scanned({ 2: { B: 1, C: '不是題目欄' } }, [], { row: 1, numberCol: 2, answerCol: 7 });
+    const [q] = scanned({ 2: { B: 1, C: '不是題目欄' } }, [], { row: 1, numberCol: 2, answerCol: 7, answerLastCol: 7 });
     expect(q?.question).toEqual({ number: 1, type: 'SINGLE', subQuestions: [{ index: 1, blankCell: 'G2' }] });
   });
 });
@@ -132,16 +138,63 @@ describe('QuestionScanner.scan (question groups)', () => {
   });
 
   it('reads the group template', () => {
-    const result = scanner.scan(fixtureGrid('group'), { row: 4, numberCol: 2, answerCol: 7, questionCol: 3 });
+    const result = scanner.scan(fixtureGrid('group'), { row: 4, numberCol: 2, answerCol: 7, answerLastCol: 8, questionCol: 3 });
     const questions = (result as ScannedQuestion[]).map((q) => q.question);
+    // G holds only the marker on group rows, so the answer goes in H; single answers are merged G:H (#34).
     expect(questions.map((q) => [q.number, q.type, q.subQuestions.map((s) => s.blankCell)])).toEqual([
-      [1, 'GROUP', ['G5', 'G6']],
-      [2, 'GROUP', ['G8', 'G9']],
+      [1, 'GROUP', ['H5', 'H6']],
+      [2, 'GROUP', ['H8', 'H9']],
       [3, 'SINGLE', ['G11']],
       [4, 'SINGLE', ['G13']],
     ]);
     expect(questions[0]?.text?.split('\n')).toHaveLength(2);
     expect(questions[0]?.text).toMatch(/^（1）根據文章第一段.*\n（2）而他安裝的 Windows/);
+  });
+});
+
+describe('QuestionScanner.scan (marker on the left of the blank cell, REQ-IMP-10, #34)', () => {
+  it('uses the cell right of a marker-only answer cell inside the answer header (AC-11, AC-12)', () => {
+    const [q] = scanned({ 5: { B: 1, C: '第一小題', G: '（1）' }, 6: { C: '第二小題', G: ' (2) ' } }, ['B5:B6'], WIDE);
+    expect(q?.question.subQuestions).toEqual([
+      { index: 1, blankCell: 'H5' },
+      { index: 2, blankCell: 'H6' },
+    ]);
+    expect(q?.markers).toEqual({ H5: { marker: '（1）', inBlankCell: false }, H6: { marker: '(2)', inBlankCell: false } });
+    expect(q?.question.text).toBe('（1）第一小題\n(2)第二小題');
+  });
+
+  it('keeps the right cell when it already has an answer, so a rescan after writing back agrees (AC-12b)', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）', H: 'CPU' }, 6: { G: '（2）', H: '作業系統' } }, ['B5:B6'], WIDE);
+    expect(q?.question.subQuestions.map((s) => s.blankCell)).toEqual(['H5', 'H6']);
+  });
+
+  it('keeps the marker cell when it holds more than the marker', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）舊答案' }, 6: { G: '（2）' } }, ['B5:B6'], WIDE);
+    expect(q?.question.subQuestions.map((s) => s.blankCell)).toEqual(['G5', 'H6']);
+    expect(q?.markers).toEqual({ G5: { marker: '（1）', inBlankCell: true }, H6: { marker: '（2）', inBlankCell: false } });
+  });
+
+  it('keeps the marker cell when the answer header is one column (AC-12a)', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' }, 6: { G: '（2）' } }, ['B5:B6']);
+    expect(q?.question.subQuestions.map((s) => s.blankCell)).toEqual(['G5', 'G6']);
+    expect(q?.markers).toEqual({ G5: { marker: '（1）', inBlankCell: true }, G6: { marker: '（2）', inBlankCell: true } });
+  });
+
+  it('keeps the marker cell when it is merged up to the end of the answer header', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' } }, ['G5:H5'], WIDE);
+    expect(q?.question.subQuestions).toEqual([{ index: 1, blankCell: 'G5' }]);
+    expect(q?.markers).toEqual({ G5: { marker: '（1）', inBlankCell: true } });
+  });
+
+  it('keeps the marker cell when the right cell is merged from the row above', () => {
+    const [q] = scanned({ 5: { B: 1, G: '（1）' }, 6: { G: '（2）' } }, ['B5:B6', 'H5:H6'], WIDE);
+    expect(q?.question.subQuestions.map((s) => s.blankCell)).toEqual(['H5', 'G6']);
+  });
+
+  it('records an empty marker in the blank cell when there is none', () => {
+    const [q] = scanned({ 5: { B: 1 } }, [], WIDE);
+    expect(q?.question.subQuestions).toEqual([{ index: 1, blankCell: 'G5' }]);
+    expect(q?.markers).toEqual({ G5: { marker: '', inBlankCell: true } });
   });
 });
 
