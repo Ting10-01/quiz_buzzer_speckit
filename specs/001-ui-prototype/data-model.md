@@ -85,7 +85,7 @@
 | --- | --- | --- |
 | `teacherAccount` | 模擬老師帳號的名稱與電子郵件 | M1 |
 | `spreadsheets` | 三份學習單：「題組＋單題範本」（可編輯）、「單題範本」（僅檢視）、「表頭錯誤範例」 | M2 |
-| `importResults` | 「題組＋單題範本」：4 題，其中 2 題為題組，共 6 個填空格；「單題範本」：6 題單題，6 個填空格；「表頭錯誤範例」：`ImportError` | M2；內容沿用 `docs/design/dark/T-Import.html`、`T-ImportError.html` |
+| `importResults` | 「題組＋單題範本」：4 題，其中 2 題為題組，共 6 個填空格（題組為 H5、H6、H8、H9，單題為 G11、G13，與 003 依 REQ-IMP-10 辨識的結果相同）；「單題範本」：6 題單題，6 個填空格；「表頭錯誤範例」：`ImportError` | M2；內容沿用 `docs/design/dark/T-Import.html`、`T-ImportError.html`；填空格位置依 003（issue #35） |
 | `activity` | 首頁與學生頁面看到的固定模擬活動：4 題、6 組 | M3 |
 | `groupMembers` | 各組已加入人數，至少一組為 0 人 | M3 |
 | `submissionsByQuestion` | 每題開放時的模擬送出列表：除第 3 題外每題 2 組以上；第 3 題沒有送出 | M4；內容沿用 `docs/design/dark/T-Live.html` |

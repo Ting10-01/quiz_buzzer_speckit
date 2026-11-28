@@ -88,7 +88,7 @@ function ImportResult({ result, onSelectWorksheet, onRepick, onCancel, onConfirm
         <h1 className={styles.title}>確認辨識結果</h1>
         <p className={styles.lead}>
           表頭在「{spreadsheet.selectedWorksheet}」工作表第 {result.headerRow} 列，
-          {`${recognisedColumns(result.headerColumns)
+          {`${recognisedColumns(result.headerColumns, questions)
             .map((column) => `${column.name}在 ${column.letter} 欄`)
             .join('、')}。`}
         </p>

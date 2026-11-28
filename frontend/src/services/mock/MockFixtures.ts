@@ -73,8 +73,8 @@ const groupAndSingleQuestions: Question[] = [
     type: QuestionType.GROUP,
     text: `${texts.cpu}\n${texts.os}`,
     subQuestions: [
-      { index: 1, blankCell: 'G5' },
-      { index: 2, blankCell: 'G6' },
+      { index: 1, blankCell: 'H5' },
+      { index: 2, blankCell: 'H6' },
     ],
   },
   {
@@ -82,8 +82,8 @@ const groupAndSingleQuestions: Question[] = [
     type: QuestionType.GROUP,
     text: `${texts.algorithm}\n${texts.stack}`,
     subQuestions: [
-      { index: 1, blankCell: 'G8' },
-      { index: 2, blankCell: 'G9' },
+      { index: 1, blankCell: 'H8' },
+      { index: 2, blankCell: 'H9' },
     ],
   },
   {

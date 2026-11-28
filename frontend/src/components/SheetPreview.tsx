@@ -1,7 +1,8 @@
 // Worksheet preview (FR-021): built only from the recognition result, so cells outside it
 // are never shown. T-Results passes `filled` to preview what write-back will put in each cell;
 // it has the activity's questions but not the import's header row, so the header is optional (C-5).
-// The columns follow what was recognised: no text column when the sheet has none (FR-021, #16).
+// The columns follow what was recognised: no text column when the sheet has none (FR-021, #16),
+// and the answer column is named after the columns the blank cells are in (FR-021, #35).
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 import styles from './SheetPreview.module.css';
 
@@ -25,13 +26,43 @@ export interface RecognisedColumn {
   name: string;
 }
 
+/** Column letters of a cell reference such as "AA6". */
+function columnOf(cell: string): string {
+  return cell.match(/^[A-Z]+/)?.[0] ?? '';
+}
+
+/** Left-to-right order of column letters: shorter first, so Z comes before AA. */
+function compareColumns(a: string, b: string): number {
+  return a.length - b.length || a.localeCompare(b);
+}
+
+/**
+ * The columns the blank cells are in, left to right and without repeats, joined with "、",
+ * e.g. "G、H". Blank cells can sit in different columns (003 #34), so the header's answer
+ * column alone does not say where the answers go (#35).
+ */
+function answerLetters(questions: ImportSuccess['questions']): string {
+  const letters = new Set(questions.flatMap((q) => q.subQuestions.map((sub) => columnOf(sub.blankCell))));
+  letters.delete('');
+  return [...letters].sort(compareColumns).join('、');
+}
+
 /**
  * What each of `headerColumns` was recognised as. They are in the order number, text (only when
  * the sheet has one) and answer (003 data-model), so two columns mean there is no text column (#16).
+ * The answer column is named after the blank cells' columns when there are any (#35).
  */
-export function recognisedColumns(headerColumns: string[]): RecognisedColumn[] {
+export function recognisedColumns(
+  headerColumns: string[],
+  questions: ImportSuccess['questions'] = [],
+): RecognisedColumn[] {
   const kinds: ColumnKind[] = headerColumns.length >= 3 ? ['number', 'text', 'answer'] : ['number', 'answer'];
-  return kinds.map((kind, i) => ({ kind, letter: headerColumns[i] ?? '', name: COLUMN_NAMES[kind] }));
+  const answers = answerLetters(questions);
+  return kinds.map((kind, i) => ({
+    kind,
+    letter: kind === 'answer' && answers !== '' ? answers : (headerColumns[i] ?? ''),
+    name: COLUMN_NAMES[kind],
+  }));
 }
 
 /** Row number of a cell reference such as "G5"; the preview has no other source of rows. */
@@ -43,7 +74,7 @@ export function SheetPreview({ result, filled }: SheetPreviewProps) {
   const hasHeader = result.headerRow !== undefined && result.headerColumns !== undefined;
   // Without the import's header (T-Results, C-5), three columns with generic names are shown.
   const columns = hasHeader
-    ? recognisedColumns(result.headerColumns ?? [])
+    ? recognisedColumns(result.headerColumns ?? [], result.questions)
     : recognisedColumns(['題號', '題目', '作答']).map((column) => ({ ...column, letter: column.name }));
   const hasText = columns.some((column) => column.kind === 'text');
   return (
