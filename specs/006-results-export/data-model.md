@@ -72,7 +72,7 @@
 | `now` | 取得目前時間（測試可替換） |
 | `writeBack(): Promise<WriteBackResult>` | 依「寫回步驟」執行；成功回 `{ ok: true, cellCount }`；失敗丟出 `WriteBackFailure`，由 `resultsRoutes` 轉成 HTTP 回應（見下表） |
 | `firstLayoutMismatch(stored, current): number \| null` | research RD-04；`current` 為 `ImportError` 時回 `stored` 的第一題題號 |
-| `planCells(stored, markers, results): CellText[]` | 對每個有 `winner` 的題目、每個小題 `i`：`cell = subQuestions[i].blankCell`、`{ cell, text: composeCellText(markers[cell] ?? '', winner.answers[i]) }`；沒有 `winner` 的題目不產生 |
+| `planCells(stored, markers, results): CellText[]` | 對每個有 `winner` 的題目、每個小題 `i`：`cell = subQuestions[i].blankCell`、`{ cell, text: composeCellText(markers[cell]?.inBlankCell ? markers[cell].marker : '', winner.answers[i]) }`（標記在左邊另一格時只寫答案，REQ-RES-08）；沒有 `winner` 的題目不產生 |
 | `mapGoogleError(error, step): WriteBackFailure` | research RD-07 的對應表 |
 
 **寫回步驟**（與時序圖第 3 段一致）：
@@ -143,7 +143,7 @@
 | `ActivityStore` | 004 | `current(): ActivityState \| null`：`phase`、`questions`、`spreadsheet`（`id`、`selectedWorksheet`）、`endedAt: Map<number, number>` |
 | `GroupMembership` | 004 | `groupOf(socket: { id: string }): number \| null` |
 | `SubmissionStore` | 005 | `list(questionNumber): Submission[]`（依 `rank` 排序）、`winner(questionNumber): Submission \| null` |
-| `ImportStore` | 003 | `latest(): Readonly<ImportSuccess> \| null`；`latestMarkers(): BlankMarkers \| null`（`blankCell` → 小題標記或 `""`，與 `latest()` 同一次讀取；只在伺服器）；以 `app.importStore` 提供 |
+| `ImportStore` | 003 | `latest(): Readonly<ImportSuccess> \| null`；`latestMarkers(): BlankMarkers \| null`（`blankCell` → `{ marker, inBlankCell }`，與 `latest()` 同一次讀取；只在伺服器）；以 `app.importStore` 提供 |
 | `SpreadsheetReader` | 003 | `load(spreadsheetId): Promise<LoadedSpreadsheet>`（`id`、`title`、`editable`、`sheets: SheetGrid[]`）；錯誤為 `SheetsReadError`（`kind`：`NO_ACCESS`、`UNAVAILABLE`、`AUTH_EXPIRED`），沒有老師登入時丟 002 的 `TeacherNotSignedInError`；以 `app.spreadsheetReader` 提供；不讀寫 `ImportStore` |
 | `SheetGrid` | 003 | `sheetId`、`name` |
 | `GuidedNotesParser` | 003 | `parse(grid: SheetGrid, spreadsheet: Spreadsheet): ImportSuccess \| ImportError`（沒有狀態，自行 `new`；不碰網路、不讀寫 `ImportStore`；失敗以回傳 `ImportError` 表示，不丟例外） |

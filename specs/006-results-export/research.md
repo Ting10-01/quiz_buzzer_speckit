@@ -49,7 +49,7 @@
 
 ## RD-06 一次批次、純文字寫入
 
-- **Decision**: `SpreadsheetWriter.writeTexts` 呼叫一次 `spreadsheets.values.batchUpdate`，`valueInputOption: 'RAW'`，每個填空格一個 `ValueRange`，範圍為 `'<工作表名稱>'!<A1>`（工作表名稱中的單引號重複一次）。寫入文字由 `composeCellText(marker, answer)` 產生：`marker` 為空字串時是 `answer`，否則 `marker + answer`。
+- **Decision**: `SpreadsheetWriter.writeTexts` 呼叫一次 `spreadsheets.values.batchUpdate`，`valueInputOption: 'RAW'`，每個填空格一個 `ValueRange`，範圍為 `'<工作表名稱>'!<A1>`（工作表名稱中的單引號重複一次）。寫入文字由 `composeCellText(marker, answer)` 產生：`marker` 為空字串時是 `answer`，否則 `marker + answer`；標記不在填空格內（003 `inBlankCell: false`）時 `marker` 傳空字串。
 - **Rationale**: `RAW` 讓「=1+1」存成文字（AC-16）；單一批次請求由 Google 整批套用，失敗時不會只寫一部分（REQ-RES-14）；只寫值，不動格式與合併（REQ-RES-10）。寫入內容只由搶答結果決定，所以重試與寫一次的結果相同（AC-19）。
 - **已知限制**: 寫入要求已送出、但 15 秒內沒有回應時，無法知道 Google 是否已套用。此時回 `WRITE_UNCONFIRMED`，訊息說明無法確認、不會只寫一部分、可以再寫回一次（2026-11-21 clarify）。
 - **Alternatives considered**: `USER_ENTERED`（「=」開頭會變公式）；每格一個請求（慢，而且中途失敗會留下寫一半的工作表）。

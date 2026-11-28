@@ -75,7 +75,7 @@ else 找到工作表
 end
 alt ImportSuccess
   I -> P : markersOf(grid, result)
-  P --> I : BlankMarkers（blankCell → 標記）
+  P --> I : BlankMarkers（blankCell → 標記、是否在填空格內）
   I -> S : save(result, markers)
   I --> R : ImportSuccess
   R --> Svc : 200 ImportSuccess
