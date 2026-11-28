@@ -541,17 +541,17 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 **Purpose**: 套用 spec Session 2026-11-28 的 #35 問答（commit `spec(001): ...`）：003 的 #34 修訂後，同一份學習單的填空格可能分散在不同欄；確認辨識結果頁的說明與學習單預覽的作答欄，改依各小題 `blankCell` 實際所在的欄列出（FR-021）。
 
-- **只改 `SheetPreview.tsx` 與 `ImportPage.tsx`**；版面、按鈕與其他文字不變，不改介面或契約。欄字母由左到右排序（`Z` 在 `AA` 前）、不重複，以「、」分隔；題號欄、題目欄仍依 `headerColumns`；沒有表頭資訊時（T-Results）維持「題號、題目、作答」三欄。
+- **只改 `SheetPreview.tsx`、`ImportPage.tsx` 與 `MockFixtures.ts`**；版面、按鈕與其他文字不變，不改介面或契約。`MockFixtures` 的「題組＋單題範本」題組填空格由 G5、G6、G8、G9 改為 H5、H6、H8、H9，與 003 依 REQ-IMP-10 辨識的結果相同（data-model 第 3 節；#38 留給 #35）。欄字母由左到右排序（`Z` 在 `AA` 前）、不重複，以「、」分隔；題號欄、題目欄仍依 `headerColumns`；沒有表頭資訊時（T-Results）維持「題號、題目、作答」三欄。
 - **測試先寫、一次確認失敗**（T176 一筆 `test(001)` commit），再一次實作到全部通過（T177 一筆 `fix(001)` commit）。
-- **既有測試不修改**：測試資料的填空格都在 G 欄，與 `headerColumns` 的作答欄相同，結果不變。
+- **既有測試只改一處斷言**（因模擬資料改變，不改行為）：`us2-preparation.spec.ts` Q3 第 1 題的填空格原本斷言「G5、G6」，改為「H5、H6」；`tests/helpers/fixtures.ts` 的測試資料不改，填空格都在 G 欄的既有元件測試結果不變。
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T176 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx` 與 `frontend/tests/component/SheetPreview.test.tsx`：`headerColumns` 為 `["B","C","G"]`、填空格為 H5、H6、H8、H9、G11、G13 時，說明文字含「題號在 B 欄、題目在 C 欄、作答在 G、H 欄。」，預覽的欄名為 B、C、「G、H」，黃框的填空格位置不變；填空格為 H5、AA6、Z8 時作答欄為「H、Z、AA」；填空格都在 G 欄時維持「作答在 G 欄」（FR-021；issue #35）
+- [ ] T176 [US2] 擴充 `frontend/tests/component/ImportPage.test.tsx` 與 `frontend/tests/component/SheetPreview.test.tsx`：`headerColumns` 為 `["B","C","G"]`、填空格為 H5、H6、H8、H9、G11、G13 時，說明文字含「題號在 B 欄、題目在 C 欄、作答在 G、H 欄。」，預覽的欄名為 B、C、「G、H」，黃框的填空格位置不變；填空格為 H5、AA6、Z8 時作答欄為「H、Z、AA」；填空格都在 G 欄時維持「作答在 G 欄」；擴充 `frontend/tests/e2e/us2-preparation.spec.ts` Q3：選「題組＋單題範本」後說明含「作答在 G、H 欄。」，並改上述一處斷言（FR-021、M2；issue #35）
 
 ### Implementation
 
-- [ ] T177 [US2] 修改 `frontend/src/components/SheetPreview.tsx`（作答欄的欄字母改由各小題 `blankCell` 取得）與 `frontend/src/pages/teacher/ImportPage.tsx`（說明文字用同一份欄字母）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T176 通過，且其他測試沒有退步（依賴 T176）
+- [ ] T177 [US2] 修改 `frontend/src/components/SheetPreview.tsx`（作答欄的欄字母改由各小題 `blankCell` 取得）、`frontend/src/pages/teacher/ImportPage.tsx`（說明文字用同一份欄字母）與 `frontend/src/services/mock/MockFixtures.ts`（題組填空格改為 H 欄）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T176 通過，且其他測試沒有退步（依賴 T176）
 - [ ] T178 依 `quickstart.md` Q19 人工驗證：匯入「02_題組範本」與填空格都在同一欄的學習單，檢視說明與預覽，記錄於 `manual-verification.md`
 
 **Checkpoint**: 填空格分散在多欄時，說明與預覽列出每一個作答欄；都在同一欄時與原本相同。
