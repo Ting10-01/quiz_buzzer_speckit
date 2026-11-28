@@ -25,7 +25,10 @@ export class MockResultService implements ResultService {
     if (!source.spreadsheet.editable) {
       return { ok: false, cellCount: 0, failureReason: '沒有編輯權限，無法寫回' };
     }
-    const cellCount = source.questions.reduce((sum, q) => sum + q.subQuestions.length, 0);
+    // Only questions with a winner are written, matching the T-WriteBack counts (M8, FR-041).
+    const cellCount = source.questions
+      .filter((q) => this.buildResult(q.number).winner)
+      .reduce((sum, q) => sum + q.subQuestions.length, 0);
     return { ok: true, cellCount };
   }
 
