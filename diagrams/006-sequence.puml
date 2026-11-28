@@ -92,7 +92,7 @@ else 老師
     RP --> WB : ImportSuccess / ImportError（不更新 ImportStore）
     WB -> WB : firstLayoutMismatch() 有題號 → LAYOUT_CHANGED
     WB -> WB : backupName(worksheet, now, 現有工作表名稱)
-    WB -> SW : duplicateSheet(spreadsheetId, grid.sheetId, 備份名稱)
+    WB -> SW : duplicateSheet(spreadsheetId, grid.sheetId, 備份名稱, 學習單位置 + 1)
     note right of SW : 失敗 → mapGoogleError(BACKUP)，不寫入
     WB -> SW : writeTexts(spreadsheetId, worksheet, cells)
     note right of SW : 一次 values.batchUpdate、RAW；\n15 秒沒有回應 → WRITE_UNCONFIRMED
