@@ -2,7 +2,8 @@
 // T-EndConfirm (FR-033), and T-QuestionEnd (FR-034).
 // Each page id renders its own view component, so moving between them starts a fresh view.
 // T-Lobby uses the Activity returned by createActivity / updateSettings and then the
-// onActivityChange snapshots; it never calls getCurrentActivity (contract C-1).
+// onActivityChange snapshots, which start with the activity held when it subscribes; it never
+// calls getCurrentActivity (contract C-1, issue #22).
 // The console never derives a phase: it follows the Activity the services return (FR-003).
 // Connected tab counts, offline state and time limits are not shown (SC-004).
 // Cancelling is only offered on T-Lobby, before question 1 opens (FR-026).
