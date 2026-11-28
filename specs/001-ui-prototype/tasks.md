@@ -34,7 +34,7 @@ description: "001 畫面與流程原型的實作任務"
 
 | 編號 | 衝突 | 決定 | 影響的任務 |
 | --- | --- | --- | --- |
-| C-1 | contract 的 `getCurrentActivity()` 列出「T-Lobby 載入時」呼叫；但時序圖第 2 段的 T-Lobby 使用 `createActivity` 回傳的 `Activity`，且 data-model 規定 `getCurrentActivity` 只反映首頁與學生端的 `viewerPhaseIndex` | 修改 contract：T-Lobby 不呼叫 `getCurrentActivity()`，使用 `createActivity`、`updateSettings` 回傳的 `Activity`，之後由 `onActivityChange` 更新 | T059、T065 |
+| C-1 | contract 的 `getCurrentActivity()` 列出「T-Lobby 載入時」呼叫；但時序圖第 2 段的 T-Lobby 使用 `createActivity` 回傳的 `Activity`，且 data-model 規定 `getCurrentActivity` 只反映首頁與學生端的 `viewerPhaseIndex` | 修改 contract：T-Lobby 不呼叫 `getCurrentActivity()`，使用 `createActivity`、`updateSettings` 回傳的 `Activity`，之後由 `onActivityChange` 更新。**2026-11-28 修訂（issue #22）**：T-Lobby 只在畫面出現時訂閱，訂閱前（進入 T-Setup 期間，或從 T-Setup 換頁的空檔）的學生加入、離開收不到。補查放在服務，不放在頁面：`onActivityChange` 訂閱後，實作手上已有活動時立即以目前的活動通知一次（非同步；通知前已取消訂閱則不通知，相當於 #20 的「unmount 後忽略結果」）。T-Lobby 仍不呼叫 `getCurrentActivity()`，因為模擬實作的 `getCurrentActivity()` 只反映首頁與學生端的狀態（data-model「老師端與學生端的兩條模擬狀態」）；模擬實作的人數固定（M3），仍不通知 | T059、T065、T173–T175 |
 | C-2 | FR-057 要求 S-QuestionDone 顯示題目進度，但 contract 的 `getAllResults()` 呼叫頁面沒有列 S-QuestionDone | 修改 contract：S-QuestionDone 呼叫 `getAllResults()`。學生頁面呼叫結果介面時只取得可公開的內容，公開範圍由 006 決定，在伺服器端過濾；頁面不自行過濾，001 的模擬實作不過濾 | T083、T089 |
 | C-3 | data-model 的 `MockSession` 欄位表把 `teacherActivity`、`viewerPhaseIndex` 的寫入者只列為 MockActivityService；但 M4、M6 與時序圖第 3 段要求 MockSubmissionService 在接受時結束老師端的題目、推進學生端的階段 | 修改 data-model：寫入者補上 MockSubmissionService（`judge(ACCEPTED)`、`simulateJudgement(ACCEPTED)`），兩條模擬狀態的說明一併補上 | T113、T114、T124–T126 |
 | C-4 | FR-032 規定按鈕是否可用依送出介面回傳的結果呈現，但 `Submission` 沒有「可判定」欄位 | 不改類別圖：依修訂後的 FR-032（spec commit `spec(001): align ui flow with feature split`），`SubmissionTable` 只讓 `rank` 最小的 `PENDING` 列可按；規則已由 feature-split 3.2 定案，變更須先改 spec（原則 II），不屬於 005 的擴充點 | T068、T073 |
@@ -516,6 +516,27 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ---
 
+## Phase 8.10: 設計修訂（2026-11-28）：大廳補上訂閱前的人數變化（issue #22）
+
+**Purpose**: 套用 C-1 的 2026-11-28 修訂（commit `spec(001): ...`）：`onActivityChange` 訂閱後，實作手上已有活動時立即通知一次目前的活動，讓老師從活動設定頁回到控制台・準備中時，期間的學生加入、離開也反映在人數上（spec「階段推動的切換」T-Lobby 列、FR-025）。
+
+- **只改 `HttpActivityService.ts`**（004 的伺服器實作）；T-Lobby、模擬實作、版面、按鈕與文字都不變。`ConsolePage.tsx` 只更新引用 C-1 的註解。
+- **測試先寫、一次確認失敗**（T173 一筆 `test(001)` commit），再一次實作到全部通過（T174 一筆 `fix(001)` commit）。
+- **既有測試只改一處斷言**：`HttpActivityService.cancel.test.ts` 的「取消後 `onActivityChange` 不通知」原本斷言完全沒有呼叫；它在已有快照時才訂閱，依新的 contract 會先收到一次補通知，改為斷言只收到這次補通知、沒有收到 `null`；其他斷言不修改。
+
+### Tests（先寫，確認失敗）
+
+- [ ] T173 [US2] 新增 `frontend/tests/unit/HttpActivityService.subscribe.test.ts`（假的 `RealtimeClient`）：已採用快照後才訂閱 `onActivityChange`，listener 收到一次目前的活動；訂閱後同步取消訂閱則不收到；還沒有快照時訂閱不收到，之後的快照照常收到；活動為 `null`（沒有活動）時訂閱不收到；訂閱後、補通知前又採用新快照時只收到新快照一次（C-1；issue #22）；修改 `HttpActivityService.cancel.test.ts` 的一處斷言（見上）
+
+### Implementation
+
+- [ ] T174 [US2] 修改 `frontend/src/services/HttpActivityService.ts` 的 `onActivityChange`：訂閱時 `latest?.activity` 不是 `null`，在下一個 microtask 以當時的 `latest.activity` 通知一次；已取消訂閱或已收到新通知則不通知（004 contracts/activity-service.md）；更新 `ConsolePage.tsx` 引用 C-1 的註解；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T173 通過，且其他測試沒有退步（依賴 T173）
+- [ ] T175 依 `quickstart.md` Q18 人工驗證：老師在活動設定頁期間讓學生加入與離開，回到控制台・準備中後檢查人數，記錄於 `manual-verification.md`
+
+**Checkpoint**: 老師從活動設定頁回到控制台・準備中，各組人數與學生端一致，不必等下一次加入或離開。
+
+---
+
 ## 需求與任務對照
 
 | 需求 | 任務 |
@@ -535,7 +556,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 | FR-020 | T046、T052、T056、T062 |
 | FR-021、FR-022 | T057、T061、T063、T167–T169 |
 | FR-023、FR-024 | T058、T064、T066a、T160、T161、T163、T165、T166 |
-| FR-025 | T059、T065 |
+| FR-025 | T059、T065、T173–T175 |
 | FR-026 | T135–T138、T139–T142、T152、T155 |
 | FR-030–FR-034、FR-032a | T068、T069、T071–T075、T113、T126 |
 | FR-040–FR-042 | T070、T076、T143–T145、T170–T172 |
