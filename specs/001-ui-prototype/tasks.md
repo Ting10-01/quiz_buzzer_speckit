@@ -505,7 +505,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T170 [US3] 擴充 `frontend/tests/component/TeacherResultsPage.test.tsx` 與 `frontend/tests/unit/MockResultService.test.ts`：四題中只有第 1 題（2 格）與第 4 題（1 格）有成功組別時，確認視窗顯示「3 格（2 題）」；沒有任何題目有成功組別時顯示「0 格（0 題）」；模擬寫回在沒有成功組別時回傳 0 格，有成功組別時回傳的格數只計算那些題目的填空格（FR-041、M8、US3 AC-10、AC-11；issue #31）
+- [X] T170 [US3] 擴充 `frontend/tests/component/TeacherResultsPage.test.tsx` 與 `frontend/tests/unit/MockResultService.test.ts`：四題中只有第 1 題（2 格）與第 4 題（1 格）有成功組別時，確認視窗顯示「3 格（2 題）」；沒有任何題目有成功組別時顯示「0 格（0 題）」；模擬寫回在沒有成功組別時回傳 0 格，有成功組別時回傳的格數只計算那些題目的填空格（FR-041、M8、US3 AC-10、AC-11；issue #31）
 
 ### Implementation
 
