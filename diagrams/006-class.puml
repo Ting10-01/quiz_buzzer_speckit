@@ -175,7 +175,7 @@ package "其他子功能（介面依各自 contracts）" #EEEEEE {
     +latestMarkers(): BlankMarkers | null
   }
   class BlankMarkers <<003, server only>> {
-    Readonly<Record<blankCell, marker>>
+    Readonly<Record<blankCell, { marker, inBlankCell }>>
   }
   ImportStore ..> BlankMarkers
   interface SpreadsheetReader <<003, app.spreadsheetReader>> {

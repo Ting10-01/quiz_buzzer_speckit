@@ -130,6 +130,7 @@ package "server/src/guided-notes（003）" {
     row: number
     numberCol: number
     answerCol: number
+    answerLastCol: number
     questionCol: number [0..1]
   }
   class QuestionScanner {
@@ -139,6 +140,7 @@ package "server/src/guided-notes（003）" {
   class ScannedQuestion {
     row: number
     question: Question
+    markers: BlankMarkers
   }
   class importErrors <<module>> {
     +noHeader(worksheet, foundHeaders): ImportError
@@ -159,7 +161,11 @@ package "server/src/guided-notes（003）" {
     NO_WORKSHEET
   }
   class BlankMarkers <<type>> {
-    Readonly<Record<blankCell, marker>>
+    Readonly<Record<blankCell, BlankMarker>>
+  }
+  class BlankMarker <<type>> {
+    marker: string
+    inBlankCell: boolean
   }
   class ImportStore {
     -latestResult: ImportSuccess [0..1]
@@ -192,6 +198,7 @@ package "server/src/guided-notes（003）" {
   ScannedQuestion --> Question
   ImportStore o-- "0..1" ImportSuccess
   ImportStore o-- "0..1" BlankMarkers
+  BlankMarkers *-- BlankMarker
   GuidedNotesParser ..> BlankMarkers : creates
   guidedNotesRoutes --> GuidedNotesImporter
   guidedNotesRoutes ..> SheetsReadError : 對應 HTTP 錯誤

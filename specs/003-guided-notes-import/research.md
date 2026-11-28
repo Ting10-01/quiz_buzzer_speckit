@@ -39,9 +39,9 @@
   - 從表頭列下一列到最後一列，讀題號欄。儲存格在合併範圍內但不是第一列時跳過。
   - 題號：`effectiveValue.numberValue` 是 ≥ 1 的整數；或 `formattedValue` 經 NFKC 後全是數字且 ≥ 1。其他（0、負數、小數、文字、空白）略過該列。
   - 題號儲存格的合併範圍跨多列 → `GROUP`，範圍內每一列是一個候選小題；否則 `SINGLE`，只有該列。
-  - 每個候選列：找作答欄 `(row, answerCol)` 所在的合併範圍；不在合併範圍內時填空格就是該格。合併範圍的第一列早於這一列 → 不是獨立填空格，略過；否則填空格是合併範圍左上角，轉成 A1（例如 `G5`）。
+  - 每個候選列：找作答欄 `(row, answerCol)` 所在的合併範圍；不在合併範圍內時填空格就是該格。合併範圍的第一列早於這一列 → 不是獨立填空格，略過；否則填空格是合併範圍左上角，轉成 A1（例如 `G5`）。這一格（合併範圍）去除前後空白後只有標記，而且它的最右欄 + 1 仍不超過作答欄表頭的 `answerLastCol`、那一格不屬於從上一列或左邊開始的合併範圍時，填空格改為右邊那格（#34；不看右邊那格的內容，寫回後再解析才會得到同一格）。
   - 一題沒有任何獨立填空格 → `NO_BLANK`。
-  - 標記：填空格文字符合 `^\s*([（(]\s*\d+\s*[)）])`，原樣保留括號內外的寫法（去掉前面的空白）作為標記；不符合時為 `""`。標記以外的文字忽略。擷取寫成 `QuestionScanner.extractMarker(text)`。標記不放進 001 的 `SubQuestion`：`GuidedNotesParser.markersOf(grid, result)` 對每個 `blankCell` 讀出標記，`GuidedNotesImporter.read()` 成功時與 `ImportSuccess` 一起存入 `ImportStore`（`save(result, markers)`），006 以 `latestMarkers()` 取用（001 最終版沒有 `SubQuestion.marker`，2026-11-22 決定不請 001 修改）。
+  - 標記：填空格文字符合 `^\s*([（(]\s*\d+\s*[)）])`，原樣保留括號內外的寫法（去掉前面的空白）作為標記；不符合時為 `""`。標記以外的文字忽略。擷取寫成 `QuestionScanner.extractMarker(text)`。填空格是右邊那格時，標記取自左邊的標記格，`inBlankCell: false`。標記不放進 001 的 `SubQuestion`：`GuidedNotesParser.markersOf(grid, result)` 對每個 `blankCell` 取得 `BlankMarker`，`GuidedNotesImporter.read()` 成功時與 `ImportSuccess` 一起存入 `ImportStore`（`save(result, markers)`），006 以 `latestMarkers()` 取用（001 最終版沒有 `SubQuestion.marker`，2026-11-22 決定不請 001 修改）。
   - 題目敘述：題目欄同一列（合併時取左上角）的文字，去除前後空白。單題直接用；題組依小題順序每行為「標記（空白時為「（n）」）＋文字」，用 `\n` 連接，只保留有文字的列；全部沒有文字時不設 `text`。
 - **Rationale**: 題組只依題號欄的合併範圍判定（AC-14）。填空格位置是解析結果（原則 IV），006 直接以 A1 寫回。
 - **Alternatives considered**: 依標記判定題組（範本單題也可能加標記，會誤判）。

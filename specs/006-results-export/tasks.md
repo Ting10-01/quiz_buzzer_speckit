@@ -148,6 +148,16 @@ description: "Task list for 006 結果與寫回"
 
 ---
 
+## Fix: 標記在左邊另一格時只寫答案（#34）
+
+**Goal**: 依 003 的 `inBlankCell`，標記在填空格內時寫「標記＋答案」，在左邊另一格時只寫答案（REQ-RES-08、AC-13、AC-13a）。依 003 T051。
+
+- [ ] T040 [P] 測試：`server/tests/unit/results/WriteBackService.success.test.ts` 的題組範本寫入 H5「CPU」、H6「作業系統」、H8「演算法」、H9「堆疊」、G13「IP」；`inBlankCell: true` 的標記仍寫「（1）CPU」；`frontend/tests/e2e/results.spec.ts` 寫入的儲存格跟著改
+- [ ] T041 實作 `WriteBackService.planCells`：`inBlankCell` 為 true 時傳標記給 `composeCellText`，否則傳空字串，依 T040 與 data-model 第 4 節
+- [ ] T042 人工驗證 quickstart #7：寫回後題組範本 H 欄只有答案、G 欄標記不變，記到 `manual-verification.md`
+
+---
+
 ## Dependencies & Execution Order
 
 - Phase 1、2 → Phase 3（US1）→ Phase 4（US2）→ Phase 5（US3）→ Phase 6（US4）→ Phase 7。
@@ -168,7 +178,7 @@ description: "Task list for 006 結果與寫回"
 | REQ-RES-05 | AC-09 | T004、T011、T008 |
 | REQ-RES-06 | AC-05 | T004、T012、T008、T014 |
 | REQ-RES-07 | AC-12、SC-001 | T017、T023、T024、T033 |
-| REQ-RES-08 | AC-13 | T016、T017、T021 |
+| REQ-RES-08 | AC-13、AC-13a | T016、T017、T021、T040、T041、T042 |
 | REQ-RES-09 | AC-14、AC-18 | T017、T023 |
 | REQ-RES-10 | AC-15、SC-002、SC-003 | T017、T023、T033 |
 | REQ-RES-11 | AC-16 | T018、T022 |

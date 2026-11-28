@@ -136,6 +136,16 @@ description: "Task list for 003 匯入學習單"
 
 ---
 
+## Fix: 題組的答案寫在小題標記右邊的格子（#34）
+
+**Goal**: 作答欄那格只有標記、右邊同在作答表頭範圍內有另一格時，填空格是右邊那格，標記記為不在填空格內（REQ-IMP-09、REQ-IMP-10、AC-11、AC-12、AC-12a、AC-12b）
+
+- [ ] T050 [P] 測試：`gnt/QuestionScanner.test.ts`、`gnt/GuidedNotesParser.test.ts` 中題組範本的填空格改為 H5、H6、H8、H9（G11、G13 不變），`markersOf` 為 `{ marker: '（1）', inBlankCell: false }` 等；新增以 `gridBuilder` 建的版面：作答表頭只有一欄、標記在填空格內 → 填空格是標記那格、`inBlankCell: true`；右邊那格已有文字 → 仍是右邊那格；標記格還有其他文字 → 是標記那格；右邊那格屬於從上一列開始的合併 → 是標記那格；`HeaderLocator.locate` 回傳作答表頭合併的 `answerLastCol`
+- [ ] T051 實作：`HeaderMatch.answerLastCol`；`QuestionScanner.scan` 依 REQ-IMP-10 選右邊那格並在 `ScannedQuestion.markers` 記下 `BlankMarker`；`GuidedNotesParser.markersOf` 改用掃描結果；`BlankMarkers` 的值改為 `BlankMarker`，依 T050 與 data-model、contracts/import-store.md
+- [ ] T052 人工驗證 quickstart #2：匯入題組範本，第 1、2 題的填空格為 H5、H6、H8、H9，記到 `manual-verification.md`
+
+---
+
 ## 需求追溯
 
 | 需求 | AC | 任務 |
@@ -148,8 +158,8 @@ description: "Task list for 003 匯入學習單"
 | REQ-IMP-06 | AC-01、AC-09、AC-19–21 | T012、T013、T020、T021、T034、T040 |
 | REQ-IMP-07 | AC-04、AC-15 | T012、T020、T030、T033 |
 | REQ-IMP-08 | AC-11、AC-13、AC-14 | T030、T031、T032 |
-| REQ-IMP-09 | AC-12 | T001、T005、T009、T023、T030、T031、T033 |
-| REQ-IMP-10 | AC-01、AC-11、AC-22 | T004、T012、T020、T034、T040 |
+| REQ-IMP-09 | AC-12、AC-12a | T001、T005、T009、T023、T030、T031、T033、T050、T051 |
+| REQ-IMP-10 | AC-01、AC-11、AC-12b、AC-22 | T004、T012、T020、T034、T040、T050、T051、T052 |
 | REQ-IMP-11 | AC-07 | T014、T015、T022 |
 | REQ-IMP-12 | AC-19–24 | T006、T034、T035、T037、T040、T042 |
 | REQ-IMP-13 | AC-25、AC-26 | T026、T036、T038、T039、T041、T043、T044 |

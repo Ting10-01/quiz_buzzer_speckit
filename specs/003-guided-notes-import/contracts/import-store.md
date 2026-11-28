@@ -19,8 +19,10 @@
 
 ```ts
 // server/src/guided-notes/ImportStore.ts
-/** blankCell (A1, e.g. "G5") -> marker found at the start of that cell ("（1）", "(2)" or ""). */
-export type BlankMarkers = Readonly<Record<string, string>>;
+/** The sub-question marker of a blank cell ("（1）", "(2)" or ""); inBlankCell is false when it is in the cell on the left (REQ-IMP-10). */
+export interface BlankMarker { marker: string; inBlankCell: boolean }
+/** blankCell (A1, e.g. "H5") -> its marker. */
+export type BlankMarkers = Readonly<Record<string, BlankMarker>>;
 
 export class ImportStore {
   // Only GuidedNotesImporter.read() calls this; result and markers are replaced together.
@@ -36,7 +38,7 @@ export class ImportStore {
 2. `questions` 有 1～200 題，`number` 嚴格遞增、可跳號。
 3. `type === 'SINGLE'` ⇒ `subQuestions.length === 1`；`type === 'GROUP'` ⇒ `subQuestions.length >= 1`；`index` 從 1 連號。
 4. 每個 `blankCell` 是 A1 表示法，在同一份結果中不重複，都位於 `spreadsheet.selectedWorksheet`。
-5. `latestMarkers()` 與 `latest()` 來自同一次讀取：`latest()` 中每個 `blankCell` 在 `latestMarkers()` 都恰好有一筆，值是填空格開頭原有的小題標記（原樣保留全形、半形寫法）或 `""`；沒有其他鍵。標記只存在伺服器，不在 001 的 `SubQuestion` 中，也不回傳給前端。
+5. `latestMarkers()` 與 `latest()` 來自同一次讀取：`latest()` 中每個 `blankCell` 在 `latestMarkers()` 都恰好有一筆，值的 `marker` 是填空格開頭原有的小題標記（原樣保留全形、半形寫法）或 `""`，`inBlankCell` 為 true；填空格是標記右邊的格子（REQ-IMP-10）時，`marker` 是左邊標記格的標記，`inBlankCell` 為 false。沒有其他鍵。標記只存在伺服器，不在 001 的 `SubQuestion` 中，也不回傳給前端。
 6. 只存在記憶體；伺服器重新啟動後 `latest()` 為 `null`。
 7. 004、006 不得修改 `latest()` 回傳的物件，也不得呼叫 `save()`。
 
@@ -77,4 +79,4 @@ export class GuidedNotesParser {
 | 使用者 | 讀什麼 | 用途 |
 | --- | --- | --- |
 | 004 建立活動 | `app.importStore.latest()` 的 `spreadsheet`、`questions`（不需要標記） | 活動的題目與題數；`latest()` 為 `null` 時建立活動應回驗證錯誤（由 004 定義） |
-| 006 寫回 | `app.importStore.latest()` 的 `spreadsheet.id`、`spreadsheet.selectedWorksheet`、`questions[].subQuestions[].blankCell`；`app.importStore.latestMarkers()[blankCell]`；`app.spreadsheetReader.load()`、`GuidedNotesParser.parse()` | 版面檢查後寫入「`latestMarkers()[blankCell]` ＋答案」到原填空格；寫回預覽顯示不含標記的答案（006 定義） |
+| 006 寫回 | `app.importStore.latest()` 的 `spreadsheet.id`、`spreadsheet.selectedWorksheet`、`questions[].subQuestions[].blankCell`；`app.importStore.latestMarkers()[blankCell]`；`app.spreadsheetReader.load()`、`GuidedNotesParser.parse()` | 版面檢查後寫入原填空格：`inBlankCell` 為 true 時「`marker` ＋答案」，false 時只寫答案；寫回預覽顯示不含標記的答案（006 定義） |

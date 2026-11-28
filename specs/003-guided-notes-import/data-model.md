@@ -30,7 +30,7 @@
 | 欄位 | 型別 | 003 的規則 |
 | --- | --- | --- |
 | `index` | number | 從 1 起算，依列序 |
-| `blankCell` | string | A1 表示法（例如 `G5`）；合併範圍取左上角（REQ-IMP-10） |
+| `blankCell` | string | A1 表示法（例如 `G5`）；合併範圍取左上角；作答欄那格只有標記、右邊同在作答欄表頭範圍內有另一格時，是右邊那格（REQ-IMP-10） |
 
 ### ImportSuccess
 
@@ -89,14 +89,15 @@
 | `CellRange` | `startRow`、`endRow`、`startCol`、`endCol` | 合併範圍，從 1 起算、含結尾（API 的 GridRange 是 0 起算、結尾不含） |
 | `SheetsReadError` | `kind: 'NO_ACCESS' \| 'UNAVAILABLE' \| 'AUTH_EXPIRED'` | `GoogleSheetsReader` 丟出（research R1）；`AUTH_EXPIRED` 依 002 的 `isGoogleAuthExpired` |
 | `GoogleSheetsReader` | `-clients: GoogleClientProvider`、`load(spreadsheetId)` | 實作 `SpreadsheetReader`；`buildApp` 以 `app.googleClients` 建立，提供為 `app.spreadsheetReader`。每次 `load` 都重新呼叫 `authorizedClient()`，不保存 client：任何人登入都會換成新帳號的授權（002 REQ-AUTH-03），新帳號沒有權限時回 `NO_ACCESS` |
-| `GuidedNotesParser` | `parse(grid, spreadsheet): ImportSuccess \| ImportError`、`markersOf(grid, result): BlankMarkers` | 不碰網路，不讀寫 `ImportStore`；`markersOf` 對 `result` 的每個 `blankCell` 以 `QuestionScanner.extractMarker(grid.textA1(blankCell))` 取得標記 |
+| `GuidedNotesParser` | `parse(grid, spreadsheet): ImportSuccess \| ImportError`、`markersOf(grid, result): BlankMarkers` | 不碰網路，不讀寫 `ImportStore`；`markersOf` 再次找表頭並掃描，取每個 `blankCell` 的 `BlankMarker`（`ScannedQuestion.markers`） |
 | `HeaderLocator` | 全部是 static：`NUMBER_HEADERS`、`ANSWER_HEADERS`、`QUESTION_HEADERS`、`locate(grid): HeaderMatch \| null`、`currentHeaderTexts(grid): string[]` | research R3；沒有狀態，不需建立實例 |
-| `HeaderMatch` | `row`、`numberCol`、`answerCol`、`questionCol?` | 欄號從 1 起算 |
+| `HeaderMatch` | `row`、`numberCol`、`answerCol`、`answerLastCol`、`questionCol?` | 欄號從 1 起算；`answerLastCol` 是作答欄表頭合併範圍的最右欄（沒有合併時等於 `answerCol`） |
 | `QuestionScanner` | `scan(grid, header): ScannedQuestion[] \| ImportError`、`extractMarker(text): string`（static） | research R4；`scan` 只會回傳 `NO_BLANK`；`extractMarker` 回傳開頭的「（n）」「(n)」或 `""` |
-| `ScannedQuestion` | `row`、`question: Question` | `row` 是題號所在列，供錯誤訊息使用 |
+| `ScannedQuestion` | `row`、`question: Question`、`markers: Record<blankCell, BlankMarker>` | `row` 是題號所在列，供錯誤訊息使用；`markers` 是這一題每個填空格的標記（REQ-IMP-09、REQ-IMP-10） |
 | `importErrors`（模組） | `ImportErrorCode`、`noHeader(worksheet, foundHeaders)`、`noQuestions(worksheet, headerRow)`、`invalidNumbering(number, row, previous)`、`tooManyQuestions(count)`、`noBlank(number, row)`、`noAccess()`、`noWorksheet(worksheet)` | 產生 `ImportError`（research R5）。區分 `ImportSuccess` 與 `ImportError` 用 001 `shared/src/guards.ts` 的 `isImportError`，本模組不另寫 |
 | `ImportStore` | `-latestResult: ImportSuccess \| null`、`-latestBlankMarkers: BlankMarkers \| null`、`save(result, markers)`、`latest(): Readonly<ImportSuccess> \| null`、`latestMarkers(): BlankMarkers \| null` | 伺服器記憶體；`buildApp` 建立一個，提供為 `app.importStore`；004 只呼叫 `latest()`，006 呼叫 `latest()`、`latestMarkers()` |
-| `BlankMarkers` | `Readonly<Record<string, string>>` | 鍵為 `blankCell`（A1），值為填空格開頭原有的小題標記或 `""`；`latest()` 的每個 `blankCell` 恰好一筆（REQ-IMP-09） |
+| `BlankMarkers` | `Readonly<Record<string, BlankMarker>>` | 鍵為 `blankCell`（A1）；`latest()` 的每個 `blankCell` 恰好一筆（REQ-IMP-09） |
+| `BlankMarker` | `marker: string`、`inBlankCell: boolean` | `marker` 為小題標記或 `""`；`inBlankCell` 為 false 表示標記在填空格左邊的格子（REQ-IMP-10 的右邊格子），true 表示在填空格內或沒有標記 |
 
 002 提供、003 只引用（`specs/002-teacher-login/contracts/server-extension.md`）：`buildApp(config, deps)`、`app.requireTeacher`、`app.googleClients`（`GoogleClientProvider.authorizedClient()`）、`isGoogleAuthExpired(error)`（`server/src/auth/GoogleClientProvider.ts`）、`TeacherNotSignedInError`、`ErrorBody`、`loggerOptions`、`GET /api/auth/picker-token`（`{ accessToken, apiKey, appId }`）、前端的 `ApiClient.request(method, path, body?)` 與 `ApiError`。`GoogleSheetsReader` 另外重用 002 `server/src/auth/GoogleOAuthGateway.ts` 的 `httpStatusOf(error)`、`isGoogleUnreachable(error)`、`GoogleUnavailableError`，讓逾時與連不上 Google 的判斷和 002 相同；這三個不在 002 的 `server-extension.md`。
 

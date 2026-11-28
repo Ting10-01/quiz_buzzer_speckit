@@ -77,7 +77,7 @@ else 老師
   WB -> WB : inProgress？（是 → IN_PROGRESS）
   WB -> AS : current()：phase、spreadsheet
   WB -> IS : latest()、latestMarkers()
-  IS --> WB : ImportSuccess（blankCell）、BlankMarkers（blankCell → 標記）
+  IS --> WB : ImportSuccess（blankCell）、BlankMarkers（blankCell → 標記、是否在填空格內）
   WB -> WB : 未結束 → NOT_FINISHED；學習單不同 → IMPORT_CHANGED
   WB -> RQ : allResults(null)
   RQ --> WB : QuestionResult[]（每題成功組別與答案）
