@@ -24,9 +24,19 @@ async function setup(spreadsheetId: string = SPREADSHEET_ID.GROUP_AND_SINGLE) {
 }
 
 describe('MockResultService (M8)', () => {
-  it('writes back 6 cells for the editable template', async () => {
+  it('writes back 0 cells for the editable template when no question has a winner (M8; issue #31)', async () => {
     const { result } = await setup(SPREADSHEET_ID.GROUP_AND_SINGLE);
-    await expect(result.writeBack()).resolves.toEqual({ ok: true, cellCount: 6 });
+    await expect(result.writeBack()).resolves.toEqual({ ok: true, cellCount: 0 });
+  });
+
+  it('writes back only the cells of questions with a winner (M8; issue #31)', async () => {
+    const { session, submission, result } = await setup(SPREADSHEET_ID.GROUP_AND_SINGLE);
+    const list = await submission.listSubmissions(1);
+    await submission.judge(1, list[0].groupNumber, Judgement.ACCEPTED);
+    const q1 = session.lastImport!.questions.find((q) => q.number === 1)!;
+    const total = session.lastImport!.questions.reduce((sum, q) => sum + q.subQuestions.length, 0);
+    expect(q1.subQuestions.length).toBeLessThan(total);
+    await expect(result.writeBack()).resolves.toEqual({ ok: true, cellCount: q1.subQuestions.length });
   });
 
   it('fails to write back the view-only template (edge)', async () => {

@@ -1,4 +1,4 @@
-// T070, T143: T-Results and T-WriteBack (US3 AC-10–14, FR-040–FR-042, FR-003, FR-014, SC-004).
+// T070, T143, T170: T-Results and T-WriteBack (US3 AC-10–14, FR-040–FR-042, FR-003, FR-014, SC-004).
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -189,12 +189,24 @@ describe('TeacherResultsPage T-WriteBack (FR-041, US3 AC-10, AC-13)', () => {
     const dialog = await openWriteBack();
     expect(dialog).toHaveTextContent('Sample Sheet Title');
     expect(dialog).toHaveTextContent('學習單');
-    expect(dialog).toHaveTextContent('6 格');
-    expect(dialog).toHaveTextContent('4 題');
     expect(dialog).toHaveTextContent('覆蓋');
     expect(within(dialog).getByRole('button', { name: '取消' })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: '寫回' })).toBeInTheDocument();
     expect(registry.result.writeBack).not.toHaveBeenCalled();
+  });
+
+  // Only questions 1 (2 cells) and 4 (1 cell) have a winner; 2 and 3 are not written (006 REQ-RES-09).
+  it('counts only the cells and questions of questions with a winner (FR-041; issue #31)', async () => {
+    setup();
+    const dialog = await openWriteBack();
+    expect(dialog).toHaveTextContent('3 格（2 題）');
+  });
+
+  it('shows "0 格（0 題）" when no question has a winner (edge, FR-041; issue #31)', async () => {
+    const none = results().map((r) => ({ ...r, winner: undefined }));
+    setup({ result: { getAllResults: vi.fn().mockResolvedValue(none) } });
+    const dialog = await openWriteBack();
+    expect(dialog).toHaveTextContent('0 格（0 題）');
   });
 
   it('does not offer a backup or clearing old answers (SC-004)', async () => {
@@ -214,7 +226,7 @@ describe('TeacherResultsPage T-WriteBack (FR-041, US3 AC-10, AC-13)', () => {
 });
 
 describe('TeacherResultsPage write-back result in the dialog (FR-042, US3 AC-11, AC-12, AC-14)', () => {
-  // cellCount 5 differs from the 6 cells the confirm text lists, so "5 格" can only come from the result.
+  // cellCount 5 differs from the 3 cells the confirm text lists, so "5 格" can only come from the result.
   async function writeBackWith(result: WriteBackResult) {
     const writeBack = vi.fn().mockResolvedValue(result);
     setup({ result: { writeBack } });
