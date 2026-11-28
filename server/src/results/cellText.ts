@@ -1,4 +1,5 @@
 // What a blank cell gets: the sub-question marker 003 found in it ("（1）"), then the answer.
+// The caller passes "" when the marker is in another cell (REQ-RES-08).
 export function composeCellText(marker: string, answer: string): string {
   return marker + answer;
 }

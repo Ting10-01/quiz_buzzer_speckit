@@ -153,7 +153,7 @@ description: "Task list for 006 結果與寫回"
 **Goal**: 依 003 的 `inBlankCell`，標記在填空格內時寫「標記＋答案」，在左邊另一格時只寫答案（REQ-RES-08、AC-13、AC-13a）。依 003 T051。
 
 - [X] T040 [P] 測試：`server/tests/unit/results/WriteBackService.success.test.ts` 的題組範本寫入 H5「CPU」、H6「作業系統」、H8「演算法」、H9「堆疊」、G13「IP」；`inBlankCell: true` 的標記仍寫「（1）CPU」；`frontend/tests/e2e/results.spec.ts` 寫入的儲存格跟著改
-- [ ] T041 實作 `WriteBackService.planCells`：`inBlankCell` 為 true 時傳標記給 `composeCellText`，否則傳空字串，依 T040 與 data-model 第 4 節
+- [X] T041 實作 `WriteBackService.planCells`：`inBlankCell` 為 true 時傳標記給 `composeCellText`，否則傳空字串，依 T040 與 data-model 第 4 節
 - [ ] T042 人工驗證 quickstart #7：寫回後題組範本 H 欄只有答案、G 欄標記不變，記到 `manual-verification.md`
 
 ---

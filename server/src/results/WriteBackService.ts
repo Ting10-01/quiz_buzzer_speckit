@@ -198,15 +198,16 @@ export class WriteBackService {
     return null;
   }
 
-  // Every sub-question blank cell of every question with a winner, as marker + answer.
+  // Every sub-question blank cell of every question with a winner: marker + answer when the marker is in
+  // the blank cell, only the answer when it is in the cell on the left (REQ-RES-08, #34).
   private planCells(stored: ImportSuccess, markers: BlankMarkers | null, results: QuestionResult[]): CellText[] {
     return results.flatMap(({ questionNumber, winner }) => {
       const question = stored.questions.find((q) => q.number === questionNumber);
       if (!winner || !question) return [];
-      return question.subQuestions.map(({ blankCell }, i) => ({
-        cell: blankCell,
-        text: composeCellText(markers?.[blankCell] ?? '', winner.answers[i] ?? ''),
-      }));
+      return question.subQuestions.map(({ blankCell }, i) => {
+        const found = markers?.[blankCell];
+        return { cell: blankCell, text: composeCellText(found?.inBlankCell ? found.marker : '', winner.answers[i] ?? '') };
+      });
     });
   }
 }

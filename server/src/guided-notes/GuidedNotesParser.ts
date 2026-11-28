@@ -1,7 +1,7 @@
 import type { ImportError, ImportSuccess, Spreadsheet } from '@quiz-buzzer/shared/entities';
 import { isImportError } from '@quiz-buzzer/shared/guards';
 import { HeaderLocator } from './HeaderLocator.js';
-import type { BlankMarkers } from './ImportStore.js';
+import type { BlankMarker, BlankMarkers } from './ImportStore.js';
 import { invalidNumbering, noHeader, noQuestions, tooManyQuestions } from './importErrors.js';
 import { QuestionScanner } from './QuestionScanner.js';
 import { columnLetters, type SheetGrid } from './SheetGrid.js';
@@ -40,9 +40,12 @@ export class GuidedNotesParser {
     };
   }
 
-  // The marker at the start of every blank cell of `result` (exactly one entry per blankCell).
+  // The marker of every blank cell of `result` (exactly one entry per blankCell), from a rescan of `grid`.
   markersOf(grid: SheetGrid, result: ImportSuccess): BlankMarkers {
+    const header = HeaderLocator.locate(grid);
+    const scanned = header ? this.scanner.scan(grid, header) : [];
+    const found: Record<string, BlankMarker> = Object.assign({}, ...(isImportError(scanned) ? [] : scanned.map((s) => s.markers)));
     const cells = result.questions.flatMap((q) => q.subQuestions.map((s) => s.blankCell));
-    return Object.fromEntries(cells.map((cell) => [cell, QuestionScanner.extractMarker(grid.textA1(cell))]));
+    return Object.fromEntries(cells.map((cell) => [cell, found[cell] ?? { marker: '', inBlankCell: true }]));
   }
 }
