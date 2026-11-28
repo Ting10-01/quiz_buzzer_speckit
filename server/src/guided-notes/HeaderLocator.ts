@@ -1,10 +1,12 @@
 import type { SheetGrid } from './SheetGrid.js';
 
 // The header row and its columns, all 1-based. questionCol is absent without a question column.
+// answerLastCol is the last column of a merged answer header (answerCol when it is not merged).
 export interface HeaderMatch {
   row: number;
   numberCol: number;
   answerCol: number;
+  answerLastCol: number;
   questionCol?: number;
 }
 
@@ -25,18 +27,24 @@ export class HeaderLocator {
     for (let row = 1; row <= grid.rowCount; row++) {
       let numberCol: number | undefined;
       let answerCol: number | undefined;
+      let answerLastCol = 0;
       let questionCol: number | undefined;
       for (let col = 1; col <= grid.colCount; col++) {
         const text = normalize(grid.text(row, col));
         if (!text) continue;
         // A merged header cell counts as its leftmost column.
-        const leftmost = grid.mergeAt(row, col)?.startCol ?? col;
+        const merge = grid.mergeAt(row, col);
+        const leftmost = merge?.startCol ?? col;
         if (numberCol === undefined && HeaderLocator.NUMBER_HEADERS.includes(text)) numberCol = leftmost;
-        else if (answerCol === undefined && HeaderLocator.ANSWER_HEADERS.includes(text)) answerCol = leftmost;
+        else if (answerCol === undefined && HeaderLocator.ANSWER_HEADERS.includes(text)) {
+          answerCol = leftmost;
+          answerLastCol = merge?.endCol ?? col;
+        }
         else if (questionCol === undefined && HeaderLocator.QUESTION_HEADERS.includes(text)) questionCol = leftmost;
       }
       if (numberCol !== undefined && answerCol !== undefined) {
-        return questionCol === undefined ? { row, numberCol, answerCol } : { row, numberCol, answerCol, questionCol };
+        const match = { row, numberCol, answerCol, answerLastCol };
+        return questionCol === undefined ? match : { ...match, questionCol };
       }
     }
     return null;
