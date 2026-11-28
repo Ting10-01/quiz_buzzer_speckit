@@ -526,7 +526,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Tests（先寫，確認失敗）
 
-- [ ] T173 [US2] 新增 `frontend/tests/unit/HttpActivityService.subscribe.test.ts`（假的 `RealtimeClient`）：已採用快照後才訂閱 `onActivityChange`，listener 收到一次目前的活動；訂閱後同步取消訂閱則不收到；還沒有快照時訂閱不收到，之後的快照照常收到；活動為 `null`（沒有活動）時訂閱不收到；訂閱後、補通知前又採用新快照時只收到新快照一次（C-1；issue #22）；修改 `HttpActivityService.cancel.test.ts` 的一處斷言（見上）
+- [X] T173 [US2] 新增 `frontend/tests/unit/HttpActivityService.subscribe.test.ts`（假的 `RealtimeClient`）：已採用快照後才訂閱 `onActivityChange`，listener 收到一次目前的活動；訂閱後同步取消訂閱則不收到；還沒有快照時訂閱不收到，之後的快照照常收到；活動為 `null`（沒有活動）時訂閱不收到；訂閱後、補通知前又採用新快照時只收到新快照一次（C-1；issue #22）；修改 `HttpActivityService.cancel.test.ts` 的一處斷言（見上）
 
 ### Implementation
 
