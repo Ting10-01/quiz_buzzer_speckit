@@ -45,14 +45,16 @@ export class SubmissionEngine {
     this.processed++;
     const seq = this.processed;
     const requestId = typeof request?.requestId === 'string' ? request.requestId : null;
-    const error = this.validate(group, request);
-    if (error === ALREADY_SUBMITTED) {
-      const first = this.submissions.question(request.questionNumber)!.byGroup(group as number)!;
-      if (first.requestId === request.requestId) {
-        this.log?.info({ seq, groupNumber: group, requestId }, 'submission.duplicate');
-        return { ok: true, submission: this.visibility.forStudent(first) };
-      }
+    // The same submission again answers the first result even after the question closed (issue #32).
+    const first =
+      group !== null && isWellFormed(request)
+        ? this.submissions.question(request.questionNumber)?.byGroup(group)
+        : undefined;
+    if (first !== undefined && first.requestId === request.requestId) {
+      this.log?.info({ seq, groupNumber: group, requestId }, 'submission.duplicate');
+      return { ok: true, submission: this.visibility.forStudent(first) };
     }
+    const error = this.validate(group, request);
     if (error !== null) {
       this.log?.info({ seq, groupNumber: group, requestId, reason: error.message }, 'submission.rejected');
       return { ok: false, error };
@@ -82,7 +84,7 @@ export class SubmissionEngine {
     return { ok: true, submission: this.visibility.forStudent(record) };
   }
 
-  /** The checks of submit in data-model order; the first error, or null when it can be accepted. */
+  /** The checks of submit after the repeat check, in data-model order; the first error, or null when it can be accepted. */
   private validate(group: number | null, request: SubmitRequest): ValidationError | null {
     if (group === null) return NOT_JOINED;
     if (!isWellFormed(request)) return BAD_FORMAT;
