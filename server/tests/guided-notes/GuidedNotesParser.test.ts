@@ -91,7 +91,7 @@ describe('GuidedNotesParser (question groups)', () => {
       [3, 'SINGLE'],
       [4, 'SINGLE'],
     ]);
-    expect(blanks(result)).toEqual(['G5', 'G6', 'G8', 'G9', 'G11', 'G13']);
+    expect(blanks(result)).toEqual(['H5', 'H6', 'H8', 'H9', 'G11', 'G13']);
   });
 
   it('keeps markers out of the SubQuestions (AC-12)', () => {
@@ -105,12 +105,12 @@ describe('GuidedNotesParser (question groups)', () => {
     const grid = fixtureGrid('group');
     const result = success(parser.parse(grid, SPREADSHEET));
     expect(parser.markersOf(grid, result)).toEqual({
-      G5: '（1）',
-      G6: '（2）',
-      G8: '（1）',
-      G9: '（2）',
-      G11: '',
-      G13: '',
+      H5: { marker: '（1）', inBlankCell: false },
+      H6: { marker: '（2）', inBlankCell: false },
+      H8: { marker: '（1）', inBlankCell: false },
+      H9: { marker: '（2）', inBlankCell: false },
+      G11: { marker: '', inBlankCell: true },
+      G13: { marker: '', inBlankCell: true },
     });
   });
 });

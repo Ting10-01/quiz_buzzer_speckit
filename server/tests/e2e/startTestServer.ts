@@ -3,10 +3,13 @@
 // Vite dev-server proxy forwards /api and /socket.io. PORT=0 picks a free port and prints it as
 // `E2E_SERVER_PORT=<port>` (frontend/tests/e2e/testServer.ts starts one per Playwright worker).
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
+import { isImportError } from '@quiz-buzzer/shared/guards';
 import type { FastifyInstance } from 'fastify';
 import { pathToFileURL } from 'node:url';
 import { Audience } from '../../src/activity/ActivityView.js';
 import { buildApp } from '../../src/app.js';
+import { GuidedNotesParser } from '../../src/guided-notes/GuidedNotesParser.js';
+import type { BlankMarkers } from '../../src/guided-notes/ImportStore.js';
 import { loadConfig } from '../../src/config.js';
 import { FakeGoogleGateway, signInFor } from '../helpers/fakeGoogleGateway.js';
 import { FakeSpreadsheetWriter } from '../helpers/FakeSpreadsheetWriter.js';
@@ -36,11 +39,12 @@ export const E2E_ACCOUNTS = {
  * Test-only routes, never part of the product (T061):
  * - POST /test/reset: no activity and no group members, so every test starts the same way.
  * - POST /test/import: stands in for 003's import; the page's Picker and import API are faked
- *   in the page (googlePicker.ts), so the result it showed is saved here for createActivity.
+ *   in the page (googlePicker.ts), so the result it showed is saved here for createActivity, with the
+ *   blank cells and markers 003's parser finds in the same fixture (006 checks them on write-back, #34).
  * - GET /test/activity: the teacher snapshot, so walk helpers know the next phase step.
  * - GET /test/written: what 006's write-back sent to the fake Google Sheets (006 T032).
  */
-function addTestRoutes(app: FastifyInstance, writer: FakeSpreadsheetWriter): void {
+function addTestRoutes(app: FastifyInstance, writer: FakeSpreadsheetWriter, reader: FakeSpreadsheetReader): void {
   app.post('/test/reset', async () => {
     const { queue, store, membership } = app.activity;
     queue.run(() => {
@@ -52,10 +56,30 @@ function addTestRoutes(app: FastifyInstance, writer: FakeSpreadsheetWriter): voi
   });
   app.get('/test/written', async () => writer.calls);
   app.post<{ Body: ImportSuccess }>('/test/import', async (request) => {
-    app.importStore.save(request.body, {});
+    const { result, markers } = await withParsedBlankCells(reader, request.body);
+    app.importStore.save(result, markers);
     return { ok: true };
   });
   app.get('/test/activity', async () => app.activity.manager.snapshot(Audience.TEACHER));
+}
+
+// The page's mock result keeps its question texts; the blank cells and markers come from 003's parser on
+// the fixture of the same id, as a real import would give. Without a fixture the page's result is kept.
+async function withParsedBlankCells(
+  reader: FakeSpreadsheetReader,
+  shown: ImportSuccess,
+): Promise<{ result: ImportSuccess; markers: BlankMarkers }> {
+  const { id, selectedWorksheet } = shown.spreadsheet;
+  const grid = (await reader.load(id).catch(() => null))?.sheets.find((s) => s.name === selectedWorksheet);
+  const parser = new GuidedNotesParser();
+  const parsed = grid ? parser.parse(grid, shown.spreadsheet) : null;
+  if (!grid || !parsed || isImportError(parsed)) return { result: shown, markers: {} };
+  const result = structuredClone(shown);
+  for (const question of result.questions) {
+    const found = parsed.questions.find((q) => q.number === question.number);
+    if (found) question.subQuestions = found.subQuestions;
+  }
+  return { result, markers: parser.markersOf(grid, parsed) };
 }
 
 export async function startTestServer(port: number) {
@@ -66,7 +90,7 @@ export async function startTestServer(port: number) {
     .set(E2E_CODES.pageTeacher, signInFor(E2E_ACCOUNTS.pageTeacher))
     .set(E2E_CODES.walkTeacher, signInFor(E2E_ACCOUNTS.walkTeacher));
   // 006: write-back reads the sheet again. 001's "題組＋單題範本" (the page's import, googlePicker.ts) has
-  // the same question numbers and blank cells as the "group" fixture; its "單題範本" is read-only, like
+  // the same question numbers as the "group" fixture, whose blank cells /test/import takes; its "單題範本" is read-only, like
   // in 001's mock (M8); any other sheet is not found.
   const spreadsheetReader = new FakeSpreadsheetReader()
     .set('group-and-single', loadFixture('group'))
@@ -76,7 +100,7 @@ export async function startTestServer(port: number) {
     { port, google: TEST_GOOGLE_CONFIG, missingGoogleVars: [] },
     { gateway, spreadsheetReader, spreadsheetWriter },
   );
-  addTestRoutes(app, spreadsheetWriter);
+  addTestRoutes(app, spreadsheetWriter, spreadsheetReader);
   await app.listen({ host: '127.0.0.1', port });
   return app;
 }

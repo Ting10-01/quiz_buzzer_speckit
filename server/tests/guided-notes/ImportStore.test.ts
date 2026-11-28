@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ImportStore } from '../../src/guided-notes/ImportStore.js';
+import { ImportStore, type BlankMarker } from '../../src/guided-notes/ImportStore.js';
 import type { ImportSuccess } from '@quiz-buzzer/shared/entities';
 
 function result(title: string, blankCell: string): ImportSuccess {
@@ -20,32 +20,32 @@ describe('ImportStore', () => {
 
   it('returns what was saved', () => {
     const store = new ImportStore();
-    store.save(result('A', 'G5'), { G5: '（1）' });
+    store.save(result('A', 'G5'), { G5: { marker: '（1）', inBlankCell: true } });
     expect(store.latest()).toEqual(result('A', 'G5'));
-    expect(store.latestMarkers()).toEqual({ G5: '（1）' });
+    expect(store.latestMarkers()).toEqual({ G5: { marker: '（1）', inBlankCell: true } });
   });
 
   it('replaces the result and the markers together', () => {
     const store = new ImportStore();
-    store.save(result('A', 'G5'), { G5: '（1）' });
-    store.save(result('B', 'G7'), { G7: '' });
+    store.save(result('A', 'G5'), { G5: { marker: '（1）', inBlankCell: true } });
+    store.save(result('B', 'G7'), { G7: { marker: '', inBlankCell: true } });
     expect(store.latest()).toEqual(result('B', 'G7'));
-    expect(store.latestMarkers()).toEqual({ G7: '' });
+    expect(store.latestMarkers()).toEqual({ G7: { marker: '', inBlankCell: true } });
   });
 
   it('keeps its own copy of the saved objects', () => {
     const store = new ImportStore();
     const saved = result('A', 'G5');
-    const markers: Record<string, string> = { G5: '（1）' };
+    const markers: Record<string, BlankMarker> = { G5: { marker: '（1）', inBlankCell: true } };
     store.save(saved, markers);
 
     saved.spreadsheet.title = 'changed';
     saved.questions[0]!.subQuestions[0]!.blankCell = 'Z99';
     saved.questions.push({ number: 2, type: 'SINGLE', subQuestions: [{ index: 1, blankCell: 'G7' }] });
-    markers.G5 = 'changed';
-    markers.G7 = '';
+    markers.G5!.marker = 'changed';
+    markers.G7 = { marker: '', inBlankCell: true };
 
     expect(store.latest()).toEqual(result('A', 'G5'));
-    expect(store.latestMarkers()).toEqual({ G5: '（1）' });
+    expect(store.latestMarkers()).toEqual({ G5: { marker: '（1）', inBlankCell: true } });
   });
 });

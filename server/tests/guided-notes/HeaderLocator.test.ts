@@ -4,7 +4,7 @@ import { buildGrid, fixtureGrid, rowsFrom } from './helpers/gridBuilder.js';
 
 describe('HeaderLocator.locate', () => {
   it('finds the header of the single template', () => {
-    expect(HeaderLocator.locate(fixtureGrid('single'))).toEqual({ row: 4, numberCol: 2, answerCol: 7, questionCol: 3 });
+    expect(HeaderLocator.locate(fixtureGrid('single'))).toEqual({ row: 4, numberCol: 2, answerCol: 7, answerLastCol: 8, questionCol: 3 });
   });
 
   it('takes the first row that has both a number and an answer header', () => {
@@ -16,7 +16,7 @@ describe('HeaderLocator.locate', () => {
         6: { B: '編號', D: '答案' },
       }),
     );
-    expect(HeaderLocator.locate(grid)).toEqual({ row: 3, numberCol: 1, answerCol: 2 });
+    expect(HeaderLocator.locate(grid)).toEqual({ row: 3, numberCol: 1, answerCol: 2, answerLastCol: 2 });
   });
 
   it.each([
@@ -25,12 +25,12 @@ describe('HeaderLocator.locate', () => {
     ['題次', '回答', '題幹'],
   ])('accepts the synonyms %s / %s / %s (AC-08)', (number, answer, question) => {
     const grid = buildGrid(rowsFrom({ 2: { B: number, C: question, E: answer } }));
-    expect(HeaderLocator.locate(grid)).toEqual({ row: 2, numberCol: 2, answerCol: 5, questionCol: 3 });
+    expect(HeaderLocator.locate(grid)).toEqual({ row: 2, numberCol: 2, answerCol: 5, answerLastCol: 5, questionCol: 3 });
   });
 
   it('ignores surrounding half-width and full-width spaces', () => {
     const grid = buildGrid(rowsFrom({ 1: { A: '  題號　', B: '　作答 ' } }));
-    expect(HeaderLocator.locate(grid)).toEqual({ row: 1, numberCol: 1, answerCol: 2 });
+    expect(HeaderLocator.locate(grid)).toEqual({ row: 1, numberCol: 1, answerCol: 2, answerLastCol: 2 });
   });
 
   it('requires the whole text to match', () => {
@@ -43,9 +43,14 @@ describe('HeaderLocator.locate', () => {
     expect(HeaderLocator.locate(grid)?.answerCol).toBe(7);
   });
 
+  it('records the last column of a merged answer header (REQ-IMP-10, #34)', () => {
+    const grid = buildGrid(rowsFrom({ 4: { B: '題號', G: '作答' } }), ['G4:I4']);
+    expect(HeaderLocator.locate(grid)).toMatchObject({ answerCol: 7, answerLastCol: 9 });
+  });
+
   it('allows a sheet without a question column (AC-04)', () => {
     const grid = buildGrid(rowsFrom({ 1: { A: '題號', B: '作答' } }));
-    expect(HeaderLocator.locate(grid)).toEqual({ row: 1, numberCol: 1, answerCol: 2 });
+    expect(HeaderLocator.locate(grid)).toEqual({ row: 1, numberCol: 1, answerCol: 2, answerLastCol: 2 });
     expect(HeaderLocator.locate(grid)).not.toHaveProperty('questionCol');
   });
 

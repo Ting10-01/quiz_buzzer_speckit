@@ -16,12 +16,13 @@ import {
 // Local time 2026-11-23 09:05.
 const NOW = new Date(2026, 10, 23, 9, 5);
 
-// Q1 (group 3) and Q2 (group 2) are groups with markers; Q3 has no winner; Q4 (group 5) is single.
+// Q1 (group 3) and Q2 (group 2) are groups whose markers stay in G, so H gets only the answer (#34);
+// Q3 has no winner; Q4 (group 5) is single.
 const EXPECTED_CELLS = [
-  { cell: 'G5', text: '（1）CPU' },
-  { cell: 'G6', text: '（2）作業系統' },
-  { cell: 'G8', text: '（1）演算法' },
-  { cell: 'G9', text: '（2）堆疊' },
+  { cell: 'H5', text: 'CPU' },
+  { cell: 'H6', text: '作業系統' },
+  { cell: 'H8', text: '演算法' },
+  { cell: 'H9', text: '堆疊' },
   { cell: 'G13', text: 'IP' },
 ];
 
@@ -72,7 +73,7 @@ describe('WriteBackService.writeBack succeeds', () => {
     ]);
   });
 
-  it('writes exactly the blank cells of questions with a winner, markers kept (AC-13, AC-14, AC-15)', async () => {
+  it('writes exactly the blank cells of questions with a winner, markers left in G (AC-13a, AC-14, AC-15)', async () => {
     const { service, writer } = setup();
     await service.writeBack();
     expect(writer.callsOf('writeTexts')).toEqual([
@@ -85,12 +86,22 @@ describe('WriteBackService.writeBack succeeds', () => {
     expect(await service.writeBack()).toEqual({ ok: true, cellCount: 5 });
   });
 
-  it('writes only the answer when a cell has no marker', async () => {
+  it('writes marker + answer when the marker is in the blank cell (AC-13, REQ-RES-08)', async () => {
     const { service, writer, imports } = setup();
-    const markers = { ...imports.latestMarkers()!, G5: '' };
+    const markers = { ...imports.latestMarkers()!, H5: { marker: '（1）', inBlankCell: true } };
     imports.save(imports.latest()!, markers);
     await service.writeBack();
-    expect(writer.callsOf('writeTexts')[0]?.cells[0]).toEqual({ cell: 'G5', text: 'CPU' });
+    expect(writer.callsOf('writeTexts')[0]?.cells.slice(0, 2)).toEqual([
+      { cell: 'H5', text: '（1）CPU' },
+      { cell: 'H6', text: '作業系統' },
+    ]);
+  });
+
+  it('writes only the answer when the marker is in the cell on the left (AC-13a, #34)', async () => {
+    const { service, writer, imports } = setup();
+    expect(imports.latestMarkers()?.H5).toEqual({ marker: '（1）', inBlankCell: false });
+    await service.writeBack();
+    expect(writer.callsOf('writeTexts')[0]?.cells[0]).toEqual({ cell: 'H5', text: 'CPU' });
   });
 
   it('does not read, back up or write when no question has a winner (AC-18)', async () => {
