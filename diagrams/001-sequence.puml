@@ -87,7 +87,7 @@ Teacher -> Page : 填寫活動設定，點「建立活動」
 Page -> Act : createActivity(settings)
 Act --> Page : Activity(PREPARING)
 Page -> Act : onActivityChange(listener)
-note right of Act : 學生加入或離開組別時通知（004）；\n001 的模擬資料固定，不會通知
+note right of Act : 學生加入或離開組別時通知（004）；\n訂閱後實作手上已有活動時先通知一次目前的活動，\n補上訂閱前（例如在活動設定頁期間）的變化（issue #22）；\n001 的模擬資料固定，不會通知
 Page --> Teacher : 控制台・準備中
 opt 取消活動（FR-026；只在開放第 1 題之前）
   Teacher -> Page : 點「取消活動」

@@ -102,3 +102,7 @@ F4 的設計修改（commit `3c121a7`）重新產生了 `001-class.png`、`001-s
 ## issue #20 之後（2026-11-27）
 
 學生端各畫面（`StudentPlayPage` 的 `usePhaseChange`）訂閱 `onPhaseChange` 之後，再呼叫 `getCurrentActivity()` 一次，用同一個處理函式判斷是否換頁。原因：前一個畫面換頁之後、新畫面訂閱之前通知的階段變化，舊畫面忽略、新畫面收不到，學生會停在舊畫面。時序圖第 3 段的訂閱註記已補上這次呼叫，`001-sequence.png` 重新產生；組件圖與類別圖不受影響（`getCurrentActivity()` 已在 `ActivityService` 中，頁面對服務的依賴不變）。Q2（各畫面掛載時訂閱 `onPhaseChange`）仍成立，其餘結論不變。
+
+## issue #22 之後（2026-11-28）
+
+T-Lobby 只在畫面出現時訂閱 `onActivityChange`，老師在活動設定頁期間（或從活動設定頁換頁的空檔）的學生加入、離開收不到。修正放在服務：`onActivityChange` 訂閱後，實作手上已有活動時立即通知一次目前的活動（C-1 修訂）。時序圖第 2 段的訂閱註記已補上這次通知，`001-sequence.png` 重新產生；組件圖與類別圖不受影響（`onActivityChange` 的簽章與頁面對服務的依賴不變，T-Lobby 仍不呼叫 `getCurrentActivity()`）。其餘結論不變。
