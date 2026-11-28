@@ -63,6 +63,8 @@ function ranksIn(frames: string[]): number[] {
 
 test.describe('T032 搶答與判定 (quickstart 1–10)', () => {
   test('a teacher and 4 students submit, judge in order and end questions', async ({ page, browser }) => {
+    // Five tabs and two questions: under a loaded full-suite run this can pass 30 s, so triple the limit.
+    test.slow();
     const [a, b, c] = [await studentTab(browser), await studentTab(browser), await studentTab(browser)];
 
     await toLobby(page);
