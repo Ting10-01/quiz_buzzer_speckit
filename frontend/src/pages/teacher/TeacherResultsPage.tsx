@@ -95,7 +95,10 @@ export function TeacherResultsPage({
     }
   };
 
-  const cellCount = activity.questions.reduce((sum, q) => sum + q.subQuestions.length, 0);
+  // Only questions with a winner are written (006 REQ-RES-09), so the counts follow the preview (FR-041).
+  const filled = filledCells(activity, results);
+  const cellCount = Object.keys(filled).length;
+  const questionCount = results.filter((r) => r.winner).length;
   const { title, selectedWorksheet } = activity.spreadsheet;
 
   return (
@@ -158,7 +161,7 @@ export function TeacherResultsPage({
               </p>
               <SheetPreview
                 result={{ questions: activity.questions }}
-                filled={filledCells(activity, results)}
+                filled={filled}
               />
             </section>
           </div>
@@ -201,7 +204,7 @@ export function TeacherResultsPage({
                 <div>
                   <dt>寫入答案</dt>
                   <dd>
-                    {cellCount} 格（{activity.questions.length} 題）
+                    {cellCount} 格（{questionCount} 題）
                   </dd>
                 </div>
               </dl>

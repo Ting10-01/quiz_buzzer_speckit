@@ -509,7 +509,7 @@ T012、T014、T015、T020、T021、T023、T024、T025、T028、T029、T031、T03
 
 ### Implementation
 
-- [ ] T171 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx` 的格數與題數（改用 `filledCells` 的格數與有成功組別的題數），以及 `frontend/src/services/mock/MockResultService.ts` 的寫回格數（只計算有成功組別的題目）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T170 通過，且其他測試沒有退步（依賴 T170）
+- [X] T171 [US3] 修改 `frontend/src/pages/teacher/TeacherResultsPage.tsx` 的格數與題數（改用 `filledCells` 的格數與有成功組別的題數），以及 `frontend/src/services/mock/MockResultService.ts` 的寫回格數（只計算有成功組別的題目）；執行 `npm run typecheck`、`npm run lint`、`npm test`、`npm run test:e2e`，確認 T170 通過，且其他測試沒有退步（依賴 T170）
 - [ ] T172 依 `quickstart.md` Q17 人工驗證：讓至少一題沒有成功組別，比對確認視窗的格數與寫回成功後的格數，記錄於 `manual-verification.md`
 
 **Checkpoint**: 有題目沒人答對時，寫回確認視窗的格數與題數和實際寫入的一致。
