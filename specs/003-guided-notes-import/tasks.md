@@ -142,7 +142,7 @@ description: "Task list for 003 匯入學習單"
 
 - [X] T050 [P] 測試：`gnt/QuestionScanner.test.ts`、`gnt/GuidedNotesParser.test.ts` 中題組範本的填空格改為 H5、H6、H8、H9（G11、G13 不變），`markersOf` 為 `{ marker: '（1）', inBlankCell: false }` 等；新增以 `gridBuilder` 建的版面：作答表頭只有一欄、標記在填空格內 → 填空格是標記那格、`inBlankCell: true`；右邊那格已有文字 → 仍是右邊那格；標記格還有其他文字 → 是標記那格；右邊那格屬於從上一列開始的合併 → 是標記那格；`HeaderLocator.locate` 回傳作答表頭合併的 `answerLastCol`
 - [X] T051 實作：`HeaderMatch.answerLastCol`；`QuestionScanner.scan` 依 REQ-IMP-10 選右邊那格並在 `ScannedQuestion.markers` 記下 `BlankMarker`；`GuidedNotesParser.markersOf` 改用掃描結果；`BlankMarkers` 的值改為 `BlankMarker`，依 T050 與 data-model、contracts/import-store.md
-- [ ] T052 人工驗證 quickstart #2：匯入題組範本，第 1、2 題的填空格為 H5、H6、H8、H9，記到 `manual-verification.md`
+- [X] T052 人工驗證 quickstart #2：匯入題組範本，第 1、2 題的填空格為 H5、H6、H8、H9，記到 `manual-verification.md`
 
 ---
 
