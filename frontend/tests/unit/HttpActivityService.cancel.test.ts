@@ -30,7 +30,8 @@ describe('HttpActivityService.cancelActivity', () => {
     expect(api.request).toHaveBeenCalledWith('DELETE', '/api/activity');
   });
 
-  it('applies the response before resolving: onPhaseChange gets null, onActivityChange nothing', async () => {
+  // onActivityChange gets only the catch-up of the activity held when it subscribed (C-1, issue #22).
+  it('applies the response before resolving: onPhaseChange gets null, onActivityChange no null', async () => {
     const onPhase = vi.fn();
     const onActivity = vi.fn();
     service.onPhaseChange(onPhase);
@@ -39,7 +40,7 @@ describe('HttpActivityService.cancelActivity', () => {
 
     await expect(service.cancelActivity()).resolves.toBeUndefined();
     expect(onPhase.mock.calls).toEqual([[null]]);
-    expect(onActivity).not.toHaveBeenCalled();
+    expect(onActivity.mock.calls).toEqual([[preparing()]]);
     await expect(service.getCurrentActivity()).resolves.toBeNull();
   });
 
