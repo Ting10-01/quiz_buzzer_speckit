@@ -1,7 +1,7 @@
 import type { CellText, SpreadsheetWriter } from '../../src/results/SpreadsheetWriter.js';
 
 export type WriterCall =
-  | { method: 'duplicateSheet'; spreadsheetId: string; sheetId: number; newTitle: string }
+  | { method: 'duplicateSheet'; spreadsheetId: string; sheetId: number; newTitle: string; insertIndex: number }
   | { method: 'writeTexts'; spreadsheetId: string; worksheet: string; cells: CellText[] };
 
 // Shaped like the GaxiosError Google client libraries throw when Google answers `status`.
@@ -25,8 +25,8 @@ export class FakeSpreadsheetWriter implements SpreadsheetWriter {
     return this;
   }
 
-  async duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string): Promise<void> {
-    this.calls.push({ method: 'duplicateSheet', spreadsheetId, sheetId, newTitle });
+  async duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string, insertIndex: number): Promise<void> {
+    this.calls.push({ method: 'duplicateSheet', spreadsheetId, sheetId, newTitle, insertIndex });
     this.throwIfFailing('duplicateSheet');
   }
 

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GuidedNotesParser } from '../../../src/guided-notes/GuidedNotesParser.js';
 import { ResultQuery } from '../../../src/results/ResultQuery.js';
 import { WriteBackService } from '../../../src/results/WriteBackService.js';
+import { loadFixture } from '../../guided-notes/helpers/gridBuilder.js';
 import { FakeSpreadsheetWriter } from '../../helpers/FakeSpreadsheetWriter.js';
 import {
   FakeSubmissionStore,
@@ -65,12 +66,27 @@ describe('WriteBackService.writeBack succeeds', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it('backs up the worksheet by its sheetId under a timestamped name (AC-17)', async () => {
+  it('backs up the worksheet by its sheetId under a timestamped name, right after it (AC-12, AC-17)', async () => {
     const { service, writer } = setup();
     await service.writeBack();
     expect(writer.callsOf('duplicateSheet')).toEqual([
-      { method: 'duplicateSheet', spreadsheetId: SPREADSHEET_ID, sheetId: 0, newTitle: '學習單-備份-20261123-0905' },
+      { method: 'duplicateSheet', spreadsheetId: SPREADSHEET_ID, sheetId: 0, newTitle: '學習單-備份-20261123-0905', insertIndex: 1 },
     ]);
+  });
+
+  it('puts the backup right after the worksheet when it is not the first one (REQ-RES-13, #33)', async () => {
+    const { service, reader, writer } = setup();
+    const book = loadFixture('group');
+    const notes = book.sheets![0]!;
+    // Listed out of order: Google's index decides the order, as in a real answer.
+    book.sheets = [
+      { properties: { sheetId: 7, title: '說明', index: 0 } },
+      { ...notes, properties: { ...notes.properties, index: 2 } },
+      { properties: { sheetId: 9, title: '學習單-備份-20261122-1000', index: 1 } },
+    ];
+    reader.set(SPREADSHEET_ID, book);
+    await service.writeBack();
+    expect(writer.callsOf('duplicateSheet')[0]).toMatchObject({ sheetId: 0, insertIndex: 3 });
   });
 
   it('writes exactly the blank cells of questions with a winner, markers left in G (AC-13a, AC-14, AC-15)', async () => {
