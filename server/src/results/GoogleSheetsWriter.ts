@@ -15,9 +15,11 @@ export class GoogleSheetsWriter implements SpreadsheetWriter {
 
   constructor(private readonly clients: GoogleClientProvider) {}
 
-  async duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string): Promise<void> {
+  // Without insertSheetIndex Google puts the copy first, and 003 would then pick it on the next import (#33).
+  async duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string, insertIndex: number): Promise<void> {
+    const duplicateSheet = { sourceSheetId: sheetId, newSheetName: newTitle, insertSheetIndex: insertIndex };
     await this.api().spreadsheets.batchUpdate(
-      { spreadsheetId, requestBody: { requests: [{ duplicateSheet: { sourceSheetId: sheetId, newSheetName: newTitle } }] } },
+      { spreadsheetId, requestBody: { requests: [{ duplicateSheet }] } },
       { timeout: this.timeoutMs },
     );
   }

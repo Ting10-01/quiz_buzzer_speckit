@@ -8,8 +8,9 @@ export interface CellText {
 // Changes a Google spreadsheet. The only production implementation is GoogleSheetsWriter; the
 // interface exists so tests can substitute Google (constitution III, VIII).
 export interface SpreadsheetWriter {
-  // Copies the worksheet `sheetId` into a new worksheet named `newTitle` (the backup).
-  duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string): Promise<void>;
+  // Copies the worksheet `sheetId` into a new worksheet named `newTitle` (the backup), placed at
+  // position `insertIndex` (0 is the first worksheet).
+  duplicateSheet(spreadsheetId: string, sheetId: number, newTitle: string, insertIndex: number): Promise<void>;
   // Writes every cell as plain text in a single request.
   writeTexts(spreadsheetId: string, worksheet: string, cells: CellText[]): Promise<void>;
 }
