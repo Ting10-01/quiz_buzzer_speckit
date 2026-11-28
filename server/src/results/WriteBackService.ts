@@ -151,7 +151,9 @@ export class WriteBackService {
 
     const names = loaded.sheets.map((s) => s.name);
     try {
-      await this.writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, this.now(), names));
+      // loaded.sheets is in Google's worksheet order, so this is the position right after the worksheet.
+      const afterWorksheet = loaded.sheets.indexOf(grid) + 1;
+      await this.writer.duplicateSheet(id, grid.sheetId, backupName(selectedWorksheet, this.now(), names), afterWorksheet);
     } catch (error) {
       throw this.mapGoogleError(error, 'BACKUP');
     }

@@ -153,7 +153,7 @@ description: "Task list for 006 結果與寫回"
 **Goal**: 寫回建立的備份工作表緊接在學習單後面，老師之後匯入同一份試算表時，003 仍預設選到學習單（AC-12、REQ-RES-13）
 
 - [X] T037 [P] 測試：`server/tests/unit/results/GoogleSheetsWriter.test.ts` 的 `duplicateSheet` 請求帶 `insertSheetIndex`；`server/tests/unit/results/WriteBackService.success.test.ts` 傳給 `duplicateSheet` 的 `insertIndex` 是學習單在 `loaded.sheets` 的位置 + 1（學習單不在第一個工作表時也對）；`FakeSpreadsheetWriter` 記錄 `insertIndex`
-- [ ] T038 `SpreadsheetWriter.duplicateSheet` 加上 `insertIndex`，`GoogleSheetsWriter` 送出 `insertSheetIndex`，`WriteBackService` 傳入 `loaded.sheets.indexOf(grid) + 1`，依 T037 與 data-model 第 4 節
+- [X] T038 `SpreadsheetWriter.duplicateSheet` 加上 `insertIndex`，`GoogleSheetsWriter` 送出 `insertSheetIndex`，`WriteBackService` 傳入 `loaded.sheets.indexOf(grid) + 1`，依 T037 與 data-model 第 4 節
 - [ ] T039 人工驗證 quickstart #7：寫回後備份緊接在學習單後面，再匯入同一份試算表時預設選到學習單，記到 `manual-verification.md`
 
 ---
