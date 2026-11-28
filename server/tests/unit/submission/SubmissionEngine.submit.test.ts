@@ -1,4 +1,5 @@
 import type { SubmitReply, SubmitRequest } from '@quiz-buzzer/shared/submissionEvents';
+import type { FastifyBaseLogger } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityManager } from '../../../src/activity/ActivityManager.js';
 import type { ActivityState, ActivityStore } from '../../../src/activity/ActivityStore.js';
@@ -36,6 +37,7 @@ function openState(n: number, openedAt = OPENED_AT): ActivityState {
 
 function setup(initial: ActivityState | null = openState(2)) {
   let state = initial;
+  const log = { info: vi.fn() };
   const activityStore = { current: () => state, subscribe: () => () => {} } as unknown as ActivityStore;
   const submissions = new SubmissionStore();
   const notifier = {
@@ -52,6 +54,7 @@ function setup(initial: ActivityState | null = openState(2)) {
     activityStore,
     manager,
     new SequenceClock(),
+    log as unknown as FastifyBaseLogger,
   );
   const submit = (group: number | null, request: Partial<SubmitRequest> | unknown): SubmitReply =>
     queue.run(() => engine.submit(group, request as SubmitRequest));
@@ -60,6 +63,7 @@ function setup(initial: ActivityState | null = openState(2)) {
     submissions,
     notifier,
     submit,
+    logged: () => log.info.mock.calls.map(([, message]) => message as string),
     processed: () => (engine as unknown as { processed: number }).processed,
     setState: (next: ActivityState | null) => {
       state = next;
@@ -288,6 +292,30 @@ describe('SubmissionEngine.submit: the same requestId again (AC-05)', () => {
     submit(1, first);
     submit(2, request());
     expect(submissions.list(2).map((s) => s.rank)).toEqual([1, 2]);
+  });
+
+  // issue #32: a repeat that arrives after the question closed still answers the first result.
+  it.each([
+    ['the question has ended', activityState({ questions: imported.questions, phase: 'QUESTION_ENDED', currentQuestion: 2 })],
+    ['the activity is FINISHED', activityState({ questions: imported.questions, phase: 'FINISHED', currentQuestion: 4 })],
+    ['the next question is open', openState(3)],
+  ])('answers the first result when %s, logged as submission.duplicate', (_name, closed) => {
+    const { submit, submissions, notifier, setState, logged } = setup();
+    const first = request();
+    const reply = submit(1, first);
+    setState(closed);
+    expect(submit(1, { ...first })).toEqual(reply);
+    expect(submissions.list(2)).toHaveLength(1);
+    expect(notifier.groupSubmitted).toHaveBeenCalledOnce();
+    expect(logged()).toEqual(['submission.accepted', 'submission.duplicate']);
+  });
+
+  it('still rejects another requestId of the same group with 這一題目前不能作答 after the question ended', () => {
+    const { submit, setState, logged } = setup();
+    submit(1, request());
+    setState(activityState({ questions: imported.questions, phase: 'QUESTION_ENDED', currentQuestion: 2 }));
+    expect(submit(1, request())).toEqual({ ok: false, error: NOT_OPEN });
+    expect(logged()).toEqual(['submission.accepted', 'submission.rejected']);
   });
 });
 
